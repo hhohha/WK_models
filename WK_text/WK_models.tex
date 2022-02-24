@@ -1,0 +1,207 @@
+\documentclass[english]{fitthesis} % bez zadání - pro začátek práce, aby nebyl problém s překladem
+%\documentclass[english]{fitthesis} % without assignment - for the work start to avoid compilation problem
+%\documentclass[zadani]{fitthesis} % odevzdani do wisu a/nebo tisk s barevnými odkazy - odkazy jsou barevné
+%\documentclass[english,zadani]{fitthesis} % for submission to the IS FIT and/or print with color links - links are color
+%\documentclass[zadani,print]{fitthesis} % pro černobílý tisk - odkazy jsou černé
+%\documentclass[english,zadani,print]{fitthesis} % for the black and white print - links are black
+%\documentclass[zadani,cprint]{fitthesis} % pro barevný tisk - odkazy jsou černé, znak VUT barevný
+%\documentclass[english,zadani,cprint]{fitthesis} % for the print - links are black, logo is color
+
+% Setting of a path to the pictures
+\graphicspath{{figures/}{./figures/}}
+
+%---rm---------------
+\renewcommand{\rmdefault}{lmr}
+%---sf---------------
+\renewcommand{\sfdefault}{qhv}
+%---tt------------
+\renewcommand{\ttdefault}{lmtt}
+
+% disables function of the template which replaces quotation marks
+% to avoid unnecessary replacements in the API descriptions etc.
+\csdoublequotesoff
+
+\usepackage{url}
+
+% =======================================================================
+% "hyperref" package create clickable links in pdf if you are using pdflatex.
+% Problem is that this package have to be introduced as the last one so it 
+% can not be placed in the template file.
+\ifWis
+\ifx\pdfoutput\undefined % nejedeme pod pdflatexem / we are not using pdflatex
+\else
+  \usepackage{color}
+  \usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex]{hyperref}
+  \definecolor{hrcolor-ref}{RGB}{223,52,30}
+  \definecolor{hrcolor-cite}{HTML}{2F8F00}
+  \definecolor{hrcolor-urls}{HTML}{092EAB}
+  \hypersetup{
+	linkcolor=hrcolor-ref,
+	citecolor=hrcolor-cite,
+	filecolor=magenta,
+	urlcolor=hrcolor-urls
+  }
+  \def\pdfBorderAttrs{/Border [0 0 0] }  % without margins around links
+  \pdfcompresslevel=9
+\fi
+\else % for the print clickable links will be black
+\ifx\pdfoutput\undefined % we are not using pdflatex
+\else
+  \usepackage{color}
+  \usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
+  \definecolor{links}{rgb}{0,0,0}
+  \definecolor{anchors}{rgb}{0,0,0}
+  \def\AnchorColor{anchors}
+  \def\LinkColor{links}
+  \def\pdfBorderAttrs{/Border [0 0 0] } % without margins around links
+  \pdfcompresslevel=9
+\fi
+\fi
+% This solves the problems with links which leads after the picture
+\usepackage[all]{hypcap}
+
+% Information about the thesis
+%---------------------------------------------------------------------------
+\projectinfo{
+  % Thesis
+  project={DP},
+  year={2022},
+  date=\today,
+  title.cs={Watson-Crick modely pro zpracování formálních jazyků},
+  title.en={Watson-Crick Models for Formal Language Processing},
+  %title.length={14.5cm}, % setting the length of a block with a thesis title for adjusting a line break (can be defined here or below)
+  %sectitle.length={14.5cm}, % setting the length of a block with a second thesis title for adjusting a line break (can be defined here or below)
+  %dectitle.length={14.5cm}, % setting the length of a block with a thesis title above declaration for adjusting a line break (can be defined here or below)
+  author.name={Jan},
+  author.surname={Hammer},
+  author.title.p={Bc.},
+  department={UIFS},
+  % supervisor
+  supervisor.name={Zbyněk},
+  supervisor.surname={Křivka},
+  supervisor.title.p={Ing.},
+  supervisor.title.a={Ph.D.},
+  keywords.cs={Watson-Crick, Automaty},
+  keywords.en={Watson-Crick, Automata},
+  abstract.cs={Abstrakt bude zde.}, % abstrakt v českém či slovenském jazyce / abstract in czech or slovak language
+  abstract.en={Abstract will be here.},
+  declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Mr. Křivka
+  I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.},
+  % Acknowledgement (optional, ideally in the language of the thesis)
+  %acknowledgment={Here it is possible to express thanks to the supervisor and to the people which provided professional help
+  %(external submitter, consultant, etc.).},
+  faculty={FIT},
+  faculty.cs={Fakulta informačních technologií},
+  faculty.en={Faculty of Information Technology},
+  %department.cs={Ústav matematiky}, % Department in Czech - for use of this entry select DEF above or comment it out
+  %department.en={Institute of Mathematics} % Department in English - for use of this entry select DEF above or comment it out
+}
+
+% setting the length of a block with a thesis title for adjusting a line break - can be defined here or above
+%\titlelength{14.5cm}
+% setting the length of a block with a second thesis title for adjusting a line break - can be defined here or above
+%\sectitlelength{14.5cm}
+% setting the length of a block with a thesis title above declaration for adjusting a line break - can be defined here or above
+%\dectitlelength{14.5cm}
+
+% solves first/last row of the paragraph on the previous/next page
+\clubpenalty=10000
+\widowpenalty=10000
+
+% checklist
+\newlist{checklist}{itemize}{1}
+\setlist[checklist]{label=$\square$}
+
+% If you do not want enlarged spacing for filling of the pages in case of duplex printing, uncomment the following line
+% \raggedbottom
+
+\begin{document}
+  % Typesetting of the title pages
+  % ----------------------------------------------
+  \maketitle
+  % Contents
+  % ----------------------------------------------
+  \setlength{\parskip}{0pt}
+
+  {\hypersetup{hidelinks}\tableofcontents}
+  
+  % List of figures and list of tables (if the thesis contains a lot of pictures, it is good)
+  % {\hypersetup{hidelinks}\listoffigures}
+  % {\hypersetup{hidelinks}\listoftables}
+
+  \ifODSAZ
+    \setlength{\parskip}{0.5\bigskipamount}
+  \else
+    \setlength{\parskip}{0pt}
+  \fi
+
+  % Skip the page in the two-sided mode
+  \iftwoside
+    \cleardoublepage
+  \fi
+
+  % Thesis text
+  % ----------------------------------------------
+  \input{WK_models-chapters}
+  
+  % Compilation piecewise (see above, it is necessary to uncomment it)
+  %\subfile{projekt-01-uvod-introduction}
+  % ...
+  %\subfile{chapters/projekt-05-conclusion}
+
+
+  % Bibliography
+  % ----------------------------------------------
+
+  \makeatletter
+  \def\@openbib@code{\addcontentsline{toc}{chapter}{Bibliography}}
+  \makeatother
+  \bibliographystyle{bib-styles/Pysny/enplain}
+  %  \bibliographystyle{alpha}
+  \begin{flushleft}
+  \bibliography{WK_models-bibliography}
+  \end{flushleft}
+
+  % Skip the page in the two-sided mode
+  \iftwoside
+    \cleardoublepage
+  \fi
+
+  % Appendices
+  % ---------------------------------------------
+  \appendix
+
+%  \appendixpage
+
+% Skip the page in the two-sided mode
+%\iftwoside
+%  \cleardoublepage
+%\fi
+  
+
+
+%    \section*{List of Appendices}
+%    \addcontentsline{toc}{section}{List of Appendices}
+
+  \startcontents[chapters]
+  \setlength{\parskip}{0pt} 
+  % list of appendices
+  % \printcontents[chapters]{l}{0}{\setcounter{tocdepth}{2}}
+  
+  \ifODSAZ
+    \setlength{\parskip}{0.5\bigskipamount}
+  \else
+    \setlength{\parskip}{0pt}
+  \fi
+  
+  % Skip the page in the two-sided mode
+  \iftwoside
+    \cleardoublepage
+  \fi
+  
+%   \input{WK_models-appendices}
+  
+  % Compilation piecewise (see above, it is necessary to uncomment it)
+  %\subfile{WK_models-appendices}
+  
+\end{document}
