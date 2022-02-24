@@ -1,0 +1,13 @@
+*.dvi
+*.log
+WK_models.blg
+WK_models.bbl
+WK_models.toc
+*.aux
+WK_models.out
+WK_models.lof
+WK_models.ptc
+WK_models.pdf
+*~
+__pycache__
+WK_articles
