@@ -1,9 +1,96 @@
 \chapter{Introduction}
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+I used the following stuff: \cite{A1}, \cite{DETERM_WKA}, \cite{A3}, \cite{A4}, \cite{A5}, \cite{A6}, \cite{A7}, \cite{A8}, \cite{A9}, \cite{WK_FIN_AUT}
+
+
+\chapter{Watson-Crick and DNA}
+\todo{Describe the relation between DNA and WK}
 
 \chapter{Watson-Crick models}
+Number of models working with double stranded sequences has been proposed. The purpuse of this chapter is to summarize these models and some of their key attributes that will be used in a later chapters.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-I used the following stuff: \cite{A1}, \cite{A2}, \cite{A3}, \cite{A4}, \cite{A5}, \cite{A6}, \cite{A7}, \cite{A8}, \cite{A9}
+\section{Watson-Crick automata}
+Watson-Crick automata have been first proposed in \cite{WK_FIN_AUT} as an enhancement of standard Finite Automata. Watson-Crick finite automaton is a 6-tuple $M = (V, \rho, Q, q_0, F, P)$ with the following meaning.
+\begin{itemize}
+  \item{$V$ -- finite input alphabet}
+  \item{$\rho \subseteq V \times V$ -- complementarity relation}
+  \item{$Q$ -- finite set of states}
+  \item{$q_0 \in Q$ -- starting symbol}
+  \item{$F \subseteq Q$ -- set of finite states}
+  \item{$P$ -- finite set of transition rules in a form $q({w_1 \atop w_2}) \rightarrow q'$ where $q, q' \in Q, w_1, w_2 \in V^*$}
+\end{itemize}
+
+Compared to Finite automata, Watson-Crick automata have different form of transition rules which read two strings at the same time. These represent the two independent reading heads -- one reading the upper strand ($w_1$) and the other reading the lower strand ($w_2$). They also add the complementarity relation which is usually required to be symmetric. The symbols in the upper and lower strands with the same indices need to adhere to it.
+
+A Watson-Crick domain is a set $WK_{\rho}(V)$ which denotes all valid double strands associated with a given $V$ and $\rho$. Formally:
+\begin{align}
+	WK_{\rho}(V) = \wkdomain{V}{V}_{\rho}^{*} && \textnormal{where} && \wkdomain{V}{V}_{\rho} = \Big\{\wkdomain{a}{b} | a, b \in V, (a, b) \in \rho \Big\}
+\end{align}
+This implies that both strands have the same length.
+
+A configuraion of a Watson-Crick automaton is a pair $(q, ({w_1 \atop w_2}))$ where $q \in Q$ is a current state and $w_1, w_2 \in V^*$ are the parts of the upper and lower strands yet to be read.
+
+If $q\big({u_1 \atop u_2}\big) \rightarrow q' \in P$ and $\big({u_1 v_1 \atop u_2 v_2}\big) \in \big({V^* \atop V^*}\big)$ then $q\big({u_1 v_1 \atop u_2 v_2}\big) \Rightarrow q'\big({v_1 \atop v_2}\big)$ is a transition of the Watson-Crick automaton. $\Rightarrow^*$ denotes the transitive and reflexive closure of the relation $\Rightarrow$.
+
+A Watson-Crick automaton accepts the language $L(M)$:
+
+$$L(M) = \Big\{w_1 \in V^* | q_0 \wkdomain{w_1}{w_2} \Rightarrow^* f \genfrac{(}{)}{0pt}{1}{\lambda}{\lambda} \textnormal{ where } f \in F, w_2 \in V^*, \wkdomain{w_1}{w_2} \in WK_{\rho}(V)\Big\}$$
+
+This means that only the upper strand is accepted by this automaton to the language $L$. The lower strand has just an auxiliary purpose.
+
+\section{Special versions of Watson-Crick automata}
+Four special versions of Watson-Crick automata are often used. These are:
+\begin{itemize}
+  \item{Stateless WKA -- The WKA has only one state: $Q = F = {q_0}$}
+  \item{All final WKA -- All the states are final: $Q = F$}
+  \item{Simple WKA -- each rule reads only one head: $(q({w_1 \atop w_2}) \rightarrow q' \in P) \Rightarrow (w_1 = \lambda \vee w_2 = \lambda)$}
+  \item{1-limited WKA -- similar to Simple WKA but also reads only one symbol at a time: $(q({w_1 \atop w_2}) \rightarrow q' \in P) \Rightarrow |w_1 w_2| = 1$}
+\end{itemize}
+
+It has been shown that three of these four special types of WKAs have the same power as the actual WKA, namely all final WKA, simple WKA and 1-limited WKA (stateless WKA is weaker). Therefore one possible approach to decide membership would be to limit the decision algorithm to one of these three types without any loss in expressing power.
+
+There are three different variants of deterministic WKA proposed in \cite{DETERM_WKA}. These are:
+\begin{itemize}
+  \item{Weakly deterministic WKA -- WKA where in each reachable configuration, there is at most one possible continuation.}
+  \item{Deterministic WKA -- for any two rules which lead from the same state, either their upper strands or their lower strands must not be prefix comparable, meaning one is not the prefix of the other. Formally: $(q({u \atop v}) \rightarrow q_1 \in P \wedge q({u' \atop v'}) \rightarrow q_2 \in P) \Rightarrow u \nsim_p u' \vee v \nsim_p v'$ where $\sim_p$ is the relation of prefix comparability}
+  \item{Stronly deterministic WKA}
+\end{itemize}
+
+It is not specified how to actually achieve weak determinism. In fact, \cite{DETERM_WKA} shows that this property is undecidable. Informally, for a WKA to be weakly deterministic but not deterministic, there must be at least two rules which could both be used in certain configuration (otherwise it would be deterministic). But such a configuration must not be reachable (otherwise it would not be weakly deterministic). The configuration may be unreachable trivially -- by such rules using an unreachable state or a symbols that have no related symbols in the complementarity relation. But a configuration may be unrechable non-trivially, if it is possible to tell how many symbols will be read from each strand before reaching certain state.
+
+Both weakly deterministic and deterministic WKA are in reality not deterministic (in an intuitive sense). Their determinism relies on the fact, that the configuration is known. But that is probably not a typical way how to work with WKA, since WKA decides the membership in a language for the upper strand only. That means that a compatible lower strand has to be found in the process of running the WKA. Theoretically, it is possible to approach this problem by first generating all possible lower strands for the given upper strand based solely on the complementarity relation and afterwards use all these pairs as inputs for the WKA. In such a case the weakly deterministic and deterministic automata would be truly deterministic, however this is clearly not feasible for non-trivial complementarity relations. Therefore, the strongly deterministic WKA is the only one witch is truly deterministic under all circumstances, because the identity relation required leaves no space these types of non-determinism.
+
+\section{Watson-Crick grammars}
+There are several WK grammars.
+
+
+\section{Watson-Crick Pushdown automata}
+
+\section{Watson-Crick Context-free systems}
+
+\section{Role of the complementarity relation}
+
+\section{Comparison of expressing power of various models}
+
+\chapter{Existing ways of testing membership in Watson-Crick languages}
+
+\section{Using deterministic automata}
+
+\section{WK-CYK}
+The WK-CYK algorithm was introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK languages. The CYK algorithm, introduces in \todo{Find out where} is used to decide the membership in a language defined by a context-free grammar which must be in Chomsky Normal Form.
+
+\section{Using WK Pushdown automata}
+
+\chapter{New algorithms for testing membership in Watson-Crick languages}
+
+\section{Running non-deterministic WKA with BFA}
+
+\section{Generating strands using CF WK grammar}
+
+\chapter{Analysis of complexity of existing and new algorithms}
+
+\chapter{Testing membership problem on chosen WK languages}
+
+\chapter{Conclusion}
