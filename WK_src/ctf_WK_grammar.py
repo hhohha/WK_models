@@ -1,97 +1,87 @@
 #!/usr/bin/python3
 
-class cGrammarStatus:
-    def __init__(self, word, strand, parsedUS, parsedLS):
-        self.word = tuple(word)
-        self.strand = tuple(strand)
-        self.parsedUS = parsedUS
-        self.parsedLS = parsedLS
+class cWordStatus:
+	def __init__(self):
+		self.word = None
+		self.upperStrLen = None
+		self.lowerStrLen = None
+		self.ntCnt = None
+		self.firstNt = None # is this useful?
 
-    def __hash__(self):
-        return hash(self.word) + hash(self.strand) + hash(self.parsedUS) + hash(self.parsedLS)
+class cWK_CFG:
+	def __init__(self, nts, ts, startSymbol, rules, relation):
+		self.nts = nts
+		self.ts = ts
+		self.startSymbol = startSymbol
+		self.rules = rules
+		self.relation = relation
 
-    def __eq__(self, other):
-        return self.word == other.word and self.strand == other.strand and self.parsedUS == other.parsedUS and self.parsedLS == other.parsedLS
+		if not self.is_consistent():
+			raise ValueError
 
-class cWKRule:
-    def __init__(self, NT, result):
-        self.NT = NT
-        self.result = result
+		self ruleDict = {}
+		for nt in self.nts:
+			ruleDict[nt] = []
+		for rule in rules:
+			self.ruleDict[rule[0]].append(rule[1])
 
-class cWKCFGrammar:
-    def __init__(self, nonTerminals, terminals, startSymbol, rules):
-        self.nonTerminals = nonTerminals
-        self.terminals = terminals
-        self.startSymbol = startSymbol
-        self.rules = rules
+	def is_consistent(self):
+		if self.startSymbol not in self.nts:
+			return False
 
-        # we presume the complementary relation to be identity
-        #self.complRelation = complRelation
+		for t in self.ts:
+			if t in self.nts:
+				return False
 
-    def contains(self, word):
-        startState = cGrammarStatus([self.startSymbol], word, 0, 0)
+		for rule in self.rules:
+			if rule[0] not in self.nts:
+				return False
+			for symbol in rule[1]:
+				if symbol not in self.nts and symbol not in self.ts:
+					return False
 
-        qOpen = [startState]  # TODO - use more suitable structure maybe (deque)?
-        qClosed = set(startState)
+		for r in self.relation:
+			if r[0] not in self.ts or r[1] not in self.ts:
+				return False
 
-        while qOpen:
-            curStatus = qOpen.pop(0)
-            for state in self.getAllFollowingStates(curStatus):
-                if state not in qClosed:
-                    if weAreDone():
-                        return True
-                    else:
-                        qOpen.append(state)
-                        qClosed.add(state)
+		return True
 
-        return False
+	def can_generate(self, upperStr):
+		openQueue = [[self.startSymbol]]
+		closedQueue = set()
 
+		while openQueue:
+			currentWord = openQueue.pop(0)
+			closedQueue.add(currentWord)
 
-    def getAllFollowingStates(self, curStatus):
+			for nextWord in self.get_next_states(currentWord):
+				if self.is_result(nextWord, upperStr):
+					return True
+				if nextWord not in openQueue and nextWord not in closedQueue:
+					openQueue.append(nextWord)
 
-        # get first NT
-        NTidx = -1
-        for idx, elem in enumerate(curStatus.word):
-            if elem in self.nonTerminals:   # TODO - optimize (nonTerminals is now a list)
-                NTidx = idx
-                break
+		return False
 
-        if NTidx == -1:
-            # no non-terminal - nothing to generate
-            return
+	def is_result(word, goal):
+		return len(word) == 1 and word[0] == goal
 
-        for rule in self.rules:
-            if self.isRuleSuitable(rule, curStatus, NTidx):
-                yield rule
+	def get_all_next_states(self, word):
+		ntIdx = None
+		for i, s in enumerate(word):
+			if s in self.nts:
+				ntIdx = i
+		if ntIdx is None:
+			return
 
-    def isRuleSuitable(self, rule, status, NTidx):
-        # TODO - group rules by starting NT to avoid this
-        if rule.NT != status.word[NTidx]:
-            return False
+		nt = word[ntIdx]
+		for rule in self.ruleDict[nt]:
+			newWord = self.apply_rule(word, ntIdx, rule)
+			if newWord:
+				yield newWord
 
+	def get_NT_idxs(self, word):
+		for idx, s in enumerate(word):
+			if s in self.nts:
+				yield idx
 
-
-
-
-
-
-
-
-
-
-    # TODO - find better name
-    def weAreDone(self):
-        # TODO
-        return False
-
-
-
-
-
-
-
-
-
-word = ''
-g = cWKCFGrammar()
-g.contains(word)
+	def apply_rule(self, word, ntIdx, rule):
