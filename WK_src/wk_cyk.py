@@ -58,6 +58,7 @@ class cWKGrammarCNF:
 		self.X[idx].append(nt)
 		print(idx, nt)
 
+
 	# sentence: tuple('upper', 'lower')
 	def can_generate(self, sentence):
 		n = len(sentence[0])
@@ -97,9 +98,7 @@ class cWKGrammarCNF:
 
 		return (1, n, 1, n) in self.X and self.nts[0] in self.X[(1, n, 1, n)]
 
-
-ts = []
-nts = ['S']
+ts, nts, rel = [], ['S'], None
 rules = [
 	('S', 'S', 'S'),
 	('S', 'Tua', 'Y1'),
@@ -127,9 +126,6 @@ rules = [
 	('Tda', '', 'a'),
 	('Tdb', '', 'b')
 ]
-rel = None
-
 g = cWKGrammarCNF(ts, nts, rules, rel)
-
 s = 'abababab'
 print(g.can_generate((s, s)))

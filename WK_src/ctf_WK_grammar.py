@@ -1,12 +1,24 @@
 #!/usr/bin/python3
 
-class cWordStatus:
-	def __init__(self):
-		self.word = None
-		self.upperStrLen = None
-		self.lowerStrLen = None
-		self.ntCnt = None
-		self.firstNt = None # is this useful?
+#class cWordStatus:
+	#def __init__(self, word, upperStrLen, lowerStrLen):
+		#self.word = word
+		#self.upperStrLen = upperStrLen
+		#self.lowerStrLen = lowerStrLen
+
+#class cNonTerminal:
+	#def __init__(self, sign)
+		#self.sign = sign
+
+#class cTerminal:
+	#def __init__(self, sign)
+		#self.sign = sign
+
+#class cRule:
+	#def __init__(self, lhs, rhs):
+		#self.lhs = lhs
+		#self.rhs = rhs
+
 
 class cWK_CFG:
 	def __init__(self, nts, ts, startSymbol, rules, relation):
@@ -19,7 +31,8 @@ class cWK_CFG:
 		if not self.is_consistent():
 			raise ValueError
 
-		self ruleDict = {}
+		#TODO make rules compact: A -> (a lambda)(lambda a) == A -> (a a)
+		self.ruleDict = {}
 		for nt in self.nts:
 			ruleDict[nt] = []
 		for rule in rules:
@@ -47,6 +60,8 @@ class cWK_CFG:
 		return True
 
 	def can_generate(self, upperStr):
+		#initStatus = cWordStatus([self.startSymbol], 0, 0)
+		#openQueue = [initStatus]
 		openQueue = [[self.startSymbol]]
 		closedQueue = set()
 
@@ -66,22 +81,55 @@ class cWK_CFG:
 		return len(word) == 1 and word[0] == goal
 
 	def get_all_next_states(self, word):
-		ntIdx = None
-		for i, s in enumerate(word):
-			if s in self.nts:
-				ntIdx = i
-		if ntIdx is None:
-			return
-
-		nt = word[ntIdx]
-		for rule in self.ruleDict[nt]:
-			newWord = self.apply_rule(word, ntIdx, rule)
-			if newWord:
-				yield newWord
-
-	def get_NT_idxs(self, word):
-		for idx, s in enumerate(word):
-			if s in self.nts:
-				yield idx
+		for ntIdx, symbol in enumerate(word):
+			if not isinstance(symbol, list): # terminals are tuples so symbol is a non terminal
+				for rule in self.ruleDict[symbol]:
+					newWord = self.apply_rule(word, ntIdx, rule)
+					if newWord:
+						yield newWord
 
 	def apply_rule(self, word, ntIdx, rule):
+		isTerm = len(rule[1]) == 1 and isinstance(rule[1], list)   # rule right side is just a terminal
+		mergePrev = ntIdx > 0 and isinstance(word[ntIdx - 1], list)  # can we merge with the previous terminal
+		mergeNext = ntIdx < len(word) - 1 and isinstance(word[ntIdx + 1], list) # can we merge with the next terminal
+
+		if isTerm:
+			if mergePrev and mergeNext:
+				mergedUpper = word[ntIdx - 1][0] + rule[1][0][0] + word[ntIdx + 1][0]
+				mergedLower = word[ntIdx - 1][1] + rule[1][0][1] + word[ntIdx + 1][1]
+				return word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
+
+			elif mergePrev:
+				mergedUpper = word[ntIdx - 1][0] + rule[1][0][0]
+				mergedLower = word[ntIdx - 1][1] + rule[1][0][1]
+				return word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 1:]
+
+			elif mergeNext:
+				mergedUpper = rule[1][0][0] + word[ntIdx + 1][0]
+				mergedLower = rule[1][0][1] + word[ntIdx + 1][1]
+				return word[:ntIdx] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
+
+			else:
+				return word[:ntIdx] + [rule[1][0]] + word[ntIdx + 1:]
+
+		mergePrev = mergePrev and isinstance(rule[1][0], list)
+		mergeNext = mergeNext and isinstance(rule[1][-1], list)
+
+		if mergePrev and mergeNext:
+			mergedUpperPrev = word[ntIdx - 1][0] + rule[1][0][0]
+			mergedLowerPrev = word[ntIdx - 1][1] + rule[1][0][1]
+			mergedUpperNext = rule[1][-1][0] + word[ntIdx + 1][0]
+			mergedLowerNext = rule[1][-1][1] + word[ntIdx + 1][1]
+			return word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + rule[1][1:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
+		elif mergePrev:
+			mergedUpperPrev = word[ntIdx - 1][0] + rule[1][0][0]
+			mergedLowerPrev = word[ntIdx - 1][1] + rule[1][0][1]
+			return word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + rule[1][1:] + word[ntIdx + 1:]
+		elif mergeNext:
+			mergedUpperNext = rule[1][-1][0] + word[ntIdx + 1][0]
+			mergedLowerNext = rule[1][-1][1] + word[ntIdx + 1][1]
+			return word[:ntIdx] + rule[1][:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
+		else:
+			return word[:ntIdx] + rule[1] + word[ntIdx + 1:]
+
+
