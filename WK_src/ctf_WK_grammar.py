@@ -1,11 +1,31 @@
 #!/usr/bin/python3
 
+from typing import Dict, List, Tuple, Set, TypeVar, Optional
+
+tNonTerm = str
+tTerm = str
+tTermLetter = Tuple[List[tTerm], List[tTerm]]
+tLetter = TypeVar("tLetter", tNonTerm, tTermLetter)
+tWord = List[tLetter]
+tRule = Tuple[tNonTerm, tWord]
+tRelation = Tuple[tTerm, tTerm]
+
 class cWordStatus:
-	def __init__(self, word, upperStrLen, lowerStrLen, ntLen):
+	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus']) -> None:
 		self.word = word
 		self.upperStrLen = upperStrLen
 		self.lowerStrLen = lowerStrLen
 		self.ntLen = ntLen
+		self.parent = parent
+		self.hashNo = hash(str(word))
+
+	def __hash__(self) -> int:
+		return self.hashNo
+
+	def __eq__(self, other: object) -> bool:
+		if not isinstance(other, cWordStatus):
+			return NotImplemented
+		return self.hashNo == other.hashNo
 
 def tuplify(l):
 	if type(l) == list:
@@ -13,7 +33,7 @@ def tuplify(l):
 	else:
 		return l
 
-def wordToStr(word):
+def wordToStr(word: tWord) -> str:
 	rs = []
 	for symbol in word:
 		if isinstance(symbol, list) or isinstance(symbol, tuple):
@@ -26,7 +46,7 @@ def wordToStr(word):
 	return(f'{" ".join(rs)}')
 
 class cWK_CFG:
-	def __init__(self, nts, ts, startSymbol, rules, relation):
+	def __init__(self, nts: List[tNonTerm], ts: List[tTerm], startSymbol: tNonTerm, rules: List[tRule], relation: List[tRelation]) -> None:
 		self.nts = nts
 		self.ts = ts
 		self.startSymbol = startSymbol
@@ -37,13 +57,13 @@ class cWK_CFG:
 			#raise ValueError
 
 		#TODO make rules compact: A -> (a lambda)(lambda a) == A -> (a a)
-		self.ruleDict = {}
+		self.ruleDict: dict[tNonTerm, List[tWord]] = {}
 		for nt in self.nts:
 			self.ruleDict[nt] = []
 		for rule in rules:
 			self.ruleDict[rule[0]].append(rule[1])
 
-	def is_consistent(self):
+	def is_consistent(self) -> bool:
 		if self.startSymbol not in self.nts:
 			return False
 
@@ -64,108 +84,123 @@ class cWK_CFG:
 
 		return True
 
-	def can_generate(self, upperStr):
-		#initStatus = cWordStatus([self.startSymbol], 0, 0)
-		#openQueue = [initStatus]
-		openQueue = [tuple(self.startSymbol)]
-		openSet = set(tuple(self.startSymbol))
-		closedQueue = set()
+	def printPath(self, wordStatus: cWordStatus) -> None:
+		currentWordStatus: Optional[cWordStatus] = wordStatus
+		while currentWordStatus:
+			print(f' >>> {wordToStr(currentWordStatus.word)}')
+			currentWordStatus = currentWordStatus.parent
+
+
+	def can_generate(self, upperStr: str) -> int:
+		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None)
+		openQueue: List[cWordStatus] = [initStatus]
+		openSet: Set[int] = set()
+		openSet.add(initStatus.hashNo)
+		closedSet: Set[int] = set()
 		cnt = 0
 
 		while openQueue:
-			if cnt == 15000:
+			if cnt == 150000:
 				print('taking too long')
-				return None
+				return -1
 			else:
 				cnt += 1
-			#print(f'cnt: {cnt}')
-			currentWord = openQueue.pop(0)
-			closedQueue.add(currentWord)
+			print(f'cnt: {cnt}')
+			currentWordStatus = openQueue.pop(0)
+			closedSet.add(currentWordStatus.hashNo)
 
-			for nextWord in self.get_all_next_states(currentWord):
-				if self.is_result(nextWord, upperStr):
+			for nextWordStatus in self.get_all_next_states(currentWordStatus, len(upperStr)):
+				if self.is_result(nextWordStatus.word, upperStr):
+					self.printPath(nextWordStatus)
 					return True
-				if nextWord not in openSet and nextWord not in closedQueue:
-				#if nextWord not in openQueue:
-					openQueue.append(nextWord)
-					openSet.add(nextWord)
+				if nextWordStatus.hashNo not in openSet and nextWordStatus.hashNo not in closedSet:
+					openQueue.append(nextWordStatus)
+					openSet.add(nextWordStatus.hashNo)
 
 		return False
 
-	def is_result(self, word, goal):
+	def is_result(self, word: tWord, goal: str) -> bool:
 		return len(word) == 1 and ''.join(word[0][0]) == goal
 
-	def is_rule_applicable(self, word, ntIdx, rule):
-		return True
+	def is_rule_applicable(self, word, ntIdx, rule, maxLen):
+		return len(word) + len(rule) <= maxLen
 
-	def get_all_next_states(self, word):
-		#print(f'{wordToStr(word)}  --->  ')
-		for ntIdx, symbol in enumerate(word):
+	def get_all_next_states(self, wordStatus: cWordStatus, maxLen: int) -> List[cWordStatus]:
+		retLst: List[cWordStatus] = []
+		for ntIdx, symbol in enumerate(wordStatus.word):
 			if not isinstance(symbol, list) and not isinstance(symbol, tuple): # terminals are tuples so symbol is a non terminal
-				for rule in self.ruleDict[symbol]:
-					if self.is_rule_applicable(word, ntIdx, rule):
-						yield self.apply_rule(word, ntIdx, rule)
-		#print('\n\n')
+				for ruleRhs in self.ruleDict[symbol]:
+					if self.is_rule_applicable(wordStatus.word, ntIdx, ruleRhs, maxLen):
+						newWord = self.apply_rule(wordStatus.word, ntIdx, ruleRhs)
+
+						upperStrLen = wordStatus.upperStrLen + 0
+						lowerStrLen = wordStatus.lowerStrLen + 0
+						ntLen = wordStatus.ntLen + 0
+
+						retLst.append(cWordStatus(newWord, upperStrLen, lowerStrLen, ntLen, wordStatus))
+						#yield cWordStatus(newWord, 0, 0, 1)
+		return retLst
 
 
-	def apply_rule(self, word, ntIdx, rule):
-		#print(f'word: {wordToStr(word)}')
-		#print(f'ntIdx: {ntIdx}')
-		#print(rule)
-		#print(f'rule: {word[ntIdx] + " -> " + wordToStr(rule):20}\n')
+	def apply_rule(self, word: tWord, ntIdx: int, ruleRhs: tWord) -> tWord:
+		print(f'word: {wordToStr(word)}')
+		print(f'ntIdx: {ntIdx}')
+		print(ruleRhs)
+		print(f'rule: {word[ntIdx] + " -> " + wordToStr(ruleRhs):20}\n')
 
-		isTerm = len(rule) == 1 and (isinstance(rule, list) or isinstance(rule, tuple))   # rule right side is just a terminal
-		mergePrev = ntIdx > 0 and (isinstance(word[ntIdx - 1], list) or isinstance(word[ntIdx - 1], tuple)) # can we merge with the previous terminal
-		mergeNext = ntIdx < len(word) - 1 and (isinstance(word[ntIdx + 1], list) or isinstance(word[ntIdx + 1], tuple))# can we merge with the next terminal
+		isTerm = len(ruleRhs) == 1 and isinstance(ruleRhs[0], tuple)   # rule right side is just a terminal
+		mergePrev = ntIdx > 0 and isinstance(word[ntIdx - 1], tuple) # can we merge with the previous terminal
+		mergeNext = ntIdx < len(word) - 1 and isinstance(word[ntIdx + 1], tuple) # can we merge with the next terminal
 
 		if isTerm:
 			if mergePrev and mergeNext:
-				mergedUpper = word[ntIdx - 1][0] + rule[0][0] + word[ntIdx + 1][0]
-				mergedLower = word[ntIdx - 1][1] + rule[0][1] + word[ntIdx + 1][1]
-				return word[:ntIdx - 1] + tuple([(mergedUpper, mergedLower)]) + word[ntIdx + 2:]
+				mergedUpper = word[ntIdx - 1][0] + ruleRhs[0][0] + word[ntIdx + 1][0]
+				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1] + word[ntIdx + 1][1]
+				return word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
 
 			elif mergePrev:
-				mergedUpper = word[ntIdx - 1][0] + rule[0][0]
-				mergedLower = word[ntIdx - 1][1] + rule[0][1]
-				return word[:ntIdx - 1] + tuple([(mergedUpper, mergedLower)]) + word[ntIdx + 1:]
+				mergedUpper = word[ntIdx - 1][0] + ruleRhs[0][0]
+				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1]
+				return word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 1:]
 
 			elif mergeNext:
-				mergedUpper = rule[0][0] + word[ntIdx + 1][0]
-				mergedLower = rule[0][1] + word[ntIdx + 1][1]
-				return word[:ntIdx] + tuple([(mergedUpper, mergedLower)]) + word[ntIdx + 2:]
+				mergedUpper = ruleRhs[0][0] + word[ntIdx + 1][0]
+				mergedLower = ruleRhs[0][1] + word[ntIdx + 1][1]
+				return word[:ntIdx] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
 
 			else:
-				return word[:ntIdx] + tuple([rule[0]]) + word[ntIdx + 1:]
+				return word[:ntIdx] + [ruleRhs[0]] + word[ntIdx + 1:]
 
-		mergePrev = mergePrev and (isinstance(rule[0], list) or isinstance(rule[0], tuple))
-		mergeNext = mergeNext and (isinstance(rule[-1], list) or isinstance(rule[-1], tuple))
+		mergePrev = mergePrev and  isinstance(ruleRhs[0], tuple)
+		mergeNext = mergeNext and isinstance(ruleRhs[-1], tuple)
 
 		if mergePrev and mergeNext:
-			mergedUpperPrev = word[ntIdx - 1][0] + rule[0][0]
-			mergedLowerPrev = word[ntIdx - 1][1] + rule[0][1]
-			mergedUpperNext = rule[-1][0] + word[ntIdx + 1][0]
-			mergedLowerNext = rule[-1][1] + word[ntIdx + 1][1]
-			return word[:ntIdx - 1] + tuple([(mergedUpperPrev, mergedLowerPrev)]) + rule[1:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
+			mergedUpperPrev = word[ntIdx - 1][0] + ruleRhs[0][0]
+			mergedLowerPrev = word[ntIdx - 1][1] + ruleRhs[0][1]
+			mergedUpperNext = ruleRhs[-1][0] + word[ntIdx + 1][0]
+			mergedLowerNext = ruleRhs[-1][1] + word[ntIdx + 1][1]
+			return word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + ruleRhs[1:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
 		elif mergePrev:
-			mergedUpperPrev = word[ntIdx - 1][0] + rule[0][0]
-			mergedLowerPrev = word[ntIdx - 1][1] + rule[0][1]
-			return word[:ntIdx - 1] + tuple([(mergedUpperPrev, mergedLowerPrev)]) + rule[1:] + word[ntIdx + 1:]
+			mergedUpperPrev = word[ntIdx - 1][0] + ruleRhs[0][0]
+			mergedLowerPrev = word[ntIdx - 1][1] + ruleRhs[0][1]
+			return word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + ruleRhs[1:] + word[ntIdx + 1:]
 		elif mergeNext:
-			mergedUpperNext = rule[-1][0] + word[ntIdx + 1][0]
-			mergedLowerNext = rule[-1][1] + word[ntIdx + 1][1]
-			return word[:ntIdx] + rule[:-1] + tuple([(mergedUpperNext, mergedLowerNext)]) + word[ntIdx + 2:]
+			mergedUpperNext = ruleRhs[-1][0] + word[ntIdx + 1][0]
+			mergedLowerNext = ruleRhs[-1][1] + word[ntIdx + 1][1]
+			return word[:ntIdx] + ruleRhs[:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
 		else:
-			return word[:ntIdx] + rule + word[ntIdx + 1:]
+			return word[:ntIdx] + ruleRhs + word[ntIdx + 1:]
 
 
-nts = ['A']
-ts = ['a']
-startSymbol = 'A'
-rules = [
-	('A', ('A', 'A')),
-	('A', tuplify([[['a'], ['a']]]))
+nts: List[tNonTerm] = ['A']
+ts: List[tTerm] = ['a']
+startSymbol: tNonTerm = 'A'
+rules: List[tRule] = [
+	('A', ['A', 'A', 'A']),
+	('A', [(['a'], ['a'])])
+	#('A', tuplify([[['a'], ['a']]]))
 ]
-relation = [('a', 'a')]
+relation: List[tRelation] = [('a', 'a')]
 g = cWK_CFG(nts, ts, startSymbol, rules, relation)
 
 res = g.can_generate('aaaaaa')
