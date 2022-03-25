@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar
+from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
+from queue import PriorityQueue
 
-DEBUG = 1
+DEBUG = 0
 def debug(s):
 	if DEBUG:
 		print(s)
@@ -19,13 +20,14 @@ def is_nonterm(letter: tLetter) -> bool:
 	return not isinstance(letter, tuple)
 
 class cWordStatus:
-	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus']) -> None:
+	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus'], goalStr: str) -> None:
 		self.word = word
 		self.upperStrLen = upperStrLen
 		self.lowerStrLen = lowerStrLen
 		self.ntLen = ntLen
 		self.parent = parent
 		self.hashNo = hash(str(word))
+		self.distance = self.computeDistance(word, goalStr)
 
 	def __hash__(self) -> int:
 		return self.hashNo
@@ -34,6 +36,12 @@ class cWordStatus:
 		if not isinstance(other, cWordStatus):
 			return NotImplemented
 		return self.hashNo == other.hashNo
+
+	def __lt__(self, other: 'cWordStatus') -> bool:
+		return self.distance < other.distance
+
+	def computeDistance(self, word, goal):
+		return 0
 
 class cRule:
 	#makes rules compact: A -> (a lambda)(lambda a) == A -> (a a)
@@ -153,14 +161,15 @@ class cWK_CFG:
 
 
 	def can_generate(self, upperStr: str) -> Optional[bool]:
-		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None)
-		openQueue: List[cWordStatus] = [initStatus]
+		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, upperStr)
+		openQueue: Any = PriorityQueue()
+		openQueue.put(initStatus)
 		openSet: Set[int] = set()
 		openSet.add(initStatus.hashNo)
 		closedSet: Set[int] = set()
 		cnt = 0
 
-		while openQueue:
+		while not openQueue.empty():
 			if cnt == 1000000:
 				print('taking too long')
 				return None
@@ -169,9 +178,7 @@ class cWK_CFG:
 			debug('\n--------------------------------------')
 			debug(f'cnt: {cnt} (O: {len(openSet)}, C: {len(closedSet)})')
 			debug('--------------------------------------')
-			if cnt % 1000 == 0:
-				print(cnt)
-			currentWordStatus = openQueue.pop(0)
+			currentWordStatus = openQueue.get()
 			closedSet.add(currentWordStatus.hashNo)
 
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
@@ -179,7 +186,7 @@ class cWK_CFG:
 					self.printPath(nextWordStatus)
 					return True
 				if nextWordStatus.hashNo not in openSet and nextWordStatus.hashNo not in closedSet:
-					openQueue.append(nextWordStatus)
+					openQueue.put(nextWordStatus)
 					openSet.add(nextWordStatus.hashNo)
 
 		return False
@@ -237,7 +244,7 @@ class cWK_CFG:
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
 					newWord = self.apply_rule(wordStatus.word, ntIdx, rule.rhs)
-					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt - 1, wordStatus)
+					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt - 1, wordStatus, goalStr)
 
 					if self.is_word_feasible(newWordStatus, goalStr):
 						retLst.append(newWordStatus)
