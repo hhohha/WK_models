@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar
 
-DEBUG = 0
+DEBUG = 1
 def debug(s):
 	if DEBUG:
 		print(s)
@@ -38,12 +38,15 @@ class cWordStatus:
 class cRule:
 	#makes rules compact: A -> (a lambda)(lambda a) == A -> (a a)
 	def compactize(self, word: tWord) -> tWord:
-		for i in range(len(word) - 1):
+		i = 0
+		while i < len(word) - 1:
 			syllable1 = word[i]
 			syllable2 = word[i+1]
 			if not is_nonterm(syllable1) and not is_nonterm(syllable2):
 				newSyllable = (syllable1[0] + syllable2[0], syllable1[1] + syllable2[1])
 				word[i:i+2] = [newSyllable]
+			else:
+				i += 1
 		return word
 
 	def __init__(self, lhs: tNonTerm, rhs: tWord) -> None:
@@ -158,7 +161,7 @@ class cWK_CFG:
 		cnt = 0
 
 		while openQueue:
-			if cnt == 100000:
+			if cnt == 1000000:
 				print('taking too long')
 				return None
 			else:
@@ -166,6 +169,8 @@ class cWK_CFG:
 			debug('\n--------------------------------------')
 			debug(f'cnt: {cnt} (O: {len(openSet)}, C: {len(closedSet)})')
 			debug('--------------------------------------')
+			if cnt % 1000 == 0:
+				print(cnt)
 			currentWordStatus = openQueue.pop(0)
 			closedSet.add(currentWordStatus.hashNo)
 
