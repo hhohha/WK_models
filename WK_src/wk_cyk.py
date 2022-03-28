@@ -11,6 +11,8 @@
 #Slozitost n**6 jen pokud povazujeme pocet pravidel za konstant, jinak n**7.
 #Chyba v radku 13 algoritmu (asi nema vliv na vysledek, ale zkousi pocitat nesmysly).
 
+import time
+
 class cWKGrammarCNF:
 	def __init__(self, ts, nts, rules, rel):
 		self.ts = ts
@@ -56,7 +58,7 @@ class cWKGrammarCNF:
 			self.X[idx] = []
 
 		self.X[idx].append(nt)
-		print(idx, nt)
+		#print(idx, nt)
 
 
 	# sentence: tuple('upper', 'lower')
@@ -127,5 +129,8 @@ rules = [
 	('Tdb', '', 'b')
 ]
 g = cWKGrammarCNF(ts, nts, rules, rel)
-s = 'abababab'
+s = 'aabbab'
+start = time.time()
 print(g.can_generate((s, s)))
+end = time.time()
+print(f'time: {end-start}')

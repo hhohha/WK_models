@@ -40,8 +40,21 @@ class cWordStatus:
 	def __lt__(self, other: 'cWordStatus') -> bool:
 		return self.distance < other.distance
 
-	def computeDistance(self, word, goal):
-		return 0
+	def computeDistance(self, word: tWord, goal: str):
+		val = 100
+		for idx, letter in enumerate(word):
+			if is_nonterm(letter):
+				val += 1
+			else:
+				val -= 10
+		return val
+
+	def computeDistance2(self, word: tWord, goal: str):
+		val = 0
+		for letter in word:
+			if is_nonterm(letter):
+				val += 1
+		return val
 
 class cRule:
 	#makes rules compact: A -> (a lambda)(lambda a) == A -> (a a)
@@ -114,6 +127,24 @@ class cWK_CFG:
 				if is_nonterm(letter) and letter in self.erasableNts:
 					rule.ntCnt -= 1
 
+	#TODO - to be implemented
+	def remove_lambda_rules(self):
+		pass
+
+	def remove_unit_rules(self):
+		pass
+
+	def remove_useless_rules(self):
+		pass
+
+	def transform_to_wk_cnf(self):
+		pass
+
+	def run_wk_cyk(self):
+		pass
+
+
+
 	def is_word_erasable(self, word: tWord) -> bool:
 		for letter in word:
 			if not is_nonterm(letter):
@@ -160,7 +191,7 @@ class cWK_CFG:
 			currentWordStatus = currentWordStatus.parent
 
 
-	def can_generate(self, upperStr: str) -> Optional[bool]:
+	def can_generate(self, upperStr: str) -> Tuple[int, int, Optional[bool]]:
 		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, upperStr)
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initStatus)
@@ -172,7 +203,7 @@ class cWK_CFG:
 		while not openQueue.empty():
 			if cnt == 1000000:
 				print('taking too long')
-				return None
+				return len(openSet), len(closedSet), None
 			else:
 				cnt += 1
 			debug('\n--------------------------------------')
@@ -184,12 +215,12 @@ class cWK_CFG:
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
 					self.printPath(nextWordStatus)
-					return True
+					return len(openSet), len(closedSet), True
 				if nextWordStatus.hashNo not in openSet and nextWordStatus.hashNo not in closedSet:
 					openQueue.put(nextWordStatus)
 					openSet.add(nextWordStatus.hashNo)
 
-		return False
+		return len(openSet), len(closedSet), False
 
 	def is_result(self, word: tWord, goal: str) -> bool:
 		# word lenght must be 1
