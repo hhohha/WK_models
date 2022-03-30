@@ -14,7 +14,7 @@ print('|               |   GRAMMAR                           |        STRING    
 print(hline)
 print(hline)
 
-def runTest2(grammar: cWK_CFG, inputStr: str, expected: bool):
+def runTest(grammar: cWK_CFG, inputStr: str, expected: bool):
 	global testNo
 
 	start = time.time()
@@ -36,12 +36,12 @@ rules: List[cRule] = [
 g = cWK_CFG(['A'], ['a'], 'A', rules, [('a', 'a')])
 g.desc = 'a(aa)*'
 
-runTest2(g, '', False)
-runTest2(g, 'a', True)
-runTest2(g, 'aa', False)
-runTest2(g, 'aaa', True)
-runTest2(g, 'aaaaaaaaaaa', True)
-runTest2(g, 'aaaaaaaaaaaa', False)
+runTest(g, '', False)
+runTest(g, 'a', True)
+runTest(g, 'aa', False)
+runTest(g, 'aaa', True)
+runTest(g, 'aaaaaaaaaaa', True)
+runTest(g, 'aaaaaaaaaaaa', False)
 
 ############################ GRAMMAR 2:   a^n b^n (n>0)    ################################################################################
 rules  = [
@@ -56,13 +56,13 @@ rules  = [
 g = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
 g.desc = 'a^n b^n (n>0)'
 
-runTest2(g, 'ab', True)
-runTest2(g, 'aaabbb', True)
-runTest2(g, 'aaabb', False)
-runTest2(g, 'abab', False)
-runTest2(g, '', False)
-runTest2(g, 'aabb', True)
-runTest2(g, 'abc', False)
+runTest(g, 'ab', True)
+runTest(g, 'aaabbb', True)
+runTest(g, 'aaabb', False)
+runTest(g, 'abab', False)
+runTest(g, '', False)
+runTest(g, 'aabb', True)
+runTest(g, 'abc', False)
 
 ############################ GRAMMAR 3:   r^n d^n u^n r^n    ##############################################################################
 rules: List[cRule] = [
@@ -81,10 +81,10 @@ rules: List[cRule] = [
 g = cWK_CFG(['S', 'A', 'B', 'C', 'D'], ['r', 'd', 'u'], 'S', rules, [('r', 'r'), ('d', 'd'), ('u', 'u')])
 g.desc = 'r^n d^n u^n r^n'
 
-runTest2(g, 'rdur', True)
-runTest2(g, 'rrrrrrdddddduuuuuurrrrrr', True)
-runTest2(g, 'rrrrrrdddddduuuuuuurrrrrr', False)
-runTest2(g, 'rrrrrrddddduuuuuurrrrrr', False)
+runTest(g, 'rdur', True)
+runTest(g, 'rrrrrrdddddduuuuuurrrrrr', True)
+runTest(g, 'rrrrrrdddddduuuuuuurrrrrr', False)
+runTest(g, 'rrrrrrddddduuuuuurrrrrr', False)
 
 ############################ GRAMMAR 4:   a^n c^n b^n    ##################################################################################
 
@@ -100,8 +100,8 @@ rules: List[cRule] = [
 g = cWK_CFG(['S', 'A', 'B'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
 g.desc = 'a^n c^n b^n'
 
-runTest2(g, 'aaaaaaaaaaaaccccccccccccbbbbbbbbbbbb', True)
-runTest2(g, 'aaaaaaaaaaaccccccccccccbbbbbbbbbbbb', False)
+runTest(g, 'aaaaaaaaaaaaccccccccccccbbbbbbbbbbbb', True)
+runTest(g, 'aaaaaaaaaaaccccccccccccbbbbbbbbbbbb', False)
 
 ############################ GRAMMAR 5:   a^n b^m c^n d^m     ##############################################################################
 
@@ -122,8 +122,8 @@ rules: List[cRule] = [
 g = cWK_CFG(['S', 'A', 'B', 'C', 'D'], ['a', 'b', 'c', 'd'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c'), ('d', 'd')])
 g.desc = 'a^n b^m c^n d^m'
 
-runTest2(g, 'aaaabbbbbbbccccddddddd', True)
-runTest2(g, 'aaaabbbbbbbccccdddddd', False)
+runTest(g, 'aaaabbbbbbbccccddddddd', True)
+runTest(g, 'aaaabbbbbbbccccdddddd', False)
 
 ############################ GRAMMAR 6:   wcw where w in {a,b }*     ######################################################################
 
@@ -144,8 +144,8 @@ rules: List[cRule] = [
 g = cWK_CFG(['S', 'A', 'B', 'C'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
 g.desc = 'wcw where w in {a,b }*'
 
-runTest2(g, 'abbabacabbaba', True)
-runTest2(g, 'abbabacababa', False)
+runTest(g, 'abbabacabbaba', True)
+runTest(g, 'abbabacababa', False)
 
 ############################ GRAMMAR 6:   a^n b^m a^n where 2n <= m <= 3n   ###############################################################
 rules: List[cRule] = [
@@ -162,6 +162,6 @@ g = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
 g.desc = 'a^n b^m a^n where 2n <= m <= 3n'
 
 for m, n in [(m, n) for m in range(1, 7) for n in range (1, 7)]:
-	runTest2(g, 'a'*n + 'b'*m + 'a'*n, 2*n <= m and m <= 3*n)
+	runTest(g, 'a'*n + 'b'*m + 'a'*n, 2*n <= m and m <= 3*n)
 
 print(hline)

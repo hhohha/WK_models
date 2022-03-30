@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from itertools import combinations
 from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
 from queue import PriorityQueue
 
@@ -15,6 +16,11 @@ tTermLetter = Tuple[List[tTerm], List[tTerm]]
 tLetter = TypeVar('tLetter', tNonTerm, tTermLetter)
 tWord = List[tLetter]
 tRelation = Tuple[tTerm, tTerm]
+
+
+def get_all_combinations(l):
+	for i in range(len(l) + 1):
+		yield from combinations(l, i)
 
 def is_nonterm(letter: tLetter) -> bool:
 	return not isinstance(letter, tuple)
@@ -56,6 +62,18 @@ class cWordStatus:
 				val += 1
 		return val
 
+def wordToStr(word: tWord) -> str:
+	rs = []
+	for symbol in word:
+		if not is_nonterm(symbol):
+			e1 = ''.join(symbol[0]) if len(symbol[0]) > 0 else 'λ'
+			e2 = ''.join(symbol[1]) if len(symbol[1]) > 0 else 'λ'
+			rs.append(e1 + '/' + e2)
+		else:
+			rs.append(symbol)
+
+	return(f'{" ".join(rs)}')
+
 class cRule:
 	#makes rules compact: A -> (a lambda)(lambda a) == A -> (a a)
 	def compactize(self, word: tWord) -> tWord:
@@ -84,17 +102,11 @@ class cRule:
 			else:
 				self.ntCnt += 1
 
-def wordToStr(word: tWord) -> str:
-	rs = []
-	for symbol in word:
-		if not is_nonterm(symbol):
-			e1 = ''.join(symbol[0]) if len(symbol[0]) > 0 else 'λ'
-			e2 = ''.join(symbol[1]) if len(symbol[1]) > 0 else 'λ'
-			rs.append(e1 + '/' + e2)
-		else:
-			rs.append(symbol)
+	def __eq__(self, other):
+		return self.rhs == other.rhs and self.lhs == other.lhs
 
-	return(f'{" ".join(rs)}')
+	def __str__(self) -> str:
+		return f'{self.lhs} -> {wordToStr(self.rhs)}'
 
 class cWK_CFG:
 	def __init__(self, nts: List[tNonTerm], ts: List[tTerm], startSymbol: tNonTerm, rules: List[cRule], relation: List[tRelation]) -> None:
@@ -108,12 +120,17 @@ class cWK_CFG:
 		if not self.is_consistent():
 			raise ValueError
 
-		self.ruleDict: Dict[tNonTerm, List[cRule]] = {}
-		for nt in self.nts:
-			self.ruleDict[nt] = []
-		for rule in rules:
-			self.ruleDict[rule.lhs].append(rule)
+		self.generete_rule_dict()
+		self.find_erasable_nts()
+		#self.remove_lambda_rules()
 
+		for rule in self.rules:
+			for letter in rule.rhs:
+				if is_nonterm(letter) and letter in self.erasableNts:
+					rule.ntCnt -= 1
+
+
+	def find_erasable_nts(self) -> None:
 		loop = True
 		while loop:
 			loop = False
@@ -122,20 +139,78 @@ class cWK_CFG:
 					loop = True
 					self.erasableNts.add(rule.lhs)
 
+
+	def generete_rule_dict(self) -> None:
+		self.ruleDict: Dict[tNonTerm, List[cRule]] = {}
+		for nt in self.nts:
+			self.ruleDict[nt] = []
 		for rule in self.rules:
-			for letter in rule.rhs:
+			self.ruleDict[rule.lhs].append(rule)
+
+
+	def remove_lambda_rules(self) -> None:
+		newRules: List[cRule] = []
+
+		for rule in self.rules:
+			erasableIdxs: List[int] = []
+			for idx, letter in enumerate(rule.rhs):
 				if is_nonterm(letter) and letter in self.erasableNts:
-					rule.ntCnt -= 1
+					erasableIdxs.append(idx)
 
-	#TODO - to be implemented
-	def remove_lambda_rules(self):
-		pass
+			for idxLst in get_all_combinations(erasableIdxs):
+				newRuleRhs = []
+				for idx, letter in enumerate(rule.rhs):
+					if idx not in erasableIdxs or idx in idxLst:
+						newRuleRhs.append(letter)
 
-	def remove_unit_rules(self):
-		pass
+				newRule = cRule(rule.lhs, newRuleRhs)
+				if newRule.rhs != [([], [])] and newRule.rhs != [] and newRule not in newRules:
+					newRules.append(newRule)
 
-	def remove_useless_rules(self):
-		pass
+		self.rules = newRules
+		self.generete_rule_dict()
+
+
+	def remove_unit_rules(self) -> None:
+
+		simpleRules: Dict[tNonTerm, List[tNonTerm]] = {}
+		for nt in self.nts:
+			simpleRules[nt] = [nt]
+
+		loop = True
+		while loop:
+			loop = False
+			for rule in self.rules:
+				if len(rule.rhs) == 1 and is_nonterm(rule.rhs[0]) and rule.lhs != rule.rhs:
+					# find all non terminals which have lhs in their N but no rhs
+					for k, v in simpleRules.items():
+						if rule.lhs in v and rule.rhs[0] not in v:
+							simpleRules[k].append(rule.rhs[0])
+							loop = True
+
+		newRules: List[cRule] = []
+		for rule in self.rules:
+			if len(rule.rhs) != 1 or not is_nonterm(rule.rhs[0]):
+				for k, v in simpleRules.items():
+					if rule.lhs in v:
+						newRules.append(cRule(k, rule.rhs))
+
+		self.rules = newRules
+		self.generete_rule_dict()
+
+
+	def remove_useless_rules(self) -> None:
+		non_empty_nts: Set[tNonTerm] = set()
+
+		loop = True
+		while loop:
+			loop = False
+			for rule in self.rules:
+				if len(list(filter(lambda letter: not is_nonterm(letter) or letter in non_empty_nts, rule.rhs))) == 0:
+					non_empty_nts.add(rule.lhs)
+					loop = True
+
+		print(non_empty_nts)
 
 	def transform_to_wk_cnf(self):
 		pass
