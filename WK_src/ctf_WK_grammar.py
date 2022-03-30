@@ -17,6 +17,9 @@ tLetter = TypeVar('tLetter', tNonTerm, tTermLetter)
 tWord = List[tLetter]
 tRelation = Tuple[tTerm, tTerm]
 
+def hashWord(word: tWord) -> int:
+	return hash(str(word)) # TODO: improve this
+
 
 def get_all_combinations(l):
 	for i in range(len(l) + 1):
@@ -32,7 +35,7 @@ class cWordStatus:
 		self.lowerStrLen = lowerStrLen
 		self.ntLen = ntLen
 		self.parent = parent
-		self.hashNo = hash(str(word))
+		self.hashNo = hash(str(word)) # TODO: improve this
 		self.distance = self.computeDistance(word, goalStr)
 
 	def __hash__(self) -> int:
@@ -110,8 +113,8 @@ class cRule:
 
 class cWK_CFG:
 	def __init__(self, nts: List[tNonTerm], ts: List[tTerm], startSymbol: tNonTerm, rules: List[cRule], relation: List[tRelation]) -> None:
-		self.nts = nts
-		self.ts = ts
+		self.nts = set(nts)
+		self.ts = set(ts)
 		self.startSymbol = startSymbol
 		self.rules = rules
 		self.relation = set(relation)
@@ -199,21 +202,68 @@ class cWK_CFG:
 		self.generete_rule_dict()
 
 
-	def remove_useless_rules(self) -> None:
+	def remove_unterminatable_symbols(self) -> None:
 		non_empty_nts: Set[tNonTerm] = set()
 
 		loop = True
 		while loop:
 			loop = False
 			for rule in self.rules:
-				if len(list(filter(lambda letter: not is_nonterm(letter) or letter in non_empty_nts, rule.rhs))) == 0:
-					non_empty_nts.add(rule.lhs)
-					loop = True
+				if len(list(filter(lambda letter: is_nonterm(letter) and letter not in non_empty_nts, rule.rhs))) == 0:
+					if rule.lhs not in non_empty_nts:
+						non_empty_nts.add(rule.lhs)
+						loop = True
 
-		print(non_empty_nts)
+
+		newRules: List[cRule] = []
+		for rule in self.rules:
+			if rule.lhs in non_empty_nts and all(map(lambda letter: not is_nonterm(letter) or letter in non_empty_nts, rule.rhs)):
+				newRules.append(rule)
+
+		self.nts = self.nts.intersection(non_empty_nts)
+		self.rules = newRules
+		self.generete_rule_dict()
+
+	def remove_unreachable_symbols(self) -> None:
+		reachableNts: Set[tNonTerm] = set(self.startSymbol)
+		reachableTs: Set[tTerm] = set()
+
+		loop = True
+		while loop:
+			loop = False
+			for rule in self.rules:
+				if rule.lhs in reachableNts:
+					for letter in rule.rhs:
+						if is_nonterm(letter):
+							if letter not in reachableNts:
+								reachableNts.add(letter)
+								loop = True
+						else:
+							for terminal in letter[0] + letter[1]:
+								if terminal not in reachableTs:
+									reachableTs.add(terminal)
+									loop = True
+
+		newRules: List[cRule] = []
+		for rule in self.rules:
+			if rule.lhs in reachableNts and all(map(lambda letter: not is_nonterm(letter) or letter in reachableNts, rule.rhs)):
+				newRules.append(rule)
+
+		self.nts = self.nts.intersection(reachableNts)
+		self.ts = self.ts.intersection(reachableTs)
+		self.rules = newRules
+		self.generete_rule_dict()
+
+	def remove_useless_rules(self):
+		self.remove_unterminatable_symbols()
+		self.remove_unreachable_symbols()
 
 	def transform_to_wk_cnf(self):
-		pass
+		#coveredTs = []
+		#for rule in self.rules:
+			#if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) and len(self.ruleDict[rule.lhs]) == 1:
+				#coveredTs.append(rule.rhs[0])
+
 
 	def run_wk_cyk(self):
 		pass
