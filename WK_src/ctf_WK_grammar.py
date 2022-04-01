@@ -3,22 +3,27 @@
 from itertools import combinations
 from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
 from queue import PriorityQueue
+import time
 
 DEBUG = 0
 def debug(s):
 	if DEBUG:
 		print(s)
 
+TIME_LIMIT = 25
+
 tNonTerm = str
 tTerm = str
 tTermLetter = Tuple[List[tTerm], List[tTerm]]
 #tLetter = Union[tNonTerm, tTermLetter]
-tLetter = TypeVar('tLetter', tNonTerm, tTermLetter)
+tLetter = TypeVar('tLetter')
 tWord = List[tLetter]
 tRelation = Tuple[tTerm, tTerm]
 
-def hashWord(word: tWord) -> int:
-	return hash(str(word)) # TODO: improve this
+t4DInt = Tuple[int, int, int, int]
+
+def hashTerminal(letter: tTermLetter) -> int:
+	return hash(str(letter)) # TODO: improve this
 
 
 def get_all_combinations(l):
@@ -49,7 +54,7 @@ class cWordStatus:
 	def __lt__(self, other: 'cWordStatus') -> bool:
 		return self.distance < other.distance
 
-	def computeDistance(self, word: tWord, goal: str):
+	def computeDistance2(self, word: tWord, goal: str):
 		val = 100
 		for idx, letter in enumerate(word):
 			if is_nonterm(letter):
@@ -58,10 +63,11 @@ class cWordStatus:
 				val -= 10
 		return val
 
-	def computeDistance2(self, word: tWord, goal: str):
+	def computeDistance(self, word: tWord, goal: str):
+		#return 0
 		val = 0
 		for letter in word:
-			if is_nonterm(letter):
+			if not is_nonterm(letter):
 				val += 1
 		return val
 
@@ -98,12 +104,19 @@ class cRule:
 		self.upperCnt = 0
 		self.lowerCnt = 0
 
-		for letter in rhs:
+		self.calculate_cnts()
+
+	def calculate_cnts(self):
+		self.ntCnt = 0
+		self.upperCnt = 0
+		self.lowerCnt = 0
+		for letter in self.rhs:
 			if not is_nonterm(letter):
 				self.upperCnt += len(letter[0])
 				self.lowerCnt += len(letter[1])
 			else:
 				self.ntCnt += 1
+
 
 	def __eq__(self, other):
 		return self.rhs == other.rhs and self.lhs == other.lhs
@@ -111,19 +124,25 @@ class cRule:
 	def __str__(self) -> str:
 		return f'{self.lhs} -> {wordToStr(self.rhs)}'
 
+	__repr__ = __str__
+
+	def __hash__(self) -> int:
+		return hash((self.lhs, str(self.rhs)))
+
 class cWK_CFG:
 	def __init__(self, nts: List[tNonTerm], ts: List[tTerm], startSymbol: tNonTerm, rules: List[cRule], relation: List[tRelation]) -> None:
 		self.nts = set(nts)
 		self.ts = set(ts)
 		self.startSymbol = startSymbol
-		self.rules = rules
+		self.rules = set(rules)
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
+		self.lastCreatedNonTerm = 0
 
 		if not self.is_consistent():
 			raise ValueError
 
-		self.generete_rule_dict()
+		self.generate_rule_dict()
 		self.find_erasable_nts()
 		#self.remove_lambda_rules()
 
@@ -143,7 +162,7 @@ class cWK_CFG:
 					self.erasableNts.add(rule.lhs)
 
 
-	def generete_rule_dict(self) -> None:
+	def generate_rule_dict(self) -> None:
 		self.ruleDict: Dict[tNonTerm, List[cRule]] = {}
 		for nt in self.nts:
 			self.ruleDict[nt] = []
@@ -152,7 +171,7 @@ class cWK_CFG:
 
 
 	def remove_lambda_rules(self) -> None:
-		newRules: List[cRule] = []
+		newRules: Set[cRule] = set()
 
 		for rule in self.rules:
 			erasableIdxs: List[int] = []
@@ -168,10 +187,10 @@ class cWK_CFG:
 
 				newRule = cRule(rule.lhs, newRuleRhs)
 				if newRule.rhs != [([], [])] and newRule.rhs != [] and newRule not in newRules:
-					newRules.append(newRule)
+					newRules.add(newRule)
 
 		self.rules = newRules
-		self.generete_rule_dict()
+		self.generate_rule_dict()
 
 
 	def remove_unit_rules(self) -> None:
@@ -191,15 +210,15 @@ class cWK_CFG:
 							simpleRules[k].append(rule.rhs[0])
 							loop = True
 
-		newRules: List[cRule] = []
+		newRules: Set[cRule] = set()
 		for rule in self.rules:
 			if len(rule.rhs) != 1 or not is_nonterm(rule.rhs[0]):
 				for k, v in simpleRules.items():
 					if rule.lhs in v:
-						newRules.append(cRule(k, rule.rhs))
+						newRules.add(cRule(k, rule.rhs))
 
 		self.rules = newRules
-		self.generete_rule_dict()
+		self.generate_rule_dict()
 
 
 	def remove_unterminatable_symbols(self) -> None:
@@ -215,14 +234,15 @@ class cWK_CFG:
 						loop = True
 
 
-		newRules: List[cRule] = []
+		newRules: Set[cRule] = set()
 		for rule in self.rules:
 			if rule.lhs in non_empty_nts and all(map(lambda letter: not is_nonterm(letter) or letter in non_empty_nts, rule.rhs)):
-				newRules.append(rule)
+				newRules.add(rule)
 
 		self.nts = self.nts.intersection(non_empty_nts)
 		self.rules = newRules
-		self.generete_rule_dict()
+		self.generate_rule_dict()
+
 
 	def remove_unreachable_symbols(self) -> None:
 		reachableNts: Set[tNonTerm] = set(self.startSymbol)
@@ -244,30 +264,224 @@ class cWK_CFG:
 									reachableTs.add(terminal)
 									loop = True
 
-		newRules: List[cRule] = []
+		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if rule.lhs in reachableNts and all(map(lambda letter: not is_nonterm(letter) or letter in reachableNts, rule.rhs)):
-				newRules.append(rule)
+			if rule not in newRules and all(map(lambda letter: not is_nonterm(letter) or letter in reachableNts, rule.rhs)):
+				newRules.add(rule)
 
 		self.nts = self.nts.intersection(reachableNts)
 		self.ts = self.ts.intersection(reachableTs)
 		self.rules = newRules
-		self.generete_rule_dict()
+		self.generate_rule_dict()
 
-	def remove_useless_rules(self):
+
+	def remove_useless_rules(self) -> None:
 		self.remove_unterminatable_symbols()
 		self.remove_unreachable_symbols()
 
-	def transform_to_wk_cnf(self):
-		#coveredTs = []
-		#for rule in self.rules:
-			#if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) and len(self.ruleDict[rule.lhs]) == 1:
-				#coveredTs.append(rule.rhs[0])
+
+	def dismantleRule(self, rule: cRule) -> List[cRule]:
+		newRules: List[cRule] = []
+
+		for idx, letter in enumerate(rule.rhs):
+			if not is_nonterm(letter):
+				newNt = self.createNewNt()
+				newRules.append(cRule(newNt, [letter]))
+				rule.rhs[idx] = newNt
+				self.nts.add(newNt)
+
+		currentNt: tNonTerm = rule.lhs
+
+		while len(rule.rhs) > 2:
+			newNt = self.createNewNt()
+			self.nts.add(newNt)
+			newRules.append(cRule(currentNt, [rule.rhs.pop(0), newNt]))
+			currentNt = newNt
+
+		newRules.append(cRule(currentNt, rule.rhs))
+		return newRules
+
+	def pop_term_from_letter(self, letter: tTermLetter) -> tTermLetter:
+		if len(letter[0]) > len(letter[1]):
+			t = letter[0].pop(0)
+			return ([t], [])
+		else:
+			t = letter[1].pop(0)
+			return ([], [t])
+
+	def printDebug(self):
+		print('rules:')
+		for rule in self.rules:
+			print('   ', rule)
+		#print('ts: ', self.nts)
+		#print('nts', self.ts)
+
+	def dismantle_term_letters(self) -> None:
+		newRules: List[cRule] = []
+
+		for rule in self.rules:
+			if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) and len(rule.rhs[0][0]) + len(rule.rhs[0][1]) == 1:
+				continue
+			for idx, letter in enumerate(rule.rhs):
+				if not is_nonterm(letter):
+					newNt = self.createNewNt()
+					self.nts.add(newNt)
+
+					rule.rhs[idx] = newNt
+
+					if len(rule.rhs) == 1:
+						rule.rhs.insert(0, self.pop_term_from_letter(letter))
+
+					currentNt = newNt
+					while len(letter[0]) + len(letter[1]) > 1:
+						t = self.pop_term_from_letter(letter)
+						newNt = self.createNewNt()
+						self.nts.add(newNt)
+						newRules.append(cRule(currentNt, [t, newNt]))
+						currentNt = newNt
+
+					newRules.append(cRule(currentNt, [letter]))
+			rule.calculate_cnts()
+
+		self.rules.update(newRules)
+		self.generate_rule_dict()
+
+	def transform_to_wk_cnf_form(self) -> None:
+		newRules: Set[cRule] = set()
+
+		for rule in self.rules:
+			if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) or len(rule.rhs) == 2 and is_nonterm(rule.rhs[0]) and is_nonterm(rule.rhs[1]):
+				newRules.add(rule)
+
+			# swap terminal letters for respective non-terminals and break down words longer than 2
+			elif len(rule.rhs) >= 2:
+				newRules.update(self.dismantleRule(rule))
+
+		self.rules = newRules
+		self.generate_rule_dict()
 
 
-	def run_wk_cyk(self):
-		pass
+	def to_wk_cnf(self) -> None:
+		#self.printDebug()
+		#print('--------------------------------------')
 
+		self.remove_lambda_rules()
+
+		#self.printDebug()
+		#print('--------------------------------------')
+
+		self.remove_unit_rules()
+		self.remove_useless_rules()
+		self.remove_unreachable_symbols()
+
+		#self.printDebug()
+		#print('A-------------------------------------')
+		self.dismantle_term_letters()
+		#self.printDebug()
+		#print('B-------------------------------------')
+		self.transform_to_wk_cnf_form()
+		#self.printDebug()
+
+		# possible TODO - optimize terminal covering non-terms
+
+	def addToX(self, idx: t4DInt, nt: tNonTerm) -> None:
+		if idx not in self.X:
+			self.X[idx] = []
+
+		self.X[idx].append(nt)
+
+
+	def checkRules(self, idx1: t4DInt, idx2: t4DInt, target: t4DInt) -> None:
+		if idx1 not in self.X or idx2 not in self.X:
+			return
+		for rule in self.rules:
+			if rule.rhs[0] in self.X[idx1] and rule.rhs[1] in self.X[idx2]:
+				self.addToX(target, rule.lhs)
+
+	def computeSet(self, i: int, j: int, k: int ,l: int) -> None:
+		if i == 0 and j == 0:
+			for t in range(k, l):
+				self.checkRules((0, 0, k, t), (0, 0 ,t+1, l), (i, j, k, l))
+
+		elif k == 0 and l == 0:
+			for s in range(i, j):
+				self.checkRules((i, s, 0, 0), (s+1, j ,0 , 0), (i, j, k, l))
+
+		else:
+			self.checkRules((i, j, 0, 0), (0, 0, k, l), (i, j, k, l))
+			self.checkRules((0, 0, k, l), (i, j, 0, 0), (i, j, k, l))
+
+			for s in range(i, j):
+				for t in range(k, l):
+					self.checkRules((i, s, k, t), (s+1, j, t+1, l), (i, j, k, l))
+
+			for s in range(i, j):
+				self.checkRules((i, s, k, l), (s+1, j, 0, 0), (i, j, k, l))
+				self.checkRules((i, s, 0, 0), (s+1, j, k, l), (i, j, k, l))
+
+			for t in range(k, l):
+				self.checkRules((i, j, k, t), (0, 0, t+1, l), (i, j, k, l))
+				self.checkRules((0, 0, k, t), (i, j, t+1, l), (i, j, k, l))
+
+
+	def run_wk_cyk(self, sentence: str) -> Optional[bool]:
+		start_time = time.time()
+		n = len(sentence)
+		self.X: Dict[t4DInt, List[tNonTerm]] = {}
+
+		for i, word in enumerate(sentence):
+			current_time = time.time()
+			if current_time - start_time > TIME_LIMIT:
+				return None
+
+			for rule in self.rules:
+				if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]):
+					letter = rule.rhs[0]
+					if len(letter[0]) == 1 and letter[0][0] == word:
+						self.addToX((i+1, i+1, 0, 0), rule.lhs)
+					elif len(letter[1]) == 1 and letter[1][0] == word:
+						self.addToX((0, 0, i+1, i+1), rule.lhs)
+
+		#print('*********************************************')
+		#print(self.X)
+		#print('*********************************************')
+
+		for y in range(2, 2*n+1):
+			current_time = time.time()
+			if current_time - start_time > TIME_LIMIT:
+				return None
+
+			for beta in range(max(y - n, 0), min(n, y)+1):
+			#for beta in range(0, n+1):
+				alpha = y - beta
+
+				if alpha == 0:
+					i = j = 0
+					for k in range(1, n-y+2):
+						l = k + y - 1
+						self.computeSet(i, j, k, l)
+
+				elif beta == 0:
+					k = l = 0
+					for i in range(1, n - y + 2):
+						j = i + y - 1
+						self.computeSet(i, j, k, l)
+
+				else:
+					for i in range(1, n - alpha + 2):
+						for k in range(1, n - beta + 2):
+							j = i + alpha - 1
+							l = k + beta - 1
+							self.computeSet(i, j, k, l)
+
+		return (1, n, 1, n) in self.X and self.startSymbol in self.X[(1, n, 1, n)]
+
+
+	def createNewNt(self, prefix: str = '') -> tNonTerm:
+		self.lastCreatedNonTerm += 1
+		while prefix + str(self.lastCreatedNonTerm) in self.nts:
+			self.lastCreatedNonTerm += 1
+		return prefix + str(self.lastCreatedNonTerm)
 
 
 	def is_word_erasable(self, word: tWord) -> bool:
@@ -282,6 +496,7 @@ class cWK_CFG:
 				return False
 
 		return True
+
 
 	def is_consistent(self) -> bool:
 		if self.startSymbol not in self.nts:
@@ -309,6 +524,7 @@ class cWK_CFG:
 
 		return True
 
+
 	def printPath(self, wordStatus: cWordStatus) -> None:
 		currentWordStatus: Optional[cWordStatus] = wordStatus
 		while currentWordStatus:
@@ -323,16 +539,17 @@ class cWK_CFG:
 		openSet: Set[int] = set()
 		openSet.add(initStatus.hashNo)
 		closedSet: Set[int] = set()
-		cnt = 0
+
+		startTime = time.time()
 
 		while not openQueue.empty():
-			if cnt == 1000000:
-				print('taking too long')
+			currentTime = time.time()
+			if currentTime - startTime > TIME_LIMIT:
+				debug('taking too long')
 				return len(openSet), len(closedSet), None
-			else:
-				cnt += 1
+
 			debug('\n--------------------------------------')
-			debug(f'cnt: {cnt} (O: {len(openSet)}, C: {len(closedSet)})')
+			debug(f'OPEN STATES: {len(openSet)}, CLOSED STATES: {len(closedSet)}')
 			debug('--------------------------------------')
 			currentWordStatus = openQueue.get()
 			closedSet.add(currentWordStatus.hashNo)
@@ -346,6 +563,7 @@ class cWK_CFG:
 					openSet.add(nextWordStatus.hashNo)
 
 		return len(openSet), len(closedSet), False
+
 
 	def is_result(self, word: tWord, goal: str) -> bool:
 		# word lenght must be 1
@@ -372,12 +590,13 @@ class cWK_CFG:
 
 		return True
 
+
 	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str):
 		longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
-		if longerStrand > len(goalStr) or shorterStrand + wordStatus.ntLen > len(goalStr):
-			debug(f'not feasible (getting too long)')
+		if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
+			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}')
 			return False
 
 		word = wordStatus.word
@@ -393,6 +612,7 @@ class cWK_CFG:
 					return False
 		debug ('feasible')
 		return True
+
 
 	def get_all_next_states(self, wordStatus: cWordStatus, goalStr: str) -> List[cWordStatus]:
 		retLst: List[cWordStatus] = []
@@ -457,38 +677,3 @@ class cWK_CFG:
 
 		debug(f'result: {wordToStr(retval)}')
 		return retval
-
-#nts: List[tNonTerm] = ['A']
-#ts: List[tTerm] = ['a']
-#startSymbol: tNonTerm = 'A'
-#rules: List[cRule] = [
-	#cRule('A', ['A', 'A', 'A']),
-	#cRule('A', [(['a'], ['a'])])
-#]
-
-#relation: List[tRelation] = [('a', 'a')]
-#g = cWK_CFG(nts, ts, startSymbol, rules, relation)
-
-##print('>>', g.rules[0].upperCnt)
-##print('>>', g.rules[0].lowerCnt)
-##print('>>', g.rules[0].ntCnt)
-
-#res = g.can_generate('aaaaaaaaaaaaaaa')
-#print(f'RESULT: {res}')
-
-#for x in g.get_all_next_states([(['a', 'a'], ['a', 'a']), 'A']):
-	#print(f'-----> {wordToStr(x)}\n\n\n')
-
-#rules: List[cRule] = [
-	#cRule('S', [(['a'], []), 'S']),
-	#cRule('S', [(['a'], []), 'A']),
-	#cRule('A', [(['b'], ['a']), 'A']),
-	#cRule('A', [(['b'], ['a']), 'B']),
-	#cRule('B', [([], ['b']), 'B']),
-	#cRule('B', [([], ['b'])])
-#]
-
-#g = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
-
-#res = g.can_generate('aaaaaaaaaaabbbbbbbbbbb')
-#print(f'RESULT: {res}')

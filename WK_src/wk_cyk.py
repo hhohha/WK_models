@@ -75,8 +75,10 @@ class cWKGrammarCNF:
 				if rule[2] == word and rule[1] == '':
 					self.addToX((0, 0, i+1, i+1), rule[0])
 
+
 		for y in range(2, 2*n+1):
 			for beta in range(max(y - n, 0), min(n, y)+1):
+			#for beta in range(0, n+1):
 				alpha = y - beta
 
 				if alpha == 0:
@@ -102,35 +104,72 @@ class cWKGrammarCNF:
 
 ts, nts, rel = [], ['S'], None
 rules = [
-	('S', 'S', 'S'),
-	('S', 'Tua', 'Y1'),
-	('Y1', 'Tda', 'Y2'),
-	('Y2', 'S', 'Y3'),
-	('Y3', 'Tub', 'Tdb'),
-	('S', 'Tua', 'S'),
-	('S', 'Tua', 'A'),
-	('A', 'Tub', 'Y4'),
-	('Y4', 'Tda', 'A'),
-	('A', 'Tub', 'Y5'),
-	('Y5', 'Tda', 'B'),
-	('A', 'Tub', 'Tda'),
-	('B', 'Tdb', 'B'),
-	('B', '', 'b'),
-	('B', 'B', 'B'),
-	('B', 'Tua', 'Y6'),
-	('Y6', 'Tda', 'Y7'),
-	('Y7', 'S', 'Y8'),
-	('Y8', 'Tub', 'Tdb'),
-	('B', 'Tua', 'S'),
-	('B', 'Tua', 'A'),
-	('Tua', 'a', ''),
-	('Tub', 'b', ''),
-	('Tda', '', 'a'),
-	('Tdb', '', 'b')
+	('A', '9', '18'),
+	('S', '5', '16'),
+	('9', '', 'c'),
+	('8', '', 'b'),
+	('2', '', 'c'),
+	('10', '', 'b'),
+	('11', 'a', ''),
+	('18', 'B', '10'),
+	('B', '1', '2'),
+	('19', 'A', '12'),
+	('7', '', 'c'),
+	('13', '15', '14'),
+	('A', '13', 'A'),
+	('16', 'S', '6'),
+	('15', '', 'a'),
+	('12', 'b', ''),
+	('B', '7', '17'),
+	('14', 'c', ''),
+	('17', 'B', '8'),
+	('A', '3', '4'),
+	('3', '', 'b'),
+	('6', 'b', ''),
+	('1', '', 'b'),
+	('5', 'a', ''),
+	('S', '11', '19'),
+	('4', '', 'c')
 ]
+
 g = cWKGrammarCNF(ts, nts, rules, rel)
-s = 'aabbab'
+s = 'acb'
 start = time.time()
 print(g.can_generate((s, s)))
 end = time.time()
 print(f'time: {end-start}')
+
+#ts, nts, rel = [], ['S'], None
+#rules = [
+	#('S', 'S', 'S'),
+	#('S', 'Tua', 'Y1'),
+	#('Y1', 'Tda', 'Y2'),
+	#('Y2', 'S', 'Y3'),
+	#('Y3', 'Tub', 'Tdb'),
+	#('S', 'Tua', 'S'),
+	#('S', 'Tua', 'A'),
+	#('A', 'Tub', 'Y4'),
+	#('Y4', 'Tda', 'A'),
+	#('A', 'Tub', 'Y5'),
+	#('Y5', 'Tda', 'B'),
+	#('A', 'Tub', 'Tda'),
+	#('B', 'Tdb', 'B'),
+	#('B', '', 'b'),
+	#('B', 'B', 'B'),
+	#('B', 'Tua', 'Y6'),
+	#('Y6', 'Tda', 'Y7'),
+	#('Y7', 'S', 'Y8'),
+	#('Y8', 'Tub', 'Tdb'),
+	#('B', 'Tua', 'S'),
+	#('B', 'Tua', 'A'),
+	#('Tua', 'a', ''),
+	#('Tub', 'b', ''),
+	#('Tda', '', 'a'),
+	#('Tdb', '', 'b')
+#]
+#g = cWKGrammarCNF(ts, nts, rules, rel)
+#s = 'aabbab'
+#start = time.time()
+#print(g.can_generate((s, s)))
+#end = time.time()
+#print(f'time: {end-start}')

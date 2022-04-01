@@ -3,8 +3,12 @@
 import time
 from ctf_WK_grammar import *
 
+RES_TIMEOUT = '\033[93m' + 'TIMEOUT' + '\x1b[0m'
 RES_OK = '\033[92m' + 'OK' + '\x1b[0m'
 RES_FAILED = '\033[91m' + 'FAILED' + '\x1b[0m'
+
+totalTime = 0
+statesO, statesC = 0, 0
 
 hline = '|---------------|-------------------------------------|------------------------------------------|--------------|------------|-----------------------|--------------|---------|'
 testNo = 1
@@ -15,15 +19,26 @@ print(hline)
 print(hline)
 
 def runTest(grammar: cWK_CFG, inputStr: str, expected: bool):
-	global testNo
+	global testNo, totalTime, statesO, statesC
+
+	#grammar.to_wk_cnf()
 
 	start = time.time()
 	openStates, closedStates, actual = grammar.can_generate(inputStr)
+	statesO += openStates
+	statesC += closedStates
+	#openStates, closedStates, actual = 0, 0, grammar.run_wk_cyk(inputStr)
 	end = time.time()
 	timeTaken = round(end - start, 8)
-	status = RES_OK if actual == expected else RES_FAILED
+	totalTime += timeTaken
 
-	print(f'| TEST {testNo:2}       | {g.desc:35} | {inputStr:40} |    {expected:6}    |    {actual:6}  | {openStates:10}/{closedStates:10} | {timeTaken:12} | {status:15}  |')
+	if actual is None:
+		status = RES_TIMEOUT
+		actual = ''
+	else:
+		status = RES_OK if actual == expected else RES_FAILED
+
+	print(f'| TEST {testNo:2}       | {g.desc:35} | {inputStr:40} |    {expected:6}    |    {actual:6}  | {openStates:10}/{closedStates:10} | {timeTaken:12} | {status:16} |')
 	#print(hline)
 	testNo += 1
 
@@ -165,3 +180,5 @@ for m, n in [(m, n) for m in range(1, 7) for n in range (1, 7)]:
 	runTest(g, 'a'*n + 'b'*m + 'a'*n, 2*n <= m and m <= 3*n)
 
 print(hline)
+
+print(f'\n\ntotal time taken: {totalTime},     states open: {statesO},   states closed: {statesC}')
