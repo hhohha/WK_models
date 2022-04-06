@@ -4,13 +4,14 @@ from itertools import combinations
 from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
 from queue import PriorityQueue
 import time
+import re
 
-DEBUG = 0
+DEBUG = 1
 def debug(s):
 	if DEBUG:
 		print(s)
 
-TIME_LIMIT = 25
+TIME_LIMIT = 10
 
 tNonTerm = str
 tTerm = str
@@ -33,15 +34,20 @@ def get_all_combinations(l):
 def is_nonterm(letter: tLetter) -> bool:
 	return not isinstance(letter, tuple)
 
+
+E_STR_NO_HEURISTIC = 0
+E_STR_PREF_TERMS = 1
+E_STR_TERMS_MATCH = 2
+
 class cWordStatus:
-	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus'], goalStr: str) -> None:
+	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus'], distance: int) -> None:
 		self.word = word
 		self.upperStrLen = upperStrLen
 		self.lowerStrLen = lowerStrLen
 		self.ntLen = ntLen
 		self.parent = parent
 		self.hashNo = hash(str(word)) # TODO: improve this
-		self.distance = self.computeDistance(word, goalStr)
+		self.distance = distance
 
 	def __hash__(self) -> int:
 		return self.hashNo
@@ -54,22 +60,6 @@ class cWordStatus:
 	def __lt__(self, other: 'cWordStatus') -> bool:
 		return self.distance < other.distance
 
-	def computeDistance2(self, word: tWord, goal: str):
-		val = 100
-		for idx, letter in enumerate(word):
-			if is_nonterm(letter):
-				val += 1
-			else:
-				val -= 10
-		return val
-
-	def computeDistance(self, word: tWord, goal: str):
-		#return 0
-		val = 0
-		for letter in word:
-			if not is_nonterm(letter):
-				val += 1
-		return val
 
 def wordToStr(word: tWord) -> str:
 	rs = []
@@ -146,10 +136,48 @@ class cWK_CFG:
 		self.find_erasable_nts()
 		#self.remove_lambda_rules()
 
+		self.distance_calc_strategy = 0
+
+		self.distance_calc_strategies_list = [
+			('no heuristic', self.compute_distance_no_heuristic),
+			('prefer less non-terminals', self.compute_distance_prefer_terms),
+			('prefer prefix matching goal', self.compute_distance_terms_match)
+		]
+
 		for rule in self.rules:
 			for letter in rule.rhs:
 				if is_nonterm(letter) and letter in self.erasableNts:
 					rule.ntCnt -= 1
+
+
+	def calculate_distance(self, word: tWord, goalStr: str) -> int:
+		return self.distance_calc_strategies_list[self.distance_calc_strategy][1](word, goalStr)
+
+
+	def compute_distance_no_heuristic(self, word: tWord, goal: str) -> int:
+		return 0
+
+
+	def compute_distance_prefer_terms(self, word: tWord, goal: str) -> int:
+		distance = 0
+		for letter in word:
+			if is_nonterm(letter):
+				distance += 1
+		return distance
+
+
+	def compute_distance_terms_match(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if not is_nonterm(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 1
+						goalIdx += 1
+					else:
+						return distance
+		return distance
 
 
 	def find_erasable_nts(self) -> None:
@@ -533,7 +561,8 @@ class cWK_CFG:
 
 
 	def can_generate(self, upperStr: str) -> Tuple[int, int, Optional[bool]]:
-		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, upperStr)
+		distance = self.calculate_distance([self.startSymbol], upperStr)
+		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, distance)
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initStatus)
 		openSet: Set[int] = set()
@@ -591,12 +620,29 @@ class cWK_CFG:
 		return True
 
 
-	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str):
+	def word_to_regex(self, word: tWord) -> str:
+		if is_nonterm(word[0]):
+			regex = ''
+		else:
+			regex = '^'
+
+		for idx, letter in enumerate(word):
+			if is_nonterm(letter) and idx > 0 and not is_nonterm(word[idx-1]):
+				regex += '.*'
+			elif not is_nonterm(letter):
+				regex += ''.join(letter[0])
+
+		if not is_nonterm(word[-1]):
+			regex += '$'
+
+		return regex
+
+	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str) -> bool:
 		longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
 		if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
-			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}')
+			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
 			return False
 
 		word = wordStatus.word
@@ -610,7 +656,13 @@ class cWK_CFG:
 				if (word[0][0][idx], word[0][1][idx]) not in self.relation:
 					debug('not feasible (doesn\'t fulfil relation)')
 					return False
-		debug ('feasible')
+
+		regex = self.word_to_regex(word)
+		if re.compile(regex).search(goalStr) is None:
+			debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
+			return False
+
+		debug('feasible')
 		return True
 
 
@@ -620,9 +672,13 @@ class cWK_CFG:
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
 					newWord = self.apply_rule(wordStatus.word, ntIdx, rule.rhs)
-					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt - 1, wordStatus, goalStr)
-
+					if rule.lhs in self.erasableNts:
+						d = 0
+					else:
+						d = 1
+					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt - d, wordStatus, 0)
 					if self.is_word_feasible(newWordStatus, goalStr):
+						newWordStatus.distance = self.calculate_distance(newWord, goalStr)
 						retLst.append(newWordStatus)
 		return retLst
 

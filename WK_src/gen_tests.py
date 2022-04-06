@@ -80,7 +80,7 @@ runTest(g, 'aabb', True)
 runTest(g, 'abc', False)
 
 ############################ GRAMMAR 3:   r^n d^n u^n r^n    ##############################################################################
-rules: List[cRule] = [
+rules = [
 	cRule('S', [(['r'], []), 'S']),
 	cRule('S', [(['r'], []), 'A']),
 	cRule('A', [(['d'], ['r']), 'A']),
@@ -103,7 +103,7 @@ runTest(g, 'rrrrrrddddduuuuuurrrrrr', False)
 
 ############################ GRAMMAR 4:   a^n c^n b^n    ##################################################################################
 
-rules: List[cRule] = [
+rules = [
 	cRule('S', [(['a'], []), 'S', (['b'], [])]),
 	cRule('S', [(['a'], []), 'A', (['b'], [])]),
 	cRule('A', [(['c'], ['a']), 'A']),
@@ -120,7 +120,7 @@ runTest(g, 'aaaaaaaaaaaccccccccccccbbbbbbbbbbbb', False)
 
 ############################ GRAMMAR 5:   a^n b^m c^n d^m     ##############################################################################
 
-rules: List[cRule] = [
+rules = [
 	cRule('S', [(['a'], []), 'S']),
 	cRule('S', [(['a'], []), 'A']),
 	cRule('A', [(['b'], []), 'A']),
@@ -142,7 +142,7 @@ runTest(g, 'aaaabbbbbbbccccdddddd', False)
 
 ############################ GRAMMAR 6:   wcw where w in {a,b }*     ######################################################################
 
-rules: List[cRule] = [
+rules = [
 	cRule('S', [(['a'], []), 'S']),
 	cRule('S', [(['b'], []), 'S']),
 	cRule('S', [(['c'], []), 'A']),
@@ -154,16 +154,14 @@ rules: List[cRule] = [
 	cRule('B', [([], [])]),
 ]
 
-
-
 g = cWK_CFG(['S', 'A', 'B', 'C'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
 g.desc = 'wcw where w in {a,b }*'
 
 runTest(g, 'abbabacabbaba', True)
 runTest(g, 'abbabacababa', False)
 
-############################ GRAMMAR 6:   a^n b^m a^n where 2n <= m <= 3n   ###############################################################
-rules: List[cRule] = [
+############################ GRAMMAR 7:   a^n b^m a^n where 2n <= m <= 3n   ###############################################################
+rules = [
 	cRule('S', [(['a'], []), 'S', (['a'], ['a'])]),
 	cRule('S', [(['a'], []), 'A', (['a'], ['a'])]),
 	cRule('A', [(['b', 'b'], ['a']), 'A']),
