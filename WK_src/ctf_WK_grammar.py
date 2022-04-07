@@ -3,15 +3,14 @@
 from itertools import combinations
 from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
 from queue import PriorityQueue
+from copy import deepcopy
 import time
 import re
 
-DEBUG = 1
+DEBUG = 0
 def debug(s):
 	if DEBUG:
 		print(s)
-
-TIME_LIMIT = 10
 
 tNonTerm = str
 tTerm = str
@@ -119,6 +118,7 @@ class cRule:
 	def __hash__(self) -> int:
 		return hash((self.lhs, str(self.rhs)))
 
+
 class cWK_CFG:
 	def __init__(self, nts: List[tNonTerm], ts: List[tTerm], startSymbol: tNonTerm, rules: List[cRule], relation: List[tRelation]) -> None:
 		self.nts = set(nts)
@@ -128,16 +128,15 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
+		self.timeLimit = 5
 
 		if not self.is_consistent():
 			raise ValueError
 
 		self.generate_rule_dict()
 		self.find_erasable_nts()
-		#self.remove_lambda_rules()
 
 		self.distance_calc_strategy = 0
-
 		self.distance_calc_strategies_list = [
 			('no heuristic', self.compute_distance_no_heuristic),
 			('prefer less non-terminals', self.compute_distance_prefer_terms),
@@ -149,6 +148,16 @@ class cWK_CFG:
 				if is_nonterm(letter) and letter in self.erasableNts:
 					rule.ntCnt -= 1
 
+	def restore(self) -> None:
+		self.rules = self.rules_backup
+		self.nts = self.nts_backup
+		self.ts = self.ts_backup
+		self.generate_rule_dict()
+
+	def backup(self) -> None:
+		self.rules_backup = deepcopy(self.rules)
+		self.nts_backup = self.nts.copy()
+		self.ts_backup = self.ts.copy()
 
 	def calculate_distance(self, word: tWord, goalStr: str) -> int:
 		return self.distance_calc_strategies_list[self.distance_calc_strategy][1](word, goalStr)
@@ -459,7 +468,7 @@ class cWK_CFG:
 
 		for i, word in enumerate(sentence):
 			current_time = time.time()
-			if current_time - start_time > TIME_LIMIT:
+			if current_time - start_time > self.timeLimit:
 				return None
 
 			for rule in self.rules:
@@ -476,7 +485,7 @@ class cWK_CFG:
 
 		for y in range(2, 2*n+1):
 			current_time = time.time()
-			if current_time - start_time > TIME_LIMIT:
+			if current_time - start_time > self.timeLimit:
 				return None
 
 			for beta in range(max(y - n, 0), min(n, y)+1):
@@ -573,7 +582,7 @@ class cWK_CFG:
 
 		while not openQueue.empty():
 			currentTime = time.time()
-			if currentTime - startTime > TIME_LIMIT:
+			if currentTime - startTime > self.timeLimit:
 				debug('taking too long')
 				return len(openSet), len(closedSet), None
 
