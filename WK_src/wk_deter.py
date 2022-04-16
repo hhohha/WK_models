@@ -43,9 +43,9 @@ class cWKA:
 		for rule in self.rules:
 			stateFrom = rule[0]
 			if stateFrom in ruleDict:
-				 for upperStr, lowerStr in ruleDict[stateFrom]:
-					 if (rule[1].startswith(upperStr) or upperStr.startswith(rule[1])) and (rule[2].startswith(lowerStr) or lowerStr.startswith(rule[2])):
-						 return False
+				for upperStr, lowerStr in ruleDict[stateFrom]:
+					if (rule[1].startswith(upperStr) or upperStr.startswith(rule[1])) and (rule[2].startswith(lowerStr) or lowerStr.startswith(rule[2])):
+						return False
 			else:
 				ruleDict[stateFrom] = []
 

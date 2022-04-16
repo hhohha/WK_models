@@ -33,6 +33,8 @@ def get_all_combinations(l):
 def is_nonterm(letter: tLetter) -> bool:
 	return not isinstance(letter, tuple)
 
+def is_term(letter: tLetter) -> bool:
+	return isinstance(letter, tuple)
 
 E_STR_NO_HEURISTIC = 0
 E_STR_PREF_TERMS = 1
@@ -63,7 +65,7 @@ class cWordStatus:
 def wordToStr(word: tWord) -> str:
 	rs = []
 	for symbol in word:
-		if not is_nonterm(symbol):
+		if is_term(symbol):
 			e1 = ''.join(symbol[0]) if len(symbol[0]) > 0 else 'λ'
 			e2 = ''.join(symbol[1]) if len(symbol[1]) > 0 else 'λ'
 			rs.append(e1 + '/' + e2)
@@ -79,7 +81,7 @@ class cRule:
 		while i < len(word) - 1:
 			syllable1 = word[i]
 			syllable2 = word[i+1]
-			if not is_nonterm(syllable1) and not is_nonterm(syllable2):
+			if is_term(syllable1) and is_term(syllable2):
 				newSyllable = (syllable1[0] + syllable2[0], syllable1[1] + syllable2[1])
 				word[i:i+2] = [newSyllable]
 			else:
@@ -100,7 +102,7 @@ class cRule:
 		self.upperCnt = 0
 		self.lowerCnt = 0
 		for letter in self.rhs:
-			if not is_nonterm(letter):
+			if is_term(letter):
 				self.upperCnt += len(letter[0])
 				self.lowerCnt += len(letter[1])
 			else:
@@ -139,8 +141,12 @@ class cWK_CFG:
 		self.distance_calc_strategy = 0
 		self.distance_calc_strategies_list = [
 			('no heuristic', self.compute_distance_no_heuristic),
+			('non terms distance', self.compute_distance_nt_distance),
 			('prefer less non-terminals', self.compute_distance_prefer_terms),
-			('prefer prefix matching goal', self.compute_distance_terms_match)
+			#('prefer more non-terminals', self.compute_distance_prefer_non_terms),
+			('prefer prefix matching goal', self.compute_distance_terms_match),
+			('individual terms matching goal', self.compute_distance_terms_match2),
+			('matching goal + prefer terminals', self.compute_distance_terms_match3),
 		]
 
 		for rule in self.rules:
@@ -148,16 +154,42 @@ class cWK_CFG:
 				if is_nonterm(letter) and letter in self.erasableNts:
 					rule.ntCnt -= 1
 
+		self.calc_nt_distances()
+
 	def restore(self) -> None:
 		self.rules = self.rules_backup
 		self.nts = self.nts_backup
 		self.ts = self.ts_backup
 		self.generate_rule_dict()
+		self.calc_nt_distances()
 
 	def backup(self) -> None:
 		self.rules_backup = deepcopy(self.rules)
 		self.nts_backup = self.nts.copy()
 		self.ts_backup = self.ts.copy()
+
+	def calc_word_distance(self, word: tWord) -> int:
+		maxVal = 0
+		for letter in word:
+			if is_nonterm(letter):
+				maxVal = max(maxVal, self.ntDistances[letter])
+		return maxVal
+
+	def calc_nt_distances(self) -> None:
+		MAX_DIST = 20
+		self.ntDistances: Dict[tNonTerm, int] = {}
+		for nt in self.nts:
+			self.ntDistances[nt] = MAX_DIST
+
+		loop = True
+		while loop:
+			loop = False
+			for rule in self.rules:
+				d = self.calc_word_distance(rule.rhs) + 1
+				if d < self.ntDistances[rule.lhs]:
+					self.ntDistances[rule.lhs] = d
+					loop = True
+
 
 	def calculate_distance(self, word: tWord, goalStr: str) -> int:
 		return self.distance_calc_strategies_list[self.distance_calc_strategy][1](word, goalStr)
@@ -174,12 +206,19 @@ class cWK_CFG:
 				distance += 1
 		return distance
 
+	def compute_distance_prefer_non_terms(self, word: tWord, goal: str) -> int:
+		distance = 0
+		for letter in word:
+			if is_term(letter):
+				distance += 1
+		return distance
+
 
 	def compute_distance_terms_match(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
-			if not is_nonterm(letter):
+			if is_term(letter):
 				for symbol in letter[0]:
 					if len(goal) > goalIdx and symbol == goal[goalIdx]:
 						distance -= 1
@@ -189,7 +228,47 @@ class cWK_CFG:
 		return distance
 
 
+	def compute_distance_terms_match2(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 1
+						goalIdx += 1
+					else:
+						distance += 1
+						goalIdx += 1
+		return distance
+
+	def compute_distance_terms_match3(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 10
+						goalIdx += 1
+					else:
+						distance += 10
+						goalIdx += 1
+
+			else:
+				distance += 1
+		return distance
+
+
+	def compute_distance_nt_distance(self, word: tWord, goal: str) -> int:
+		distance = 0
+		for letter in word:
+			if is_nonterm(letter):
+				distance += self.ntDistances[letter]
+		return distance
+
 	def find_erasable_nts(self) -> None:
+		self.erasableNts = set()
 		loop = True
 		while loop:
 			loop = False
@@ -220,7 +299,7 @@ class cWK_CFG:
 				newRuleRhs = []
 				for idx, letter in enumerate(rule.rhs):
 					if idx not in erasableIdxs or idx in idxLst:
-						newRuleRhs.append(letter)
+						newRuleRhs.append(deepcopy(letter))
 
 				newRule = cRule(rule.lhs, newRuleRhs)
 				if newRule.rhs != [([], [])] and newRule.rhs != [] and newRule not in newRules:
@@ -249,7 +328,7 @@ class cWK_CFG:
 
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if len(rule.rhs) != 1 or not is_nonterm(rule.rhs[0]):
+			if len(rule.rhs) != 1 or is_term(rule.rhs[0]):
 				for k, v in simpleRules.items():
 					if rule.lhs in v:
 						newRules.add(cRule(k, rule.rhs))
@@ -273,7 +352,7 @@ class cWK_CFG:
 
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if rule.lhs in non_empty_nts and all(map(lambda letter: not is_nonterm(letter) or letter in non_empty_nts, rule.rhs)):
+			if rule.lhs in non_empty_nts and all(map(lambda letter: is_term(letter) or letter in non_empty_nts, rule.rhs)):
 				newRules.add(rule)
 
 		self.nts = self.nts.intersection(non_empty_nts)
@@ -303,7 +382,7 @@ class cWK_CFG:
 
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if rule not in newRules and all(map(lambda letter: not is_nonterm(letter) or letter in reachableNts, rule.rhs)):
+			if rule not in newRules and all(map(lambda letter: is_term(letter) or letter in reachableNts, rule.rhs)):
 				newRules.add(rule)
 
 		self.nts = self.nts.intersection(reachableNts)
@@ -321,7 +400,7 @@ class cWK_CFG:
 		newRules: List[cRule] = []
 
 		for idx, letter in enumerate(rule.rhs):
-			if not is_nonterm(letter):
+			if is_term(letter):
 				newNt = self.createNewNt()
 				newRules.append(cRule(newNt, [letter]))
 				rule.rhs[idx] = newNt
@@ -357,13 +436,12 @@ class cWK_CFG:
 		newRules: List[cRule] = []
 
 		for rule in self.rules:
-			if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) and len(rule.rhs[0][0]) + len(rule.rhs[0][1]) == 1:
+			if len(rule.rhs) == 1 and is_term(rule.rhs[0]) and len(rule.rhs[0][0]) + len(rule.rhs[0][1]) == 1:
 				continue
 			for idx, letter in enumerate(rule.rhs):
-				if not is_nonterm(letter):
+				if is_term(letter):
 					newNt = self.createNewNt()
 					self.nts.add(newNt)
-
 					rule.rhs[idx] = newNt
 
 					if len(rule.rhs) == 1:
@@ -387,7 +465,7 @@ class cWK_CFG:
 		newRules: Set[cRule] = set()
 
 		for rule in self.rules:
-			if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]) or len(rule.rhs) == 2 and is_nonterm(rule.rhs[0]) and is_nonterm(rule.rhs[1]):
+			if len(rule.rhs) == 1 and is_term(rule.rhs[0]) or len(rule.rhs) == 2 and is_nonterm(rule.rhs[0]) and is_nonterm(rule.rhs[1]):
 				newRules.add(rule)
 
 			# swap terminal letters for respective non-terminals and break down words longer than 2
@@ -399,27 +477,52 @@ class cWK_CFG:
 
 
 	def to_wk_cnf(self) -> None:
+		#print('\nSTART    -----------------------------')
 		#self.printDebug()
 		#print('--------------------------------------')
 
 		self.remove_lambda_rules()
 
+		#print('\nLAMBDA RULES REMOVED  --------------')
 		#self.printDebug()
 		#print('--------------------------------------')
 
 		self.remove_unit_rules()
+
+		#print('\nUNIT RULES REMOVED  ----------------')
+		#self.printDebug()
+		#print('--------------------------------------')
+
 		self.remove_useless_rules()
+
+		#print('\nUSELESS RULES REMOVED  -------------')
+		#self.printDebug()
+		#print('--------------------------------------')
+
+
 		self.remove_unreachable_symbols()
 
+		#print('\nUNRCH SYMBS REMOVED  ---------------')
 		#self.printDebug()
-		#print('A-------------------------------------')
+		#print('--------------------------------------')
+
 		self.dismantle_term_letters()
+
+		#print('\nTERMS DISMANLETED  -----------------')
 		#self.printDebug()
-		#print('B-------------------------------------')
+		#print('--------------------------------------')
+
 		self.transform_to_wk_cnf_form()
+
+		#print('\nDONE  ------------------------------')
 		#self.printDebug()
+		#print('--------------------------------------')
 
 		# possible TODO - optimize terminal covering non-terms
+
+		self.calc_nt_distances()
+		self.erasableNts.clear()
+
 
 	def addToX(self, idx: t4DInt, nt: tNonTerm) -> None:
 		if idx not in self.X:
@@ -472,7 +575,7 @@ class cWK_CFG:
 				return None
 
 			for rule in self.rules:
-				if len(rule.rhs) == 1 and not is_nonterm(rule.rhs[0]):
+				if len(rule.rhs) == 1 and is_term(rule.rhs[0]):
 					letter = rule.rhs[0]
 					if len(letter[0]) == 1 and letter[0][0] == word:
 						self.addToX((i+1, i+1, 0, 0), rule.lhs)
@@ -523,7 +626,7 @@ class cWK_CFG:
 
 	def is_word_erasable(self, word: tWord) -> bool:
 		for letter in word:
-			if not is_nonterm(letter):
+			if is_term(letter):
 				if letter == ([], []):
 					continue
 				else:
@@ -591,6 +694,7 @@ class cWK_CFG:
 			debug('--------------------------------------')
 			currentWordStatus = openQueue.get()
 			closedSet.add(currentWordStatus.hashNo)
+			#print(wordToStr(currentWordStatus.word))
 
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
@@ -636,12 +740,12 @@ class cWK_CFG:
 			regex = '^'
 
 		for idx, letter in enumerate(word):
-			if is_nonterm(letter) and idx > 0 and not is_nonterm(word[idx-1]):
+			if is_nonterm(letter) and idx > 0 and is_term(word[idx-1]):
 				regex += '.*'
-			elif not is_nonterm(letter):
+			elif is_term(letter):
 				regex += ''.join(letter[0])
 
-		if not is_nonterm(word[-1]):
+		if is_term(word[-1]):
 			regex += '$'
 
 		return regex
@@ -655,7 +759,7 @@ class cWK_CFG:
 			return False
 
 		word = wordStatus.word
-		if not is_nonterm(word[0]):
+		if is_term(word[0]):
 			if not goalStr.startswith(''.join(word[0][0])):
 				debug('not feasible (doesn\'t match goal string)')
 				return False
@@ -674,7 +778,6 @@ class cWK_CFG:
 		debug('feasible')
 		return True
 
-
 	def get_all_next_states(self, wordStatus: cWordStatus, goalStr: str) -> List[cWordStatus]:
 		retLst: List[cWordStatus] = []
 		for ntIdx, symbol in enumerate(wordStatus.word):
@@ -689,6 +792,7 @@ class cWK_CFG:
 					if self.is_word_feasible(newWordStatus, goalStr):
 						newWordStatus.distance = self.calculate_distance(newWord, goalStr)
 						retLst.append(newWordStatus)
+				break
 		return retLst
 
 
@@ -698,10 +802,10 @@ class cWK_CFG:
 			debug(f'ntIdx: {ntIdx}')
 			debug(f'rule: {word[ntIdx] + " -> " + wordToStr(ruleRhs)}')
 
-		mergePrev = ntIdx > 0 and not is_nonterm(word[ntIdx - 1]) # can we merge with the previous terminal
-		mergeNext = ntIdx < len(word) - 1 and not is_nonterm(word[ntIdx + 1]) # can we merge with the next terminal
+		mergePrev = ntIdx > 0 and is_term(word[ntIdx - 1]) # can we merge with the previous terminal
+		mergeNext = ntIdx < len(word) - 1 and is_term(word[ntIdx + 1]) # can we merge with the next terminal
 
-		if len(ruleRhs) == 1 and not is_nonterm(ruleRhs[0]):    # rule right side is just a terminal pair
+		if len(ruleRhs) == 1 and is_term(ruleRhs[0]):    # rule right side is just a terminal pair
 			if mergePrev and mergeNext:
 				mergedUpper = word[ntIdx - 1][0] + ruleRhs[0][0] + word[ntIdx + 1][0]
 				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1] + word[ntIdx + 1][1]
@@ -720,8 +824,8 @@ class cWK_CFG:
 			else:
 				retval = word[:ntIdx] + [ruleRhs[0]] + word[ntIdx + 1:]
 		else:
-			mergePrev = mergePrev and not is_nonterm(ruleRhs[0])
-			mergeNext = mergeNext and not is_nonterm(ruleRhs[-1])
+			mergePrev = mergePrev and is_term(ruleRhs[0])
+			mergeNext = mergeNext and is_term(ruleRhs[-1])
 
 			if ntIdx > 0 and mergePrev and mergeNext:
 				mergedUpperPrev = word[ntIdx - 1][0] + ruleRhs[0][0]
