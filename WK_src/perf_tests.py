@@ -11,6 +11,9 @@ class cPerfTester:
 		self.statesClosed = 0
 
 	def printHeader(self, grammar, inputStr, shouldAccept):
+		if len(inputStr) > 90:
+			inputStr = inputStr[:80] + f'... [length {len(inputStr)}]'
+
 		print(f'|{"="*150}|')
 		print(f'| TEST {self.testCnt:3}{" "*141}|')
 		print(f'|{"="*150}|')
@@ -41,7 +44,7 @@ class cPerfTester:
 				result = actual
 			else:
 				result = "ERROR"
-			states = str(openStates) + "/" + str(closedStates)
+			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
 			print(f'| {strategy:95}| {timeTaken:10} | {states:28}| {result:8} |')
 		print(f'|{"-"*150}|')
 
@@ -64,24 +67,24 @@ class cPerfTester:
 				result = actual
 			else:
 				result = "ERROR"
-			states = str(openStates) + "/" + str(closedStates)
+			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
 			print(f'| {strategy:95}| {timeTaken:10} | {states:28}| {result:8} |')
 
 		print(f'|{"-"*150}|')
-		start = time.time()
-		actual = grammar.run_wk_cyk(inputStr)
-		end = time.time()
-		timeTaken = round(end - start, 5)
-		strategy = 'wk cyk'
-		closedStates = 'N/A'
-		if actual is None:
-			result = "TIMEOUT"
-		elif actual == shouldAccept:
-			result = actual
-		else:
-			result = "ERROR"
+		#start = time.time()
+		#actual = grammar.run_wk_cyk(inputStr)
+		#end = time.time()
+		#timeTaken = round(end - start, 5)
+		#strategy = 'wk cyk'
+		#closedStates = 'N/A'
+		#if actual is None:
+			#result = "TIMEOUT"
+		#elif actual == shouldAccept:
+			#result = actual
+		#else:
+			#result = "ERROR"
 
-		print(f'| {strategy:95}| {timeTaken:10} | N/A{" "*25}| {result:8} |')
+		#print(f'| {strategy:95}| {timeTaken:10} | N/A{" "*25}| {result:8} |')
 		print(f'|{"="*150}|\n\n\n')
 		grammar.restore()
 
@@ -92,4 +95,23 @@ t = cPerfTester()
 #t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbb', True)
 #t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
 #t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
-t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+
+#t.run_test_suite(g1, 'a'*401, True)
+#t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
+#l = 300
+#t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
+
+l = 500
+t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
+#t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
+#t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
+#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+
+#t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaa', False)
+#t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
+#t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrrr', False)
+#t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbb', False)
+#t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
+#t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
+#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)

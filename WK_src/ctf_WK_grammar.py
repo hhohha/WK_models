@@ -131,6 +131,7 @@ class cWK_CFG:
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
 		self.timeLimit = 5
+		self.trimms = [0, 0, 0, 0]
 
 		if not self.is_consistent():
 			raise ValueError
@@ -138,7 +139,7 @@ class cWK_CFG:
 		self.generate_rule_dict()
 		self.find_erasable_nts()
 
-		self.distance_calc_strategy = 0
+		self.distance_calc_strategy = 2
 		self.distance_calc_strategies_list = [
 			('no heuristic', self.compute_distance_no_heuristic),
 			('non terms distance', self.compute_distance_nt_distance),
@@ -331,7 +332,7 @@ class cWK_CFG:
 			if len(rule.rhs) != 1 or is_term(rule.rhs[0]):
 				for k, v in simpleRules.items():
 					if rule.lhs in v:
-						newRules.add(cRule(k, rule.rhs))
+						newRules.add(cRule(k, deepcopy(rule.rhs)))
 
 		self.rules = newRules
 		self.generate_rule_dict()
@@ -382,7 +383,7 @@ class cWK_CFG:
 
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if rule not in newRules and all(map(lambda letter: is_term(letter) or letter in reachableNts, rule.rhs)):
+			if rule not in newRules and rule.lhs in reachableNts and all(map(lambda letter: is_term(letter) or letter in reachableNts, rule.rhs)):
 				newRules.add(rule)
 
 		self.nts = self.nts.intersection(reachableNts)
@@ -390,10 +391,6 @@ class cWK_CFG:
 		self.rules = newRules
 		self.generate_rule_dict()
 
-
-	def remove_useless_rules(self) -> None:
-		self.remove_unterminatable_symbols()
-		self.remove_unreachable_symbols()
 
 
 	def dismantleRule(self, rule: cRule) -> List[cRule]:
@@ -493,12 +490,11 @@ class cWK_CFG:
 		#self.printDebug()
 		#print('--------------------------------------')
 
-		self.remove_useless_rules()
+		self.remove_unterminatable_symbols()
 
 		#print('\nUSELESS RULES REMOVED  -------------')
 		#self.printDebug()
 		#print('--------------------------------------')
-
 
 		self.remove_unreachable_symbols()
 
@@ -673,6 +669,7 @@ class cWK_CFG:
 
 
 	def can_generate(self, upperStr: str) -> Tuple[int, int, Optional[bool]]:
+		self.trimms = [0,0,0,0]
 		distance = self.calculate_distance([self.startSymbol], upperStr)
 		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, distance)
 		openQueue: Any = PriorityQueue()
@@ -755,23 +752,27 @@ class cWK_CFG:
 		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
 		if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
+			self.trimms[0] += 1
 			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
 			return False
 
 		word = wordStatus.word
 		if is_term(word[0]):
 			if not goalStr.startswith(''.join(word[0][0])):
+				self.trimms[1] += 1
 				debug('not feasible (doesn\'t match goal string)')
 				return False
 
 			shorter_len = min(len(word[0][0]), len(word[0][1]))
 			for idx in range(shorter_len):
 				if (word[0][0][idx], word[0][1][idx]) not in self.relation:
+					self.trimms[2] += 1
 					debug('not feasible (doesn\'t fulfil relation)')
 					return False
 
 		regex = self.word_to_regex(word)
 		if re.compile(regex).search(goalStr) is None:
+			self.trimms[3] += 1
 			debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
 			return False
 
