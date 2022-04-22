@@ -2,7 +2,9 @@
 
 from ctf_WK_grammar import *
 
-############################ GRAMMAR 1:   a(aa)*      #####################################################################################
+# GRAMMAR 1
+# accepted strings: a(aa)*
+# my example
 
 rules = [
 	cRule('A', ['A', 'A', 'A']),
@@ -11,7 +13,9 @@ rules = [
 g1 = cWK_CFG(['A'], ['a'], 'A', rules, [('a', 'a')])
 g1.desc = 'a(aa)*'
 
-############################ GRAMMAR 2:   a^n b^n (n>0)    ################################################################################
+# GRAMMAR 2
+# accepted strings: a^n b^n (n>0)
+# taken from: On Watson Crick automata
 
 rules  = [
 	cRule('S', [(['a'], []), 'S']),
@@ -25,7 +29,9 @@ rules  = [
 g2 = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
 g2.desc = 'a^n b^n (n>0)'
 
-############################ GRAMMAR 3:   r^n d^n u^n r^n    ##############################################################################
+# GRAMMAR 3
+# accepted strings: r^n d^n u^n r^n
+# taken from:  On Watson Crick automata
 
 rules = [
 	cRule('S', [(['r'], []), 'S']),
@@ -43,7 +49,9 @@ rules = [
 g3 = cWK_CFG(['S', 'A', 'B', 'C', 'D'], ['r', 'd', 'u'], 'S', rules, [('r', 'r'), ('d', 'd'), ('u', 'u')])
 g3.desc = 'r^n d^n u^n r^n'
 
-############################ GRAMMAR 4:   a^n c^n b^n    ##################################################################################
+# GRAMMAR 4
+# accepted strings: a^n c^n b^n
+# taken from: generative power and closure properties of WK grammars (example 10)
 
 rules = [
 	cRule('S', [(['a'], []), 'S', (['b'], [])]),
@@ -57,7 +65,9 @@ rules = [
 g4 = cWK_CFG(['S', 'A', 'B'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
 g4.desc = 'a^n c^n b^n'
 
-############################ GRAMMAR 5:   a^n b^m c^n d^m     ##############################################################################
+# GRAMMAR 5
+# accepted strings: a^n b^m c^n d^m
+# taken from: generative power and closure properties of WK grammars  (example 11)
 
 rules = [
 	cRule('S', [(['a'], []), 'S']),
@@ -76,7 +86,9 @@ rules = [
 g5 = cWK_CFG(['S', 'A', 'B', 'C', 'D'], ['a', 'b', 'c', 'd'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c'), ('d', 'd')])
 g5.desc = 'a^n b^m c^n d^m'
 
-############################ GRAMMAR 6:   wcw where w in {a,b }*     ######################################################################
+# GRAMMAR 6
+# accepted strings: wcw where w in {a,b }*
+# taken from: generative power and closure properties of WK grammars (example 12)
 
 rules = [
 	cRule('S', [(['a'], []), 'S']),
@@ -93,7 +105,9 @@ rules = [
 g6 = cWK_CFG(['S', 'A', 'B'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
 g6.desc = 'wcw where w in {a,b }*'
 
-############################ GRAMMAR 7:   a^n b^m a^n where 2n <= m <= 3n   ###############################################################
+# GRAMMAR 7
+# accepted strings: a^n b^m a^n where 2n <= m <= 3n
+# taken from: generative power and closure properties of WK grammars (lemma 14)
 
 rules = [
 	cRule('S', [(['a'], []), 'S', (['a'], ['a'])]),
@@ -108,36 +122,53 @@ rules = [
 g7 = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
 g7.desc = 'a^n b^m a^n where 2n <= m <= 3n'
 
-############################ GRAMMAR 8:   ??? WK CYK    ###################################################################################
+# GRAMMAR 8
+# accepted strings: ({a,t,c,g}*ctg{a,t,c,g}*)*
+# taken from: generative power and closure properties of WK grammars (chapter 6)
+rules = [
+	cRule('S', [(['a'], ['t']), 'S']),
+	cRule('S', [(['t'], ['a']), 'S']),
+	cRule('S', [(['g'], ['c']), 'S']),
+	cRule('S', [(['c'], ['g']), 'A']),
+	cRule('A', [(['c'], ['g']), 'A']),
+	cRule('A', [(['a'], ['t']), 'S']),
+	cRule('A', [(['g'], ['c']), 'S']),
+	cRule('A', [(['t'], ['a']), 'B']),
+	cRule('B', [(['c'], ['g']), 'A']),
+	cRule('B', [(['a'], ['t']), 'S']),
+	cRule('B', [(['t'], ['a']), 'S']),
+	cRule('B', [(['g'], ['c']), 'C']),
+	cRule('C', [(['a'], ['t']), 'C']),
+	cRule('C', [(['t'], ['a']), 'C']),
+	cRule('C', [(['g'], ['c']), 'C']),
+	cRule('C', [(['c'], ['g']), 'C']),
+	cRule('C', [([], [])])
+]
+
+# GRAMMAR 9
+# accepted strings:
+# taken from: generative power and closure properties of WK grammars (example 31)
+
+
+# GRAMMAR 10
+# accepted strings: |a| == |b| and for any prefix: |a| >= |b|
+# taken from: WK cyk paper
 
 rules = [
 	cRule('S', ['S', 'S']),
-	cRule('S', ['Tua', 'Y1']),
-	cRule('Y1', ['Tda', 'Y2']),
-	cRule('Y2', ['S', 'Y3']),
-	cRule('Y3', ['Tub', 'Tdb']),
-	cRule('S', ['Tua', 'S']),
-	cRule('S', ['Tua', 'A']),
-	cRule('A', ['Tub', 'Y4']),
-	cRule('Y4', ['Tda', 'A']),
-	cRule('A', ['Tub', 'Y5']),
-	cRule('Y5', ['Tda', 'B']),
-	cRule('A', ['Tub', 'Tda']),
-	cRule('B', ['Tdb', 'B']),
+	cRule('S', [(['a'], []), ([], ['a']), 'S', (['b'], []), ([], ['b'])]),
+	cRule('S', [(['a'], []), 'S']),
+	cRule('S', [(['a'], []), 'A']),
+	cRule('A', [(['b'], []), ([], ['a']), 'A']),
+	cRule('A', [(['b'], []), ([], ['a']), 'B']),
+	cRule('A', [(['b'], []), ([], ['a'])]),
+	cRule('B', [([], ['b']), 'B']),
 	cRule('B', [([], ['b'])]),
 	cRule('B', ['B', 'B']),
-	cRule('B', ['Tua', 'Y6']),
-	cRule('Y6', ['Tda', 'Y7']),
-	cRule('Y7', ['S', 'Y8']),
-	cRule('Y8', ['Tub', 'Tdb']),
-	cRule('B', ['Tua', 'S']),
-	cRule('B', ['Tua', 'A']),
-	cRule('Tua', [(['a'], [])]),
-	cRule('Tub', [(['b'], [])]),
-	cRule('Tda', [([], ['a'])]),
-	cRule('Tdb', [([], ['b'])])
+	cRule('B', [(['a'], []), ([], ['a']), 'S', (['b'], []), ([], ['b'])]),
+	cRule('B', [(['a'], []), 'S']),
+	cRule('B', [(['a'], []), 'A'])
 ]
 
-nts = ['S', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'A', 'B', 'Tua', 'Tub', 'Tda', 'Tdb']
-ts = ['a', 'b']
-rel = [('a', 'a'), ('b', 'b')]
+g8 = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
+g8.desc = '|a| == |b| and for any prefix: |a| >= |b|'

@@ -139,7 +139,7 @@ class cWK_CFG:
 		self.generate_rule_dict()
 		self.find_erasable_nts()
 
-		self.distance_calc_strategy = 2
+		self.distance_calc_strategy = 3
 		self.distance_calc_strategies_list = [
 			('no heuristic', self.compute_distance_no_heuristic),
 			('non terms distance', self.compute_distance_nt_distance),
@@ -676,7 +676,6 @@ class cWK_CFG:
 		openQueue.put(initStatus)
 		openSet: Set[int] = set()
 		openSet.add(initStatus.hashNo)
-		closedSet: Set[int] = set()
 
 		startTime = time.time()
 
@@ -684,24 +683,23 @@ class cWK_CFG:
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
 				debug('taking too long')
-				return len(openSet), len(closedSet), None
+				return len(openSet), 0, None
 
 			debug('\n--------------------------------------')
-			debug(f'OPEN STATES: {len(openSet)}, CLOSED STATES: {len(closedSet)}')
+			debug(f'OPEN+CLOSED STATES: {len(openSet)}')
 			debug('--------------------------------------')
 			currentWordStatus = openQueue.get()
-			closedSet.add(currentWordStatus.hashNo)
 			#print(wordToStr(currentWordStatus.word))
 
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
 					self.printPath(nextWordStatus)
-					return len(openSet), len(closedSet), True
-				if nextWordStatus.hashNo not in openSet and nextWordStatus.hashNo not in closedSet:
+					return len(openSet), 0, True
+				if nextWordStatus.hashNo not in openSet:
 					openQueue.put(nextWordStatus)
 					openSet.add(nextWordStatus.hashNo)
 
-		return len(openSet), len(closedSet), False
+		return len(openSet), 0, False
 
 
 	def is_result(self, word: tWord, goal: str) -> bool:
@@ -710,6 +708,7 @@ class cWK_CFG:
 		# upper and lower strands must have the same length
 		# upper and lower strands must fulfil compl. relation
 		# upper strand must equal goal string
+		#return False
 
 		if len(word) != 1:
 			return False

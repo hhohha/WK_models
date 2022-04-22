@@ -1,17 +1,56 @@
 #!/usr/bin/python3
 
-from grammars import g2
+from grammars import g8, g2
 from ctf_WK_grammar import *
 import time
+from itertools import product
 
-l = 300
 
-strinput = 'a'*l + 'b'*l
-start = time.time()
-res = g2.can_generate(strinput)
-end = time.time()
-timeTaken = end-start
-print(f'{strinput} - {res} in {timeTaken}')
+
+#g.to_wk_cnf()
+for rule in g.rules:
+	print(rule)
+
+
+#start = time.time()
+#for s in positives:
+	#print(s, '-', g.can_generate(s))
+	##print(s, '-', g.run_wk_cyk(s))
+#end = time.time()
+
+#print('time taken:', end-start)
+
+#start = time.time()
+for i in range(1, 7):
+	for t in product('ab', repeat=i):
+		s = ''.join(t)
+		res = g.can_generate(s)
+		#res = g8.run_wk_cyk(s)
+		print(f'{s} - {res[2]}')
+		if res[2]:
+			accepted.append(s)
+
+print('-------------')
+for s in accepted:
+	print(s)
+
+#end = time.time()
+#print('time taken:', end-start)
+
+#for s in tests:
+	#res = g8.can_generate(s)
+	#if res[2]:
+		#print(f'{s} - {res}')
+
+
+#l = 300
+
+#strinput = 'a'*l + 'b'*l
+#start = time.time()
+#res = g2.can_generate(strinput)
+#end = time.time()
+#timeTaken = end-start
+#print(f'{strinput} - {res} in {timeTaken}')
 
 # example from https://www.ccs.neu.edu/home/viola/classes/slides/slides-context-free.pdf
 #L = { x2y : x,y in {0,1}* |x| ≠ |y| }

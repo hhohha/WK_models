@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-import time
-from grammars import g1, g2, g3, g4, g5, g6, g7
+import time, random
+from grammars import g1, g2, g3, g4, g5, g6, g7, g8
 
 class cPerfTester:
 	def __init__(self):
@@ -27,25 +27,38 @@ class cPerfTester:
 		print(f'| STRATEGY{" "*87}| TIME TAKEN | STATES (ANALYSED/GENERATED) | ACCEPTED |')
 		print(f'|{"-"*150}|')
 
-	def run_test_suite(self, grammar, inputStr, shouldAccept):
+	def run_test_suite(self, grammar, inputStr, shouldAccept, times=1):
 		self.testCnt += 1
 		self.printHeader(grammar, inputStr, shouldAccept)
 
 		for idx, t in enumerate(grammar.distance_calc_strategies_list):
 			grammar.distance_calc_strategy = idx
-			start = time.time()
-			openStates, closedStates, actual = grammar.can_generate(inputStr)
-			end = time.time()
-			timeTaken = round(end - start, 5)
+			avgTime = 0
+			avgStates = 0
+			timeouted = False
+
+			for i in range(times):
+				start = time.time()
+				openStates, closedStates, actual = grammar.can_generate(inputStr)
+				end = time.time()
+				timeTaken = round(end - start, 5)
+				avgTime += timeTaken
+				avgStates += openStates
+				if actual is None:
+					timeouted = True
+
+			avgTime = round(avgTime / times, 5)
+			avgStates = round(avgStates / times)
+
 			strategy = grammar.distance_calc_strategies_list[idx][0]  # TODO - ugly, refactor
-			if actual is None:
+			if timeouted:
 				result = "TIMEOUT"
 			elif actual == shouldAccept:
 				result = actual
 			else:
 				result = "ERROR"
 			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
-			print(f'| {strategy:95}| {timeTaken:10} | {states:28}| {result:8} |')
+			print(f'| {strategy:95}| {avgTime:10} | {avgStates:28}| {result:8} |')
 		print(f'|{"-"*150}|')
 
 		grammar.backup()
@@ -56,35 +69,48 @@ class cPerfTester:
 
 		for idx, t in enumerate(grammar.distance_calc_strategies_list):
 			grammar.distance_calc_strategy = idx
-			start = time.time()
-			openStates, closedStates, actual = grammar.can_generate(inputStr)
-			end = time.time()
-			timeTaken = round(end - start, 5)
+			avgTime = 0
+			avgStates = 0
+			timeouted = False
+
+			for i in range(times):
+				start = time.time()
+				openStates, closedStates, actual = grammar.can_generate(inputStr)
+				end = time.time()
+				timeTaken = round(end - start, 5)
+				avgTime += timeTaken
+				avgStates += openStates
+				if actual is None:
+					timeouted = True
+
+			avgTime = round(avgTime / times, 5)
+			avgStates = round(avgStates / times)
+
 			strategy = grammar.distance_calc_strategies_list[idx][0]  # TODO - ugly, refactor
-			if actual is None:
+			if timeouted:
 				result = "TIMEOUT"
 			elif actual == shouldAccept:
 				result = actual
 			else:
 				result = "ERROR"
 			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
-			print(f'| {strategy:95}| {timeTaken:10} | {states:28}| {result:8} |')
+			print(f'| {strategy:95}| {avgTime:10} | {avgStates:28}| {result:8} |')
 
 		print(f'|{"-"*150}|')
-		#start = time.time()
-		#actual = grammar.run_wk_cyk(inputStr)
-		#end = time.time()
-		#timeTaken = round(end - start, 5)
-		#strategy = 'wk cyk'
-		#closedStates = 'N/A'
-		#if actual is None:
-			#result = "TIMEOUT"
-		#elif actual == shouldAccept:
-			#result = actual
-		#else:
-			#result = "ERROR"
+		start = time.time()
+		actual = grammar.run_wk_cyk(inputStr)
+		end = time.time()
+		timeTaken = round(end - start, 5)
+		strategy = 'wk cyk'
+		closedStates = 'N/A'
+		if actual is None:
+			result = "TIMEOUT"
+		elif actual == shouldAccept:
+			result = actual
+		else:
+			result = "ERROR"
 
-		#print(f'| {strategy:95}| {timeTaken:10} | N/A{" "*25}| {result:8} |')
+		print(f'| {strategy:95}| {timeTaken:10} | N/A{" "*25}| {result:8} |')
 		print(f'|{"="*150}|\n\n\n')
 		grammar.restore()
 
@@ -97,21 +123,28 @@ t = cPerfTester()
 #t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
 #t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
 
-#t.run_test_suite(g1, 'a'*401, True)
-#t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
-#l = 300
-#t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
-
-l = 500
+# ------------- LEVEL 2 ---------------
+t.run_test_suite(g1, 'a'*401, True)
+t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
+l = 300
+t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
 t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
-#t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
-#t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
-#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
 
-#t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaa', False)
-#t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
+s = ''.join([random.choice(['a','b']) for i in range(l)])
+t.run_test_suite(g6, s + 'c' + s, True)
+
+n, m = 100, 250
+t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
+t.run_test_suite(g8, 'aaaaaaaaaaaaaabbbbbbbbbbbbbbaabbab', True)
+
+# ------------- NEGATIVE ----------------
+#t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', False)
+#t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
 #t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrrr', False)
-#t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbb', False)
+#t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbbb', False)
 #t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
 #t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
 #t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)
+#t.run_test_suite(g8, 'aaaaabbbbbb', False)
+
