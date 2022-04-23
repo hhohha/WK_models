@@ -130,7 +130,7 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 5
+		self.timeLimit = 20
 		self.trimms = [0, 0, 0, 0]
 
 		if not self.is_consistent():
@@ -142,9 +142,8 @@ class cWK_CFG:
 		self.distance_calc_strategy = 3
 		self.distance_calc_strategies_list = [
 			('no heuristic', self.compute_distance_no_heuristic),
-			('non terms distance', self.compute_distance_nt_distance),
 			('prefer less non-terminals', self.compute_distance_prefer_terms),
-			#('prefer more non-terminals', self.compute_distance_prefer_non_terms),
+			('non terms distance', self.compute_distance_nt_distance),
 			('prefer prefix matching goal', self.compute_distance_terms_match),
 			('individual terms matching goal', self.compute_distance_terms_match2),
 			('matching goal + prefer terminals', self.compute_distance_terms_match3),

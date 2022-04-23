@@ -144,11 +144,25 @@ rules = [
 	cRule('C', [(['c'], ['g']), 'C']),
 	cRule('C', [([], [])])
 ]
+g8 = cWK_CFG(['S', 'A', 'B', 'C'], ['a', 't', 'g', 'c'], 'S', rules, [('a', 't'), ('t', 'a'), ('g', 'c'), ('c', 'g')])
+g8.desc = '({a,t,c,g}*ctg{a,t,c,g}*)*'
 
 # GRAMMAR 9
-# accepted strings:
+# accepted strings: (l^n r^n)^k where n does not increase (e.g. accepts llrrlr but not lrllrr)
 # taken from: generative power and closure properties of WK grammars (example 31)
+rules = [
+	cRule('S', [(['l'], []), 'S']),
+	cRule('S', [(['l'], []), 'A']),
+	cRule('A', [(['r'], ['l']), 'A']),
+	cRule('A', [(['r'], ['l']), 'B']),
+	cRule('B', [(['l'], ['r']), 'B']),
+	cRule('B', [([], ['r']), 'B']),
+	cRule('B', [([], [])]),
+	cRule('B', ['A'])
+]
 
+g = cWK_CFG(['S', 'A', 'B'], ['l', 'r'], 'S', rules, [('l', 'l'), ('r', 'r')])
+g.desc = '(l^n r^n)^k where n does not increase'
 
 # GRAMMAR 10
 # accepted strings: |a| == |b| and for any prefix: |a| >= |b|
@@ -170,5 +184,66 @@ rules = [
 	cRule('B', [(['a'], []), 'A'])
 ]
 
-g8 = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
-g8.desc = '|a| == |b| and for any prefix: |a| >= |b|'
+g10 = cWK_CFG(['S', 'A', 'B'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
+g10.desc = '|a| == |b| and for any prefix: |a| >= |b|'
+
+# GRAMMAR 11
+# accepted string: x2y : x,y in {0,1}* |x| != |y| - adjusted CF grammar
+# taken from: https://www.ccs.neu.edu/home/viola/classes/slides/slides-context-free.pdf
+
+rules = [
+	cRule('S', ['B', 'L']),
+	cRule('S', ['R', 'B']),
+	cRule('L', ['B', 'L']),
+	cRule('L', ['A']),
+	cRule('R', ['R', 'B']),
+	cRule('R', ['A']),
+	cRule('A', ['B', 'A', 'B']),
+	cRule('A', [(['2'], ['2'])]),
+	cRule('B', [(['0'], ['0'])]),
+	cRule('B', [(['1'], ['1'])])
+]
+g11 = cWK_CFG(['S', 'L', 'R', 'A', 'B'], ['0', '1', '2'], 'S', rules, [('0', '0'), ('1', '1'), ('2', '2')])
+g11.desc = 'x2y : x,y in {0,1}* |x| != |y|'
+
+# GRAMMAR 12
+# accepted strings: regular expressions with ones and zeros and following symbols
+# p  :  +   (plus sign)
+# e  :  Ø   (empty set)
+# o  :  (   (left parenthesis)
+# c  :  )   (right parenthesis)
+# l  :  3   (empty string)
+# s  :  *   (star)
+# d  :  •   (dot / concatenation operator)
+# it is adjusted CF grammar
+# example from: https://jeffe.cs.illinois.edu/teaching/algorithms/models/05-context-free.pdf
+
+rules = [
+	cRule('S', ['T']),
+	cRule('S', ['T', (['p'], ['p']), 'S']),
+	cRule('T', ['F']),
+	cRule('T', ['F', 'T']),
+	cRule('F', [(['e'], ['e'])]),
+	cRule('F', ['W']),
+	cRule('F', [(['o'], ['o']), 'T', (['p'], ['p']), 'S', (['c'], ['c'])]),
+	cRule('F', ['X', (['s'], ['s'])]),
+	cRule('F', [(['o'], ['o']), 'Y', (['c'], ['c']), (['s'], ['s'])]),
+	cRule('X', [(['e'], ['e'])]),
+	cRule('X', [(['l'], ['l'])]),
+	cRule('X', [(['0'], ['0'])]),
+	cRule('X', [(['1'], ['1'])]),
+	cRule('Y', ['T', (['p'], ['p']), 'S']),
+	cRule('Y', ['F', (['d'], ['d']), 'T']),
+	cRule('Y', ['X', (['s'], ['s'])]),
+	cRule('Y', [(['o'], ['o']), 'Y', (['c'], ['c']), (['s'], ['s'])]),
+	cRule('Y', ['Z', 'Z']),
+	cRule('W', [(['l'], ['l'])]),
+	cRule('W', ['Z']),
+	cRule('Z', [(['0'], ['0'])]),
+	cRule('Z', [(['1'], ['1'])]),
+	cRule('Z', ['Z', 'Z'])
+]
+nts = ['S', 'T', 'F', 'X', 'Y', 'W', 'Z']
+ts = ['p', 'e', 'o', 'c', 'l', 's', 'd', '0', '1']
+g12 = cWK_CFG(nts, ts, 'S', rules, [(x, x) for x in ts])
+g12.desc = 'RE with 0 and 1 and operators: p-plus, e-empty set, o-opening par, c-closing par, l-epsilon, s-star, d-dot'
