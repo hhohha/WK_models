@@ -7,10 +7,10 @@ from ctf_WK_grammar import *
 # my example
 
 rules = [
-	cRule('A', ['A', 'A', 'A']),
-	cRule('A', [(['a'], ['a'])])
+	cRule('S', ['S', 'S', 'S']),
+	cRule('S', [(['a'], ['a'])])
 ]
-g1 = cWK_CFG(['A'], ['a'], 'A', rules, [('a', 'a')])
+g1 = cWK_CFG(['S'], ['a'], 'S', rules, [('a', 'a')])
 g1.desc = 'a(aa)*'
 
 # GRAMMAR 2

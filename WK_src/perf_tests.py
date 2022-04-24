@@ -24,7 +24,7 @@ class cPerfTester:
 		print(f'| SHOULD ACCEPT{" "*29}| {("Yes" if shouldAccept else "No"):105}|')
 		print(f'| TIMEOUT{" "*35}| {str(grammar.timeLimit):105}|')
 		print(f'|{"-"*150}|')
-		print(f'| STRATEGY{" "*87}| TIME TAKEN | STATES (ANALYSED/GENERATED) | ACCEPTED |')
+		print(f'| STRATEGY{" "*87}| TIME TAKEN | STATES ANALYSED           | ACCEPTED |')
 		print(f'|{"-"*150}|')
 
 	def run_test_suite(self, grammar, inputStr, shouldAccept, times=1):
@@ -115,28 +115,27 @@ class cPerfTester:
 		grammar.restore()
 
 t = cPerfTester()
-#t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', True)
-#t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', True)
-#t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrr', True)
-#t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbb', True)
-#t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
-#t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
-#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', True)
+t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', True)
+t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrr', True)
+t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbb', True)
+t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
+t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
+t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
 
 # ------------- LEVEL 2 ---------------
-t.run_test_suite(g1, 'a'*401, True)
-t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
-l = 300
-t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
-t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
-t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
+#t.run_test_suite(g1, 'a'*401, True)
+#t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
+#l = 300
+#t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
+#t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
+#t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
 
-s = ''.join([random.choice(['a','b']) for i in range(l)])
-t.run_test_suite(g6, s + 'c' + s, True)
+#s = ''.join([random.choice(['a','b']) for i in range(l)])
+#t.run_test_suite(g6, s + 'c' + s, True)
 
-n, m = 100, 250
-t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
-t.run_test_suite(g8, 'aaaaaaaaaaaaaabbbbbbbbbbbbbbaabbab', True)
+#n, m = 100, 250
+#t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
 
 # ------------- NEGATIVE ----------------
 #t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', False)
@@ -146,5 +145,4 @@ t.run_test_suite(g8, 'aaaaaaaaaaaaaabbbbbbbbbbbbbbaabbab', True)
 #t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
 #t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
 #t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)
-#t.run_test_suite(g8, 'aaaaabbbbbb', False)
 

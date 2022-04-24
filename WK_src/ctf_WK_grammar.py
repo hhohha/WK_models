@@ -130,7 +130,7 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 20
+		self.timeLimit = 5
 		self.trimms = [0, 0, 0, 0]
 
 		if not self.is_consistent():

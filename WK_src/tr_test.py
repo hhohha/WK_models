@@ -1,34 +1,46 @@
 #!/usr/bin/python3
 
-from grammars import g1
+from grammars import g4
 from ctf_WK_grammar import *
 import time
 from itertools import product
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-results = []
-lens = []
 
-g1.to_wk_cnf()
-try:
-	for i in range(1, 50):
-		s = 'a' + 'aa'*i
-		start = time.time()
-		#res = g1.run_wk_cyk(s)
-		x, y, res = g1.can_generate(s)
-		end = time.time()
-		taken = round(end-start, 3)
-		lens.append(i)
-		results.append(taken)
+g4.backup()
+g4.to_wk_cnf()
+g4.restore()
 
-		print(f'{s} - {res}     time: {taken}')
-except:
-	pass
+g4.remove_lambda_rules()
+g4.remove_unit_rules()
 
-print(results)
+g4.remove_unterminatable_symbols()
 
-plt.plot(lens, results)
-plt.show()
+print(g4.rules)
+
+#results = []
+#lens = []
+
+#g1.to_wk_cnf()
+#try:
+	#for i in range(1, 50):
+		#s = 'a' + 'aa'*i
+		#start = time.time()
+		##res = g1.run_wk_cyk(s)
+		#x, y, res = g1.can_generate(s)
+		#end = time.time()
+		#taken = round(end-start, 3)
+		#lens.append(i)
+		#results.append(taken)
+
+		#print(f'{s} - {res}     time: {taken}')
+#except:
+	#pass
+
+#print(results)
+
+#plt.plot(lens, results)
+#plt.show()
 
 
 #start = time.time()
@@ -47,3 +59,10 @@ plt.show()
 	#print(s)
 
 #print('time taken:', end-start)
+
+
+S -> a/λ A b/λ
+S -> a/λ S b/λ
+A -> c/a A
+A -> λ/c B λ/b
+B -> λ/c B λ/b
