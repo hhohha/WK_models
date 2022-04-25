@@ -149,12 +149,17 @@ class cWK_CFG:
 			('matching goal + prefer terminals', self.compute_distance_terms_match3),
 		]
 
-		for rule in self.rules:
-			for letter in rule.rhs:
-				if is_nonterm(letter) and letter in self.erasableNts:
-					rule.ntCnt -= 1
-
 		self.calc_nt_distances()
+		self.calc_min_terms_from_nt()
+		self.calc_rules_nt_cnts()
+
+
+	def calc_rules_nt_cnts(self) -> None:
+		for rule in self.rules:
+			rule.ntCnt = -self.termsFromNts[rule.lhs]
+			for letter in rule.rhs:
+				if is_nonterm(letter):
+					rule.ntCnt += self.termsFromNts[letter]
 
 	def restore(self) -> None:
 		self.rules = self.rules_backup
@@ -162,6 +167,8 @@ class cWK_CFG:
 		self.ts = self.ts_backup
 		self.generate_rule_dict()
 		self.calc_nt_distances()
+		self.calc_min_terms_from_nt()
+		self.find_erasable_nts()
 
 	def backup(self) -> None:
 		self.rules_backup = deepcopy(self.rules)
@@ -188,6 +195,30 @@ class cWK_CFG:
 				d = self.calc_word_distance(rule.rhs) + 1
 				if d < self.ntDistances[rule.lhs]:
 					self.ntDistances[rule.lhs] = d
+					loop = True
+
+	def calc_terms_cnt(self, word: tWord) -> int:
+		retVal = 0
+		for letter in word:
+			if is_term(letter):
+				retVal += len(letter[0]) + len(letter[1])
+			else:
+				retVal += self.termsFromNts[letter]
+		return retVal
+
+	def calc_min_terms_from_nt(self):
+		MAX_TERMS = 20
+		self.termsFromNts: Dict[tNonTerm, int] = {}
+		for nt in self.nts:
+			self.termsFromNts[nt] = MAX_TERMS
+
+		loop = True
+		while loop:
+			loop = False
+			for rule in self.rules:
+				d = self.calc_terms_cnt(rule.rhs)
+				if d < self.termsFromNts[rule.lhs]:
+					self.termsFromNts[rule.lhs] = d
 					loop = True
 
 
@@ -516,7 +547,9 @@ class cWK_CFG:
 		# possible TODO - optimize terminal covering non-terms
 
 		self.calc_nt_distances()
+		self.calc_min_terms_from_nt()
 		self.erasableNts.clear()
+		self.calc_rules_nt_cnts()
 
 
 	def addToX(self, idx: t4DInt, nt: tNonTerm) -> None:
@@ -670,7 +703,7 @@ class cWK_CFG:
 	def can_generate(self, upperStr: str) -> Tuple[int, int, Optional[bool]]:
 		self.trimms = [0,0,0,0]
 		distance = self.calculate_distance([self.startSymbol], upperStr)
-		initStatus = cWordStatus([self.startSymbol], 0, 0, 1, None, distance)
+		initStatus = cWordStatus([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initStatus)
 		openSet: Set[int] = set()
@@ -682,7 +715,7 @@ class cWK_CFG:
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
 				debug('taking too long')
-				return len(openSet), 0, None
+				return len(openSet), self.trimms, None
 
 			debug('\n--------------------------------------')
 			debug(f'OPEN+CLOSED STATES: {len(openSet)}')
@@ -693,12 +726,12 @@ class cWK_CFG:
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
 					self.printPath(nextWordStatus)
-					return len(openSet), 0, True
+					return len(openSet), self.trimms, True
 				if nextWordStatus.hashNo not in openSet:
 					openQueue.put(nextWordStatus)
 					openSet.add(nextWordStatus.hashNo)
 
-		return len(openSet), 0, False
+		return len(openSet), self.trimms, False
 
 
 	def is_result(self, word: tWord, goal: str) -> bool:
@@ -746,6 +779,8 @@ class cWK_CFG:
 		return regex
 
 	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		#if self.trimms[0] % 1000 == 0:
+			#print(wordToStr(wordStatus.word))
 		longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
@@ -783,11 +818,7 @@ class cWK_CFG:
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
 					newWord = self.apply_rule(wordStatus.word, ntIdx, rule.rhs)
-					if rule.lhs in self.erasableNts:
-						d = 0
-					else:
-						d = 1
-					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt - d, wordStatus, 0)
+					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt, wordStatus, 0)
 					if self.is_word_feasible(newWordStatus, goalStr):
 						newWordStatus.distance = self.calculate_distance(newWord, goalStr)
 						retLst.append(newWordStatus)

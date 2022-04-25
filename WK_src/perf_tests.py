@@ -124,25 +124,25 @@ t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', Tr
 t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
 
 # ------------- LEVEL 2 ---------------
-#t.run_test_suite(g1, 'a'*401, True)
-#t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
-#l = 300
-#t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
-#t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
-#t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
+t.run_test_suite(g1, 'a'*401, True)
+t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
+l = 300
+t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
+t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
+t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
 
-#s = ''.join([random.choice(['a','b']) for i in range(l)])
-#t.run_test_suite(g6, s + 'c' + s, True)
+s = ''.join([random.choice(['a','b']) for i in range(l)])
+t.run_test_suite(g6, s + 'c' + s, True)
 
-#n, m = 100, 250
-#t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
+n, m = 100, 250
+t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
 
 # ------------- NEGATIVE ----------------
-#t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', False)
-#t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
-#t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrrr', False)
-#t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbbb', False)
-#t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
-#t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
-#t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)
+t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', False)
+t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
+t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrrr', False)
+t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbbb', False)
+t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
+t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
+t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)
 

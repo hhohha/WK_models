@@ -1,68 +1,72 @@
 #!/usr/bin/python3
 
-from grammars import g4
+from grammars import g1
 from ctf_WK_grammar import *
 import time
 from itertools import product
 #import matplotlib.pyplot as plt
 
+g1.to_wk_cnf()
 
-g4.backup()
-g4.to_wk_cnf()
-g4.restore()
+print(g1.termsFromNts)
 
-g4.remove_lambda_rules()
-g4.remove_unit_rules()
+#print(g1.can_generate('a' * 26))
 
-g4.remove_unterminatable_symbols()
-
-print(g4.rules)
-
-#results = []
-#lens = []
-
-#g1.to_wk_cnf()
+#timeTaken = 0
+#lens, times = [], []
+#s = ''
 #try:
-	#for i in range(1, 50):
-		#s = 'a' + 'aa'*i
+	#while timeTaken < 50:
+		#s += 'aa'
 		#start = time.time()
-		##res = g1.run_wk_cyk(s)
-		#x, y, res = g1.can_generate(s)
+		##res = g1.can_generate(s)
+		#res = g1.run_wk_cyk(s)
 		#end = time.time()
-		#taken = round(end-start, 3)
-		#lens.append(i)
-		#results.append(taken)
-
-		#print(f'{s} - {res}     time: {taken}')
+		#timeTaken = round(end - start, 3)
+		#lens.append(len(s))
+		#times.append(timeTaken)
+		#print(f'{len(s)}   -   {res}   -   {timeTaken}')
 #except:
 	#pass
 
-#print(results)
-
-#plt.plot(lens, results)
+#plt.plot(lens, times)
 #plt.show()
 
+# standard search
+# positive with regex       1001   -   (2501, [1, 0, 0, 500], True)       -   1.18
+# positive without regex    1001   -   (3001, [1, 0, 0, 0], True)         -   0.542
+# negative with regex        200   -   (20100, [300, 0, 0, 100], False)   -   3.944
+# negative without regex     200   -   (20200, [300, 0, 0, 0], False)     -   2.359
 
-#start = time.time()
-#accepted = []
-#for i in range(1, 13):
-	#for t in product('lr', repeat=i):
-		#s = ''.join(t)
-		##res = g.can_generate(s)
-		#res = g.run_wk_cyk(s)
-		#print(f'{s} - {res}')
-		#if res:
-			#accepted.append(s)
-#end = time.time()
-#print('-------------')
-#for s in accepted:
-	#print(s)
+# cnf search
+# positive with regex       1001   -   (8004, [2, 0, 0, 500], True)       -   2.146
+# positive without regex    1001   -   (11501, [4, 0, 0, 0], True)        -   1.914
+# negative with regex         14   -   (211084, [58424, 0, 0, 7], False)  -   5.968
+# negative without regex      14   -   (211091, [58424, 0, 0, 0], False)  -   4.254
 
-#print('time taken:', end-start)
+# wk-cyk
+# positive                    29   -   True                               -   5.177
+# negative                    28   -   False                              -   4.24
+
+# AFTER OPTIMIZATION OF NT CNT   ######################################################################
+# standard search
+# positive with regex       1001   -   (2499, [3, 0, 0, 500], True)       -   1.167
+# positive without regex    1001   -   (2999, [3, 0, 0, 0], True)         -   0.517
+# negative with regex        200   -   (10000, [199, 0, 0, 100], False)   -   1.328
+# negative without regex     200   -   (10100, [199, 0, 0, 0], False)     -   0.877
+
+# cnf search
+# positive with regex       1001   -   (10983, [7, 0, 0, 499], True)      -   2.643
+# positive without regex    1001   -   (8500, [5, 0, 0, 0], True)         -   1.445
+# negative with regex         14   -   (861, [127, 0, 0, 7], False)       -   0.019
+# negative without regex      14   -   (868, [127, 0, 0, 0], False)       -   0.014
 
 
-S -> a/λ A b/λ
-S -> a/λ S b/λ
-A -> c/a A
-A -> λ/c B λ/b
-B -> λ/c B λ/b
+#         tree     wk_cyk
+######################################
+#  24     0.717    1.846
+#  26     1.482    2.831
+#  28     3.039    4.263
+#  30     6.274    6.25
+#  32    12.878    9.06
+#  34    26.477    12.55
