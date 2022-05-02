@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
 from itertools import combinations
-from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any
+from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any, Callable
 from queue import PriorityQueue
 from copy import deepcopy
 import time
 import re
+import threading
 
 DEBUG = 0
 def debug(s):
@@ -40,6 +41,7 @@ E_STR_NO_HEURISTIC = 0
 E_STR_PREF_TERMS = 1
 E_STR_TERMS_MATCH = 2
 
+# TODO - rename word status to node
 class cWordStatus:
 	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus'], distance: int) -> None:
 		self.word = word
@@ -130,8 +132,22 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 5
-		self.trimms = [0, 0, 0, 0]
+		self.timeLimit = 20
+		self.pruneCnts: Dict[Callable, int] = {
+			self.prune_check_strands_len: 0,
+			self.prune_check_total_len: 0,
+			self.prune_check_word_start: 0,
+			self.prune_check_relation: 0,
+			self.prune_check_regex: 0
+		}
+
+		self.pruningOptions: Dict[Callable, bool] = {
+			self.prune_check_strands_len: True,
+			self.prune_check_total_len: True,
+			self.prune_check_word_start: True,
+			self.prune_check_relation: True,
+			self.prune_check_regex: True
+		}
 
 		if not self.is_consistent():
 			raise ValueError
@@ -139,14 +155,17 @@ class cWK_CFG:
 		self.generate_rule_dict()
 		self.find_erasable_nts()
 
-		self.distance_calc_strategy = 3
+		self.distance_calc_strategy = 0
 		self.distance_calc_strategies_list = [
-			('no heuristic', self.compute_distance_no_heuristic),
-			('prefer less non-terminals', self.compute_distance_prefer_terms),
-			('non terms distance', self.compute_distance_nt_distance),
-			('prefer prefix matching goal', self.compute_distance_terms_match),
-			('individual terms matching goal', self.compute_distance_terms_match2),
-			('matching goal + prefer terminals', self.compute_distance_terms_match3),
+			('aversion to nts', self.compute_distance_nts_aversion),                                       #1
+			('weighted aversion to nts', self.compute_distance_wighted_nts_aversion),                      #2
+			('start terms match goal', self.compute_distance_start_terms_match),                           #3
+			('all terms match goal', self.compute_distance_terms_match),                                   #4
+			('all terms match goal + aversion to nts', self.compute_distance_terms_match_nt_aversion),     #1, 4
+			('2+4', self.twoAndFour),                                                                      #2, 4
+			('1+3', self.oneAndThree),                                                                     #1, 3
+			('2+3', self.twoAndThree),                                                                     #2, 3
+			#('no heuristic', self.compute_distance_no_heuristic)
 		]
 
 		self.calc_nt_distances()
@@ -230,22 +249,25 @@ class cWK_CFG:
 		return 0
 
 
-	def compute_distance_prefer_terms(self, word: tWord, goal: str) -> int:
+	def compute_distance_nts_aversion(self, word: tWord, goal: str) -> int:
 		distance = 0
 		for letter in word:
 			if is_nonterm(letter):
 				distance += 1
 		return distance
 
-	def compute_distance_prefer_non_terms(self, word: tWord, goal: str) -> int:
+	def compute_distance_wighted_nts_aversion(self, word: tWord, goal: str) -> int:
 		distance = 0
 		for letter in word:
-			if is_term(letter):
-				distance += 1
+			if is_nonterm(letter):
+				distance += self.ntDistances[letter]
 		return distance
 
 
-	def compute_distance_terms_match(self, word: tWord, goal: str) -> int:
+	# look at terminals with some upper strands only
+	# if symbol in upper strand match goal -> priority increases
+	# once you find one that doesn't, finish
+	def compute_distance_start_terms_match(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -259,7 +281,10 @@ class cWK_CFG:
 		return distance
 
 
-	def compute_distance_terms_match2(self, word: tWord, goal: str) -> int:
+	# look at terminals with some upper strands only
+	# if symbol in upper strand match goal -> priority increases
+	# but unlike previous case, if you find one that doesn't match input, just descrease priority and continue
+	def compute_distance_terms_match(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -273,7 +298,8 @@ class cWK_CFG:
 						goalIdx += 1
 		return distance
 
-	def compute_distance_terms_match3(self, word: tWord, goal: str) -> int:
+	# combination of previous heuristic and nt aversion
+	def compute_distance_terms_match_nt_aversion(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -290,13 +316,63 @@ class cWK_CFG:
 				distance += 1
 		return distance
 
+	def twoAndFour(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
 
-	def compute_distance_nt_distance(self, word: tWord, goal: str) -> int:
-		distance = 0
 		for letter in word:
-			if is_nonterm(letter):
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 10
+						goalIdx += 1
+					else:
+						distance += 10
+						goalIdx += 1
+
+			else:
 				distance += self.ntDistances[letter]
 		return distance
+
+
+	def oneAndThree(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 10
+						goalIdx += 1
+					else:
+						return distance
+
+			else:
+				distance += 1
+		return distance
+
+	def twoAndThree(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						distance -= 10
+						goalIdx += 1
+					else:
+						return distance
+
+			else:
+				distance += self.ntDistances[letter]
+		return distance
+
+
+	#def compute_distance_nt_distance(self, word: tWord, goal: str) -> int:
+		#distance = 0
+		#for letter in word:
+			#if is_nonterm(letter):
+				#distance += self.ntDistances[letter]
+		#return distance
 
 	def find_erasable_nts(self) -> None:
 		self.erasableNts = set()
@@ -700,38 +776,36 @@ class cWK_CFG:
 			currentWordStatus = currentWordStatus.parent
 
 
-	def can_generate(self, upperStr: str) -> Tuple[int, int, Optional[bool]]:
-		self.trimms = [0,0,0,0]
+	def can_generate(self, upperStr: str) -> Tuple[int, List[Tuple[str, int]], Optional[bool]]:
+		for key in self.pruneCnts:
+			self.pruneCnts[key] = 0
 		distance = self.calculate_distance([self.startSymbol], upperStr)
 		initStatus = cWordStatus([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initStatus)
-		openSet: Set[int] = set()
-		openSet.add(initStatus.hashNo)
+		openQueueLen = 1
+		allStates: Set[int] = set()
+		allStates.add(initStatus.hashNo)
 
 		startTime = time.time()
-
 		while not openQueue.empty():
+
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
-				debug('taking too long')
-				return len(openSet), self.trimms, None
+				return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
 
-			debug('\n--------------------------------------')
-			debug(f'OPEN+CLOSED STATES: {len(openSet)}')
-			debug('--------------------------------------')
 			currentWordStatus = openQueue.get()
-			#print(wordToStr(currentWordStatus.word))
-
+			openQueueLen -= 1
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
 					self.printPath(nextWordStatus)
-					return len(openSet), self.trimms, True
-				if nextWordStatus.hashNo not in openSet:
+					return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
+				if nextWordStatus.hashNo not in allStates:
+					openQueueLen += 1
 					openQueue.put(nextWordStatus)
-					openSet.add(nextWordStatus.hashNo)
+					allStates.add(nextWordStatus.hashNo)
 
-		return len(openSet), self.trimms, False
+		return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
 
 
 	def is_result(self, word: tWord, goal: str) -> bool:
@@ -778,34 +852,64 @@ class cWK_CFG:
 
 		return regex
 
+	def prune_check_strands_len(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		return max(wordStatus.upperStrLen, wordStatus.lowerStrLen) <= len(goalStr)
+
+	def prune_check_total_len(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		return wordStatus.upperStrLen + wordStatus.lowerStrLen + wordStatus.ntLen <= 2 * len(goalStr)
+
+	def prune_check_word_start(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		return is_nonterm(wordStatus.word[0]) or goalStr.startswith(''.join(wordStatus.word[0][0]))
+
+	def prune_check_relation(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		if is_nonterm(wordStatus.word[0]):
+			return True
+		shorterStrand = min(len(wordStatus.word[0][0]), len(wordStatus.word[0][1]))
+		for idx in range(shorterStrand):
+			if (wordStatus.word[0][0][idx], wordStatus.word[0][1][idx]) not in self.relation:
+				return False
+		return True
+
+	def prune_check_regex(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		regex = self.word_to_regex(wordStatus.word)
+		return re.compile(regex).search(goalStr) is not None
+
 	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		#if self.trimms[0] % 1000 == 0:
-			#print(wordToStr(wordStatus.word))
+		for pruningFunc, pruningOptActive in self.pruningOptions.items():
+			if pruningOptActive and not pruningFunc(wordStatus, goalStr):
+				debug(f'not feasible - check failed in {pruningFunc.__name__}')
+				self.pruneCnts[pruningFunc] += 1
+				return False
+		return True
+
+
+	def is_word_feasible2(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+
 		longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
 		if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
-			self.trimms[0] += 1
+			#self.pruneCnts[0] += 1
 			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
 			return False
 
 		word = wordStatus.word
 		if is_term(word[0]):
 			if not goalStr.startswith(''.join(word[0][0])):
-				self.trimms[1] += 1
+				#self.pruneCnts[1] += 1
 				debug('not feasible (doesn\'t match goal string)')
 				return False
 
 			shorter_len = min(len(word[0][0]), len(word[0][1]))
 			for idx in range(shorter_len):
 				if (word[0][0][idx], word[0][1][idx]) not in self.relation:
-					self.trimms[2] += 1
+					#self.pruneCnts[2] += 1
 					debug('not feasible (doesn\'t fulfil relation)')
 					return False
 
 		regex = self.word_to_regex(word)
 		if re.compile(regex).search(goalStr) is None:
-			self.trimms[3] += 1
+			#self.pruneCnts[3] += 1
 			debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
 			return False
 

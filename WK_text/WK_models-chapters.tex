@@ -1,6 +1,5 @@
 \chapter{Introduction}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 I used the following stuff: \cite{A1}, \cite{DETERM_WKA}, \cite{A3}, \cite{A4}, \cite{A5}, \cite{A6}, \cite{A7}, \cite{WK_CYK}, \cite{WK_PUSHDOWN_AUT}, \cite{WK_FIN_AUT}
 
 
@@ -125,7 +124,7 @@ In practice the WK-CYK algorithm is feasible for input strings with roughly X sy
 
 \section{Using WK Pushdown automata}
 
-\chapter{Testing membership by searching the state tree}
+\chapter{Testing membership by searching the state space}
 This section will introduce the main algorithm of this thesis for testing memebership in WK context-free languages. The core is a standard Bread-first search algorithm (BFS) and then various optimizations are presented.
 
 Standard BFS starts with a root node. In case of grammars, that is the starting non-terminal symbol. Then the tree is built by applying all possible rules to all possible non-terminals. Each rule application generates a new node. The node is a word which consists of some non-terminals, some terminals in the upper strand and terminals in the lower strand. The node that is the solution needs to meet the following criteria:
@@ -217,22 +216,67 @@ The following heuristics always consider a given word and assign a number to it.
 
 
 \end{enumerate}
-% \section{Running non-deterministic WKA with BFA}
 
-% \section{Generating strands using CF WK grammar}
+\chapter{Implementation of the state space search}
 
-\chapter{Implementation of the algorithm}
+\chapter{Testing the state space search and comparison to WK-CYK}
 
-\chapter{Testing the algorithm and comparison to WK-CYK}
+\section{Watson-Crick grammars used for testing}
 
-\section{WK-grammars used for testing}
-
-For the testing of the tree search algorithm and the WK-CYK algorithm, following Watson-Crick grammars have been used. Unless stated otherwise, the set of non-terminals and the set of terminals will simply be defined by the rules -- all the uppercase letters are non-terminals of the grammar and all the lowercase letters are terminals. The starting non-terminal will be $S$ and the complementarity relation is going to be identity. With these specifications in mind the grammar can be defined by the rules only.
+For the testing of the tree search algorithm and the WK-CYK algorithm, following Watson-Crick grammars have been used. Unless stated otherwise, the set of non-terminals and the set of terminals will simply be defined by the rules -- all the uppercase letters are non-terminals of the grammar and all the lowercase letters and digits are terminals. The starting non-terminal will be $S$ and the complementarity relation is going to be identity. With these specifications in mind the grammar can be defined by the rules only.
 
 \begin{enumerate}
   \item{
     $$S \rightarrow \wkpair{a}{a} \:|\: S S S$$
+
     The accepted language is: $a(aa)^*$
+  }
+
+  \item{
+    $$S \rightarrow \wkpair{a}{a} S \:|\: \wkpair{b}{b} S \:|\: \wkpair{c}{c} S \:|\: \wkpair{abc}{abc}$$
+
+    The accepted language is: $(a+b+c)^*abc$
+
+    The aim of this example is to test inputs with the decisive part on the very end. This could be problematic since the algorithm expands the non-terminals from left to right.
+  }
+
+  \item{
+    $$S \rightarrow A \wkpair{abc}{abc}$$
+    $$A \rightarrow A \wkpair{a}{a} \:|\: A \wkpair{b}{b} \:|\: A \wkpair{c}{c} \:|\: \wkpair{\lambda}{\lambda}$$
+
+    The accepted language is: $(a+b+c)^*abc$
+
+    The aim of this example is, again, to test inputs with the decisive part on the very end while, at the same time, the rules are left recursive.
+  }
+
+  \item{
+    $$S \rightarrow Q \wkpair{a}{a} \:|\: A B C D E F G$$
+    $$Q \rightarrow Q Q \:|\: A B C D E F G$$
+    $$A \rightarrow \wkpair{a}{a} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$B \rightarrow \wkpair{b}{b} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$C \rightarrow \wkpair{c}{c} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$D \rightarrow \wkpair{d}{d} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$E \rightarrow \wkpair{e}{e} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$F \rightarrow \wkpair{f}{f} \:|\: \wkpair{\lambda}{\lambda}$$
+    $$G \rightarrow \wkpair{g}{g} \:|\: \wkpair{\lambda}{\lambda}$$
+
+    The accepted language is: $a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)^*a$ ($x?$ denotes that the symbol $x$ is optional, i.e. $(x + \epsilon)$ )
+
+    During the transformation of this grammar to WK-CNF (more specifically, when removing the $\lambda$-rules) the number of rules increases rapidly.
+  }
+
+
+  \item{
+    $$S \rightarrow \wkpair{a}{t} S \:|\: \wkpair{t}{a} S \:|\: \wkpair{g}{c} S \:|\: \wkpair{c}{g} A$$
+    $$A \rightarrow \wkpair{c}{g} A \:|\: \wkpair{a}{t} S \:|\: \wkpair{g}{c} S \:|\: \wkpair{t}{a} B$$
+    $$B \rightarrow \wkpair{c}{g} A \:|\: \wkpair{a}{t} S \:|\: \wkpair{t}{a} S \:|\: \wkpair{g}{c} C$$
+    $$C \rightarrow \wkpair{a}{t} C \:|\: \wkpair{t}{a} C \:|\: \wkpair{g}{c} C \:|\: \wkpair{c}{g} C \:|\: \wkpair{\lambda}{\lambda}$$
+
+    The complementarity relation of this grammar is: $\{(a, t), (t, a), (c, g), (g, c)\}$
+
+    The accepted language is: $(\{a,t,c,g\}^*ctg\{a,t,c,g\}^*)^*$
+
+    This grammar is a first step towards an actual analysis of the DNA. In this case it simply looks for the substring $ctg$
   }
 
   \item{
@@ -242,6 +286,48 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, following
 
 
     The accepted language is: $a^nb^n$ where $n \geq 1$
+  }
+
+  \item{
+    $$S \rightarrow \wkpair{a}{a} S \wkpair{a}{a} \:|\: \wkpair{b}{b} S \wkpair{b}{b} \:|\: \wkpair{c}{c}$$
+
+    The accepted language is: $wcw^R$ where $w \in \{a, b\}^*$($w^R$ is the reversal of string $w$)
+  }
+
+  \item{
+    $$S \rightarrow \wkpair{a}{a} S \wkpair{a}{a} \:|\: \wkpair{b}{b} S \wkpair{b}{b} \:|\: \wkpair{\lambda}{\lambda}$$
+
+    The accepted language is: $ww^R$ where $w \in \{a, b\}^*$
+  }
+
+  \item{
+    $$S \rightarrow B L \:|\: R B$$
+    $$L \rightarrow B L \:|\: A$$
+    $$R \rightarrow R B \:|\: A$$
+    $$A \rightarrow B A B \:|\: \wkpair{2}{2}$$
+    $$B \rightarrow \wkpair{0}{0} \:|\: \wkpair{0}{0}$$
+
+    The accepted language is: $x2y: x, y \in \{0,1\}^* \wedge \:|x| \neq |y|$
+  }
+
+  \item{
+    $$S \rightarrow T \:|\: T \wkpair{p}{p} S$$
+    $$T \rightarrow F \:|\: F T$$
+    $$F \rightarrow \wkpair{e}{e} \:|\: W \:|\: \wkpair{o}{o} T \wkpair{p}{p} S \wkpair{c}{c} \:|\: X \wkpair{s}{s} \:|\: \wkpair{o}{o} Y \wkpair{c}{c} \wkpair{s}{s}$$
+    $$X \rightarrow \wkpair{e}{e} \:|\: \wkpair{l}{l} \:|\: \wkpair{0}{0} \:|\: \wkpair{1}{1}$$
+    $$Y \rightarrow T \wkpair{p}{p} S \:|\: F \wkpair{d}{d} T \:|\: X \wkpair{s}{s} \:|\: \wkpair{o}{o} Y \wkpair{c}{c} \wkpair{s}{s} \:|\: Z Z$$
+    $$W \rightarrow \wkpair{l}{l} \:|\: Z$$
+    $$Z \rightarrow \wkpair{0}{0} \:|\: \wkpair{1}{1} \:|\: Z Z$$
+
+    The accepted language includes regular expressions over symbols 0 and 1 with parenthesis ($o$ for opening and $c$ for closing parenthesis) operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
+  }
+
+  \item{
+    $$S \rightarrow A \:|\: B \:|\: A B \:|\: B A$$
+    $$A \rightarrow \wkpair{a}{a} \:|\: \wkpair{a}{a} A \wkpair{a}{a} \:|\: \wkpair{a}{a} A \wkpair{b}{b} \:|\: \wkpair{b}{b} A \wkpair{b}{b} \:|\: \wkpair{b}{b} A \wkpair{a}{a}$$
+    $$B \rightarrow \wkpair{b}{b} \:|\: \wkpair{a}{a} B \wkpair{a}{a} \:|\: \wkpair{a}{a} B \wkpair{b}{b} \:|\: \wkpair{b}{b} B \wkpair{b}{b} \:|\: \wkpair{b}{b} B \wkpair{a}{a}$$
+
+    The accepted language is: $\{a, b\}^* \setminus ww$ where $w \in \{a, b\}^*$ -- i.e. the complement of the copy language.
   }
 
   \item{
@@ -289,14 +375,11 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, following
   }
 
   \item{
-    $$S \rightarrow \wkpair{a}{t} S \:|\: \wkpair{t}{a} S \:|\: \wkpair{g}{c} S \:|\: \wkpair{c}{g} A$$
-    $$A \rightarrow \wkpair{c}{g} A \:|\: \wkpair{a}{t} S \:|\: \wkpair{g}{c} S \:|\: \wkpair{t}{a} B$$
-    $$B \rightarrow \wkpair{c}{g} A \:|\: \wkpair{a}{t} S \:|\: \wkpair{t}{a} S \:|\: \wkpair{g}{c} C$$
-    $$C \rightarrow \wkpair{a}{t} C \:|\: \wkpair{t}{a} C \:|\: \wkpair{g}{c} C \:|\: \wkpair{c}{g} C \:|\: \wkpair{\lambda}{\lambda}$$
+    $$S \rightarrow S S \:|\: \wkpair{a}{a} S \wkpair{b}{b} \:|\: \wkpair{a}{\lambda} S \:|\: \wkpair{a}{\lambda} A$$
+    $$A \rightarrow \wkpair{b}{a} A \:|\: \wkpair{b}{a} B \:|\: \wkpair{b}{a}$$
+    $$B \rightarrow \wkpair{\lambda}{b} B \:|\: \wkpair{\lambda}{b} \:|\: B B \:|\: \wkpair{a}{a} S \wkpair{b}{b} \:|\: \wkpair{a}{\lambda} S \:|\: \wkpair{a}{\lambda} A$$
 
-    The complementarity relation of this grammar is: $\{(a, t), (t, a), (c, g), (g, c)\}$
-
-    The accepted language is: $(\{a,t,c,g\}^*ctg\{a,t,c,g\}^*)^*$
+    The accepted language is: $w: \#_a(w) = \#_b(w)$ and for any prefix $v$ of $w: \#_a(v) \geq \#_b(v)$  where $\#_a(x)$ denotes the number of occurrences of symbol $a$ in string $x$
   }
 
   \item{
@@ -304,57 +387,92 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, following
     $$A \rightarrow \wkpair{r}{l} A \:|\: \wkpair{r}{l} B$$
     $$B \rightarrow \wkpair{l}{r} B \:|\: \wkpair{\lambda}{r} B \:|\: \wkpair{\lambda}{\lambda} \:|\: A$$
 
-    The accepted language is: $(l^n r^n)^k$ where $n$ does not increase \todo{explain this}
+    The accepted language is: $(l^n r^n)^k$ where $n$ does not increase for subsequent $k$. For instance: $lllrrrlrlr$ is within the language, $llrrlllrrr$ is not.
   }
 
   \item{
-    $$S \rightarrow S S \:|\: \wkpair{a}{a} S \wkpair{b}{b} \:|\: \wkpair{a}{\lambda} S \:|\: \wkpair{a}{\lambda} A$$
-    $$A \rightarrow \wkpair{b}{a} A \:|\: \wkpair{b}{a} B \:|\: \wkpair{b}{a}$$
-    $$B \rightarrow \wkpair{\lambda}{b} B \:|\: \wkpair{\lambda}{b} \:|\: B B \:|\: \wkpair{a}{a} S \wkpair{b}{b} \:|\: \wkpair{a}{\lambda} S \:|\: \wkpair{a}{\lambda} A$$
+    The grammar is identical to the grammar 13 with a difference in the complementarity relation. Relations between symbols $a, b$ and symbols $a, c$ are added.
 
-    The accepted language is: $w: \#_a = \#_b$ and for any prefix of $w: \#_a \geq \#_b$ ($\#_a, \#_b$ are counts of symbols $a$ and $b$)
+    This means that the relation is: $\rho = \{(a, a), (b, b), (c, c), (a, b), (b, a), (a, c), (c, a)\}$
+
+    The accepted language is: $a^n b^m c^n$ where $n, m \geq 1$
   }
 
   \item{
-    $$S \rightarrow B L \:|\: R B$$
-    $$L \rightarrow B L \:|\: A$$
-    $$R \rightarrow R B \:|\: A$$
-    $$A \rightarrow B A B \:|\: \wkpair{2}{2}$$
-    $$B \rightarrow \wkpair{0}{0} \:|\: \wkpair{1}{1}$$
+	The grammar is identical to the grammar 14 with a difference in the complementarity relation. Relation between symbols $a, b$ is added making the relation $\rho = \{(a, a), (b, b), (c, c), (d, d), (a, b), (b, a)\}$
 
-    The accepted language is: $x2y$ where $x, y \in \{0, 1\}^* $ and $|x| \neq |y|$
+	The accepted language is: $a^m b^n c^o d^p$ where $m, n, o, p \geq 1 \wedge m+n = o+p$
   }
 
-  \item{
-    $$S \rightarrow T \:|\: T \wkpair{p}{p} S$$
-    $$T \rightarrow F \:|\: F T$$
-    $$F \rightarrow \wkpair{e}{e} \:|\: W \:|\: \wkpair{o}{o} T \wkpair{p}{p} S \wkpair{c}{c} \:|\: X \wkpair{s}{s} \:|\: \wkpair{o}{o} Y \wkpair{c}{c} \wkpair{s}{s}$$
-    $$X \rightarrow \wkpair{e}{e} \:|\: \wkpair{l}{l} \:|\: \wkpair{0}{0} \:|\: \wkpair{1}{1}$$
-    $$Y \rightarrow T \wkpair{p}{p} S \:|\: F \wkpair{d}{d} T \:|\: X \wkpair{s}{s} \:|\: \wkpair{o}{o} Y \wkpair{c}{c} \wkpair{s}{s} \:|\: Z Z$$
-    $$W \rightarrow \wkpair{l}{l} \:|\: Z$$
-    $$Z \rightarrow \wkpair{0}{0} \:|\: \wkpair{1}{1} \:|\: Z Z$$
 
-    The accepted language is regular expressions over symbols 0 and 1 with parenthesis ($o$ for opening and $c$ for closing parenthesis) operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
-  }
 \end{enumerate}
 
-\section{Methods of testing}
-For each of the grammars various input strings have been used. It is important to differentiate between the positive cases -- the inputs which are in the given language -- and negative cases.
-For each input, three types of tests are then executed:
+There are twenty grammars altogether. Grammars 1--5 are regular, 6--11 are context-free and 12--18 are context-sensitive. Grammars 19 and 20 are context-free but they also have a non-bijective complementarity relation.
+
+In reality, there are not 20 but 40 grammars, because all of them are going to be used in the basic form and after the transformation to the Chomsky normal form. That results in a different grammar (although accepting the same language) which is usually significantly more difficult to calculate with, as there are more rules and many rules generate more non-terminals.
+
+\section{Testing the state space search}
+
+There is a lot of parameters that could be tested and analysed. How efficient are the various heuristics (both pruning and rule preference) for different grammars. What inputs lengths are answered withing a reasonable time frame? Or more generally -- what is the relation between input length and time to get the answer? What are the memory requirements? What is the difference between input strings that are accepted and strings that are rejected? Is there a difference between some inputs of the same lengths?
+
+In order to analyse these questions, I have decided to test the state space search in the following four stages.
+\begin{enumerate}
+  \item{Comparison of the heuristics and analysis of their efficiency.}
+  \item{Analysis of the time and memory complexity based on the length of the input string for all grammars.}
+  \item{Testing if there are any different inputs of the same length which would result in a significant difference in the computation complexity.}
+  \item{Testing the WK-CYK algorithm with various grammars and inputs and comparision to the state space search.}
+\end{enumerate}
+
+\subsection{Comparison of the heuristics efficiency}
+The space state search algorithm contains five different tests of pruning the state tree (which can and usually do work at the same time) and five rule precedence heuristics (of which only one is active). In order to compare their effectiveness I used the script \textit{heuristic\_compare.py} which runs two tests for each of the 40 grammars -- with one input that will be accepted and one that will be rejected. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time -- specifically within the time limit of seven seconds, but also to last some measurable amount of time.
+
+Each of the 80 tests is run several times with different settings of the heurisctics. First, the rule precedence heuristics are tested -- all pruning options are turned on and the same test is executed with all the available rule precedences. Next, the test is run again, this time the rule precedence is fixed and the pruning options are turned off one at a time.
+
+The results that are produces by each tests are:
 \begin{itemize}
-  \item{Try to generate the input by the grammar using all of the available heuristics.}
-  \item{First transform the grammar to WK-CNF and then try to generate the input by the grammar using all of the available heuristics. In case the grammar was in tyhe WK-CNF already, this set of tests is redundant, but most grammars used for testing are not.}
-  \item{Transform the grammar to WK-CNF and try to accept the input using the WK-CYK algorithm.}
+  \item{time of the computation}
+  \item{number of states that have been analysed and maximum number of states that were in the queue, this is useful for memory requirement analysis}
+  \item{how many times which prunings were used}
 \end{itemize}
 
-The most important metric is the time to reach the solutioin. Secondary metric is the amount of nodes that were analysed (this is only applicable to the tree search algorithm, not to WK-CYK). There is a limit of 20 seconds, if the solution is not found within this limit, the algorithm timeouts with no answer.
+Each test prints out the results in a table similar to LINK.
 
-Each test is repeated seven times and the average is taken as a result. These tests aim to answer the followinf questions:
-\begin{itemize}
-  \item{which algorithm is faster and more practical in real use}
-  \item{what is the practical complexity of the algorithms}
-  \item{what are the maximum lengths of inputs which can be solved in resonable time}
-\end{itemize}
+
+\begin{tabular}{ |l|l|l|l|l|  }
+  \hline
+  \multicolumn{5}{|l|}{Test 1} \\
+  \hline
+  Grammar & \multicolumn{4}{|l|}{$a(aa)^*$} \\
+  Rules / NTs / Ts & \multicolumn{4}{|l|}{2/1/1} \\
+  Input string & \multicolumn{4}{|l|}{aaaaaaaaaaaaaaaaaaaaaaaaa... [len 801]} \\
+  Should accept & \multicolumn{4}{|l|}{Yes} \\
+  Timeout & \multicolumn{4}{|l|}{7 seconds} \\
+  \hline
+  Strategy & Time & States Q+C & States pruned & Accepted \\
+  \hline
+  no heuristic & $4.0791$ & $8675 + 14280$ & $0, 75, 0, 0, 397$ & True \\
+  prefer less non-terminals & $0.6923$ & $798 + 1201$ & 0, 3, 0, 0, 400 & True \\
+  non terms distance & $0.6936$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True  \\
+  prefer prefix matching goal & $0.7756$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  individual terms matching goal & $0.7691$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  matching goal + prefer terminals & $0.7717$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  \hline
+  Pruning & Time & States Q+C & States pruned & Accepted \\
+  \hline
+  ALL ON & $0.771$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  prune\_check\_strands\_len OFF & $0.7731$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  prune\_check\_total\_len OFF & $0.7734$ & $801 + 1201$ & $0, 0, 0, 0, 400$ & True \\
+  prune\_check\_word\_start OFF & $0.7719$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  prune\_check\_relation OFF & $0.645$ & $798 + 1201$ & $0, 3, 0, 0, 400$ & True \\
+  prune\_check\_regex OFF & $0.3673$ & $798 + 1601$ & $0, 3, 0, 0, 0$ & True \\
+  ALL OFF & $0.2243$ & $801 + 1601$ & $0, 0, 0, 0, 0$ & True\\
+  \hline
+\end{tabular}
+
+
+\subsection{Analysis of the time and memory complexity}
+
+
 
 \section{Testing results}
 

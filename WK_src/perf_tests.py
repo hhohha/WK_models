@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
 import time, random
-from grammars import g1, g2, g3, g4, g5, g6, g7, g8
+from grammars import *
 
 class cPerfTester:
 	def __init__(self):
 		self.testCnt = 0
-		self.timeTaken = 0
-		self.statesOpen = 0
-		self.statesClosed = 0
+		self.timesTaken = [0, 0, 0, 0, 0, 0, 0, 0]
+		self.timeouts = [0, 0, 0, 0, 0, 0, 0, 0]
 
 	def printHeader(self, grammar, inputStr, shouldAccept):
 		if len(inputStr) > 90:
@@ -24,125 +23,440 @@ class cPerfTester:
 		print(f'| SHOULD ACCEPT{" "*29}| {("Yes" if shouldAccept else "No"):105}|')
 		print(f'| TIMEOUT{" "*35}| {str(grammar.timeLimit):105}|')
 		print(f'|{"-"*150}|')
-		print(f'| STRATEGY{" "*87}| TIME TAKEN | STATES ANALYSED           | ACCEPTED |')
+		print(f'| STRATEGY{" "*55}| TIME      | STATES QUEUED+CLOSED  | STATES PRUNED (SL, TL, WS, RL, RE)   | ACCEPTED |')
 		print(f'|{"-"*150}|')
 
+	def run_test_ntimes(self, grammar, inputStr, shouldAccept, times):
+		statesOpenTotal, statesAllTotal, prunesTotal, timeTotal, results = 0, 0, [0, 0, 0, 0, 0], 0, []
+		for i in range(times):
+			start = time.time()
+			statesOpen, statesAll, prunes, result = grammar.can_generate(inputStr)
+			end = time.time()
+			timeTaken = round(end - start, 4)
+
+			statesOpenTotal += statesOpen
+			statesAllTotal += statesAll
+			prunesTotal = [a + b[1] for a, b in zip(prunesTotal, prunes)]
+			timeTotal += timeTaken
+			results.append(result)
+
+		statesOpenTotal = round(statesOpenTotal/times)
+		statesAllTotal = round(statesAllTotal/times)
+		prunesTotal = list(map(lambda x: round(x/times), prunesTotal))
+		timeTotal = round(timeTotal/times, 4)
+
+		finalResult = ('TRUE' if shouldAccept else 'FALSE')
+		for r in results:
+			if r is None:
+				finalResult = 'TIMEOUT'
+				break
+			elif r != shouldAccept:
+				finalResult = 'ERROR'
+				break
+
+		return statesOpenTotal, statesAllTotal, prunesTotal, timeTotal, finalResult
+
 	def run_test_suite(self, grammar, inputStr, shouldAccept, times=1):
+		if not shouldAccept:
+			return
+
+		for k in grammar.pruningOptions:
+			grammar.pruningOptions[k] = True
+
 		self.testCnt += 1
 		self.printHeader(grammar, inputStr, shouldAccept)
 
 		for idx, t in enumerate(grammar.distance_calc_strategies_list):
 			grammar.distance_calc_strategy = idx
-			avgTime = 0
-			avgStates = 0
-			timeouted = False
+			statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
+			strategy = grammar.distance_calc_strategies_list[idx][0]
+			statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+			prunesStr = str(prunes).replace('[', '').replace(']', '')
 
-			for i in range(times):
-				start = time.time()
-				openStates, closedStates, actual = grammar.can_generate(inputStr)
-				end = time.time()
-				timeTaken = round(end - start, 5)
-				avgTime += timeTaken
-				avgStates += openStates
-				if actual is None:
-					timeouted = True
+			self.timesTaken[idx] += timeTaken
 
-			avgTime = round(avgTime / times, 5)
-			avgStates = round(avgStates / times)
+			if result == 'TIMEOUT':
+				self.timeouts[idx] += 1
+				self.timesTaken[idx] += timeTaken
 
-			strategy = grammar.distance_calc_strategies_list[idx][0]  # TODO - ugly, refactor
-			if timeouted:
-				result = "TIMEOUT"
-			elif actual == shouldAccept:
-				result = actual
-			else:
-				result = "ERROR"
-			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
-			print(f'| {strategy:95}| {avgTime:10} | {avgStates:28}| {result:8} |')
-		print(f'|{"-"*150}|')
+			print(f'| {strategy:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
-		grammar.backup()
-		grammar.to_wk_cnf()
-		lengths = f'{len(grammar.rules)} / {len(grammar.nts)} / {len(grammar.ts)}'
-		print(f'| Transformed to WK CNF - RULES / NON-TERMINALS / TERMINALS: {lengths:89} |')
-		print(f'|{"-"*150}|')
+		#print(f'|{"="*150}|')
+		#print(f'| PRUNING {" "*55}| TIME      | STATES QUEUED+CLOSED  | STATES PRUNED (SL, TL, WS, RL, RE)   | ACCEPTED |')
+		#print(f'|{"-"*150}|')
 
-		for idx, t in enumerate(grammar.distance_calc_strategies_list):
-			grammar.distance_calc_strategy = idx
-			avgTime = 0
-			avgStates = 0
-			timeouted = False
+		#grammar.distance_calc_strategy = 5
+		#prevKey = None
+		#for key in grammar.pruningOptions:
+			#if prevKey is not None:
+				#grammar.pruningOptions[prevKey] = True
+			#grammar.pruningOptions[key] = False
+			#prevKey = key
 
-			for i in range(times):
-				start = time.time()
-				openStates, closedStates, actual = grammar.can_generate(inputStr)
-				end = time.time()
-				timeTaken = round(end - start, 5)
-				avgTime += timeTaken
-				avgStates += openStates
-				if actual is None:
-					timeouted = True
+			#statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
+			#pruning = key.__name__ + ' OFF'
+			#prunesStr = str(prunes).replace('[', '').replace(']', '')
+			#statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+			#print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
-			avgTime = round(avgTime / times, 5)
-			avgStates = round(avgStates / times)
+		## all pruning options off
+		#for k in grammar.pruningOptions:
+			#grammar.pruningOptions[k] = False
+		#statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
+		#pruning = 'ALL OFF'
+		#prunesStr = str(prunes).replace('[', '').replace(']', '')
+		#statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+		#print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
-			strategy = grammar.distance_calc_strategies_list[idx][0]  # TODO - ugly, refactor
-			if timeouted:
-				result = "TIMEOUT"
-			elif actual == shouldAccept:
-				result = actual
-			else:
-				result = "ERROR"
-			states = str(openStates) + "/" + str(closedStates) + " - " + str(grammar.trimms).replace(' ', '')
-			print(f'| {strategy:95}| {avgTime:10} | {avgStates:28}| {result:8} |')
-
-		print(f'|{"-"*150}|')
-		start = time.time()
-		actual = grammar.run_wk_cyk(inputStr)
-		end = time.time()
-		timeTaken = round(end - start, 5)
-		strategy = 'wk cyk'
-		closedStates = 'N/A'
-		if actual is None:
-			result = "TIMEOUT"
-		elif actual == shouldAccept:
-			result = actual
-		else:
-			result = "ERROR"
-
-		print(f'| {strategy:95}| {timeTaken:10} | N/A{" "*25}| {result:8} |')
 		print(f'|{"="*150}|\n\n\n')
-		grammar.restore()
 
+
+startAll = time.time()
 t = cPerfTester()
-t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', True)
-t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', True)
-t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrr', True)
-t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbb', True)
-t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccdddddddddddddddddddd', True)
-t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaa', True)
-t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaa', True)
+times = 1
 
-# ------------- LEVEL 2 ---------------
-t.run_test_suite(g1, 'a'*401, True)
-t.run_test_suite(g2, 'a'*400 + 'b'*400, True)
-l = 300
-t.run_test_suite(g3, 'r'*l + 'd'*l + 'u'*l + 'r'*l, True)
-t.run_test_suite(g4, 'a'*l + 'c'*l + 'b'*l, True)
-t.run_test_suite(g5, 'a'*(l+10) + 'b'*l + 'c'*(l+10) + 'd'*l , True)
+############ grammar 1 #############################################################
+inputStr = 'a' * 801
+t.run_test_suite(g1, inputStr, True, times)
 
-s = ''.join([random.choice(['a','b']) for i in range(l)])
-t.run_test_suite(g6, s + 'c' + s, True)
+inputStr = 'a' * 80
+t.run_test_suite(g1, inputStr, False, times)
 
-n, m = 100, 250
-t.run_test_suite(g7, 'a'*n + 'b'*m + 'a'*n, True)
+g1.to_wk_cnf()
 
-# ------------- NEGATIVE ----------------
-t.run_test_suite(g1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', False)
-t.run_test_suite(g2, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', False)
-t.run_test_suite(g3, 'rrrrrrrrrrrrrrrrrddddddddddddddddduuuuuuuuuuuuuuuuurrrrrrrrrrrrrrrrrr', False)
-t.run_test_suite(g4, 'aaaaaaaaaaaaaaaaaaaaccccccccccccccccccccbbbbbbbbbbbbbbbbbbbbb', False)
-t.run_test_suite(g5, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbccccccccccddddddddddddddddddddd', False)
-t.run_test_suite(g6, 'ababbabababaaababbbabbbbaacababbabababaaababbbabbbbaaa', False)
-t.run_test_suite(g7, 'aaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaa', False)
+inputStr = 'a' * 501
+t.run_test_suite(g1, inputStr, True, times)
 
+inputStr = 'a' * 26
+t.run_test_suite(g1, inputStr, False, times)
+
+############ grammar 2 #############################################################
+inputStr = ''.join([random.choice('ab') for i in range(500)]) + 'abc'
+t.run_test_suite(g2, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(500)]) + 'ab'
+t.run_test_suite(g2, inputStr, False, times)
+
+g2.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(300)]) + 'abc'
+t.run_test_suite(g2, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(300)]) + 'ab'
+t.run_test_suite(g2, inputStr, False, times)
+
+############ grammar 3 #############################################################
+inputStr = ''.join([random.choice('ab') for i in range(300)]) + 'abc'
+t.run_test_suite(g3, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(300)]) + 'ab'
+t.run_test_suite(g3, inputStr, False, times)
+
+g3.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(9)]) + 'abc'
+t.run_test_suite(g3, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(9)]) + 'ab'
+t.run_test_suite(g3, inputStr, False, times)
+
+############ grammar 4 #############################################################
+inputStr = ''.join([random.choice('abcdefg') for i in range(80)]) + 'a'
+t.run_test_suite(g4, inputStr, True, times)
+
+inputStr = ''.join([random.choice('abcdefg') for i in range(80)]) + 'b'
+t.run_test_suite(g4, inputStr, False, times)
+
+g4.to_wk_cnf()
+
+inputStr = ''.join([random.choice('abcdefg') for i in range(40)]) + 'a'
+t.run_test_suite(g4, inputStr, True, times)
+
+inputStr = ''.join([random.choice('abcdefg') for i in range(20)]) + 'b'
+t.run_test_suite(g4, inputStr, False, times)
+
+############ grammar 5 #############################################################
+inputStr = ''.join([random.choice('acgt') for i in range(400)]) + 'ctg'
+t.run_test_suite(g5, inputStr, True, times)
+
+inputStr = ''.join([random.choice('acg') for i in range(400)])
+t.run_test_suite(g5, inputStr, False, times)
+
+g5.to_wk_cnf()
+
+inputStr = ''.join([random.choice('acgt') for i in range(400)]) + 'ctg'
+t.run_test_suite(g5, inputStr, True, times)
+
+inputStr = ''.join([random.choice('acg') for i in range(400)])
+t.run_test_suite(g5, inputStr, False, times)
+
+############ grammar 6 #############################################################
+inputStr = 'a'*300 + 'b'*300
+t.run_test_suite(g6, inputStr, True, times)
+
+inputStr = 'a'*300 + 'b'*301
+t.run_test_suite(g6, inputStr, False, times)
+
+g6.to_wk_cnf()
+
+inputStr = 'a'*300 + 'b'*300
+t.run_test_suite(g6, inputStr, True, times)
+
+inputStr = 'a'*300 + 'b'*301
+t.run_test_suite(g6, inputStr, False, times)
+
+############ grammar 7 #############################################################
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += 'c' + inputStr[::-1]
+t.run_test_suite(g7, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += 'ca' + inputStr[::-1]
+t.run_test_suite(g7, inputStr, False, times)
+
+g7.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(300)])
+inputStr += 'c' + inputStr[::-1]
+t.run_test_suite(g7, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(300)])
+inputStr += 'ca' + inputStr[::-1]
+t.run_test_suite(g7, inputStr, False, times)
+
+############ grammar 8 #############################################################
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += inputStr[::-1]
+t.run_test_suite(g8, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += 'a' + inputStr[::-1]
+t.run_test_suite(g8, inputStr, False, times)
+
+g8.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += inputStr[::-1]
+t.run_test_suite(g8, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(400)])
+inputStr += 'a' + inputStr[::-1]
+t.run_test_suite(g8, inputStr, False, times)
+
+############ grammar 9 #############################################################
+inputStr = ''.join([random.choice('01') for i in range(100)]) + '2' + ''.join([random.choice('01') for i in range(101)])
+t.run_test_suite(g9, inputStr, True, times)
+
+inputStr = ''.join([random.choice('01') for i in range(100)]) + '2' + ''.join([random.choice('01') for i in range(100)])
+t.run_test_suite(g9, inputStr, False, times)
+
+g9.to_wk_cnf()
+
+inputStr = ''.join([random.choice('01') for i in range(60)]) + '2' + ''.join([random.choice('01') for i in range(61)])
+t.run_test_suite(g9, inputStr, True, times)
+
+inputStr = ''.join([random.choice('01') for i in range(60)]) + '2' + ''.join([random.choice('01') for i in range(60)])
+t.run_test_suite(g9, inputStr, False, times)
+
+############ grammar 10 ############################################################
+inputStr = 'o0p1s0cp'*1 + '0'
+t.run_test_suite(g10, inputStr, True, times)
+
+inputStr = 'o0p1s0cp'*50
+t.run_test_suite(g10, inputStr, False, times)
+
+g10.to_wk_cnf()
+
+inputStr = 'o0p1s0cp'*7 + '0'
+t.run_test_suite(g10, inputStr, True, times)
+
+inputStr = 'o0p1s0cp'*4
+t.run_test_suite(g10, inputStr, False, times)
+
+############ grammar 11 ############################################################
+inputStr = ''.join([random.choice('ab') for i in range(100)])
+inputStr += inputStr + 'a'
+t.run_test_suite(g11, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(70)])
+inputStr += inputStr
+t.run_test_suite(g11, inputStr, False, times)
+
+g11.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(10)])
+inputStr += inputStr + 'a'
+t.run_test_suite(g11, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(10)])
+inputStr += inputStr
+t.run_test_suite(g11, inputStr, False, times)
+
+
+############ grammar 12 ############################################################
+inputStr = 'r' * 100 + 'd' * 100 + 'u' * 100 + 'r' * 100
+t.run_test_suite(g12, inputStr, True, times)
+
+inputStr = 'r' * 100 + 'd' * 100 + 'u' * 101 + 'r' * 100
+t.run_test_suite(g12, inputStr, False, times)
+
+g12.to_wk_cnf()
+
+inputStr = 'r' * 100 + 'd' * 100 + 'u' * 100 + 'r' * 100
+t.run_test_suite(g12, inputStr, True, times)
+
+inputStr = 'r' * 100 + 'd' * 100 + 'u' * 100 + 'r' * 101
+t.run_test_suite(g12, inputStr, False, times)
+
+############ grammar 13 ############################################################
+inputStr = 'a' * 100 + 'c' * 100 + 'b' * 100
+t.run_test_suite(g13, inputStr, True, times)
+
+inputStr = 'a' * 101 + 'c' * 100 + 'b' * 100
+t.run_test_suite(g13, inputStr, False, times)
+
+g13.to_wk_cnf()
+
+inputStr = 'a' * 100 + 'c' * 100 + 'b' * 100
+t.run_test_suite(g13, inputStr, True, times)
+
+inputStr = 'a' * 101 + 'c' * 100 + 'b' * 100
+t.run_test_suite(g13, inputStr, False, times)
+
+
+############ grammar 14 ############################################################
+inputStr = 'a' * 100 + 'b' * 101 + 'c' * 100 + 'd' * 101
+t.run_test_suite(g14, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'b' * 101 + 'c' * 100 + 'd' * 100
+t.run_test_suite(g14, inputStr, False, times)
+
+g14.to_wk_cnf()
+
+inputStr = 'a' * 100 + 'b' * 101 + 'c' * 100 + 'd' * 101
+t.run_test_suite(g14, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'b' * 101 + 'c' * 100 + 'd' * 100
+t.run_test_suite(g14, inputStr, False, times)
+
+############ grammar 15 ############################################################
+inputStr = ''.join([random.choice('ab') for i in range(100)])
+inputStr += 'c' + inputStr
+t.run_test_suite(g15, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(100)])
+inputStr += 'c' + inputStr + 'a'
+t.run_test_suite(g15, inputStr, False, times)
+
+g15.to_wk_cnf()
+
+inputStr = ''.join([random.choice('ab') for i in range(100)])
+inputStr += 'c' + inputStr
+t.run_test_suite(g15, inputStr, True, times)
+
+inputStr = ''.join([random.choice('ab') for i in range(100)])
+inputStr += 'c' + inputStr + 'a'
+t.run_test_suite(g15, inputStr, False, times)
+
+############ grammar 16 ############################################################
+inputStr = 'a' * 100 + 'b' * 200 + 'a' * 100
+t.run_test_suite(g16, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'b' * 199 + 'a' * 100
+t.run_test_suite(g16, inputStr, False, times)
+
+g16.to_wk_cnf()
+
+inputStr = 'a' * 50 + 'b' * 100 + 'a' * 50
+t.run_test_suite(g16, inputStr, True, times)
+
+inputStr = 'a' * 50 + 'b' * 99 + 'a' * 50
+t.run_test_suite(g16, inputStr, False, times)
+
+############ grammar 17 ############################################################
+inputStr = ''
+for i in range(10, 1, -1):
+	inputStr += 'a'*i + 'b'*i
+t.run_test_suite(g17, inputStr, True, times)
+
+inputStr = ''
+for i in range(4, 1, -1):
+	inputStr += 'a'*i + 'b'*i
+inputStr += 'a'
+t.run_test_suite(g17, inputStr, False, times)
+
+g17.to_wk_cnf()
+
+inputStr = ''
+for i in range(7, 1, -1):
+	inputStr += 'a'*i + 'b'*i
+t.run_test_suite(g17, inputStr, True, times)
+
+inputStr = ''
+for i in range(3, 1, -1):
+	inputStr += 'a'*i + 'b'*i
+inputStr += 'a'
+t.run_test_suite(g17, inputStr, False, times)
+
+############ grammar 18 ############################################################
+inputStr = ''
+for i in range(15, 1, -1):
+	inputStr += 'l' * i + 'r' * i
+t.run_test_suite(g18, inputStr, True, times)
+
+inputStr = ''
+for i in range(10, 1, -1):
+	inputStr += 'l' * i + 'r' * i
+inputStr += 'lllrrr'
+t.run_test_suite(g18, inputStr, False, times)
+
+g18.to_wk_cnf()
+
+inputStr = ''
+for i in range(15, 1, -1):
+	inputStr += 'l' * i + 'r' * i
+t.run_test_suite(g18, inputStr, True, times)
+
+inputStr = ''
+for i in range(10, 1, -1):
+	inputStr += 'l' * i + 'r' * i
+inputStr += 'lllrrr'
+t.run_test_suite(g18, inputStr, False, times)
+
+############ grammar 19 ############################################################
+inputStr = 'a' * 100 + 'c' * 200 + 'b' * 100
+t.run_test_suite(g19, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'c' * 100 + 'b' * 101
+t.run_test_suite(g19, inputStr, False, times)
+
+g19.to_wk_cnf()
+
+inputStr = 'a' * 50 + 'c' * 20 + 'b' * 50
+t.run_test_suite(g19, inputStr, True, times)
+
+inputStr = 'a' * 30 + 'c' * 20 + 'b' * 31
+t.run_test_suite(g19, inputStr, False, times)
+
+############ grammar 20 ############################################################
+inputStr = 'a' * 100 + 'b' * 90 + 'c' * 80 + 'd' * 110
+t.run_test_suite(g20, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'b' * 90 + 'c' * 80 + 'd' * 111
+t.run_test_suite(g20, inputStr, False, times)
+
+g20.to_wk_cnf()
+
+inputStr = 'a' * 100 + 'b' * 90 + 'c' * 80 + 'd' * 110
+t.run_test_suite(g20, inputStr, True, times)
+
+inputStr = 'a' * 100 + 'b' * 90 + 'c' * 80 + 'd' * 111
+t.run_test_suite(g20, inputStr, False, times)
+
+endAll = time.time()
+timeAll = round(endAll - startAll)
+print(f'TIME TOTAL: {timeAll}')
+
+print('---------------')
+print(t.timesTaken)
+print(t.timeouts)
