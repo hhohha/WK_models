@@ -191,7 +191,7 @@ rules = [
 nts = ['S', 'T', 'F', 'X', 'Y', 'W', 'Z']
 ts = ['p', 'e', 'o', 'c', 'l', 's', 'd', '0', '1']
 g10 = cWK_CFG(nts, ts, 'S', rules, [(x, x) for x in ts])
-g10.desc = 'RE with 0 and 1 and operators: p-plus, e-empty set, o-opening par, c-closing par, l-epsilon, s-star, d-dot'
+g10.desc = 'RE with 0, 1 and operators: p-plus, e-empty set, o-opening par, c-closing par, l-epsilon, s-star, d-dot'
 
 ##################################### GRAMMAR 11 #####################################
 rules = [

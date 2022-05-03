@@ -132,7 +132,7 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 20
+		self.timeLimit = 10
 		self.pruneCnts: Dict[Callable, int] = {
 			self.prune_check_strands_len: 0,
 			self.prune_check_total_len: 0,
@@ -161,11 +161,14 @@ class cWK_CFG:
 			('weighted aversion to nts', self.compute_distance_wighted_nts_aversion),                      #2
 			('start terms match goal', self.compute_distance_start_terms_match),                           #3
 			('all terms match goal', self.compute_distance_terms_match),                                   #4
-			('all terms match goal + aversion to nts', self.compute_distance_terms_match_nt_aversion),     #1, 4
+			('3 only first letter', self.threeWithFirstLetter),                                            #3m
+			('1+4', self.compute_distance_terms_match_nt_aversion),                                        #1, 4
 			('2+4', self.twoAndFour),                                                                      #2, 4
 			('1+3', self.oneAndThree),                                                                     #1, 3
 			('2+3', self.twoAndThree),                                                                     #2, 3
-			#('no heuristic', self.compute_distance_no_heuristic)
+			('1+3m', self.oneAndThreeM),                                                                   #1, 3m
+			('2+3m', self.twoAndThreeM),                                                                   #2, 3m
+			('no heuristic', self.compute_distance_no_heuristic)
 		]
 
 		self.calc_nt_distances()
@@ -263,6 +266,18 @@ class cWK_CFG:
 				distance += self.ntDistances[letter]
 		return distance
 
+	# 3m
+	def threeWithFirstLetter(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					distance -= 1
+					goalIdx += 1
+				else:
+					return distance
+		return distance
 
 	# look at terminals with some upper strands only
 	# if symbol in upper strand match goal -> priority increases
@@ -297,6 +312,41 @@ class cWK_CFG:
 						distance += 1
 						goalIdx += 1
 		return distance
+
+	# 1+3m
+	def oneAndThreeM(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_nonterm(letter):
+				distance += 1
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					distance -= 10
+					goalIdx += 1
+				else:
+					return distance
+		return distance
+
+	# 2+3m
+	def twoAndThreeM(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		for letter in word:
+			if is_nonterm(letter):
+				distance += self.ntDistances[letter]
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					distance -= 10
+					goalIdx += 1
+				else:
+					return distance
+		return distance
+
 
 	# combination of previous heuristic and nt aversion
 	def compute_distance_terms_match_nt_aversion(self, word: tWord, goal: str) -> int:
