@@ -132,7 +132,7 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 10
+		self.timeLimit = 30
 		self.pruneCnts: Dict[Callable, int] = {
 			self.prune_check_strands_len: 0,
 			self.prune_check_total_len: 0,
@@ -155,26 +155,25 @@ class cWK_CFG:
 		self.generate_rule_dict()
 		self.find_erasable_nts()
 
-		self.distance_calc_strategy = 0
+		self.distance_calc_strategy = 6
 		self.distance_calc_strategies_list = [
-			('aversion to nts', self.compute_distance_nts_aversion),                                       #1
-			('weighted aversion to nts', self.compute_distance_wighted_nts_aversion),                      #2
-			('start terms match goal', self.compute_distance_start_terms_match),                           #3
-			('all terms match goal', self.compute_distance_terms_match),                                   #4
-			('3 only first letter', self.threeWithFirstLetter),                                            #3m
-			('1+4', self.compute_distance_terms_match_nt_aversion),                                        #1, 4
-			('2+4', self.twoAndFour),                                                                      #2, 4
-			('1+3', self.oneAndThree),                                                                     #1, 3
-			('2+3', self.twoAndThree),                                                                     #2, 3
-			('1+3m', self.oneAndThreeM),                                                                   #1, 3m
-			('2+3m', self.twoAndThreeM),                                                                   #2, 3m
+			('NTA', self.compute_distance_nts_aversion),
+			('WNTA', self.compute_distance_wighted_nts_aversion),
+			('TM1', self.compute_distance_terms_match_var1),
+			('TM2', self.compute_distance_terms_match_var2),
+			('TM3', self.compute_distance_terms_match_var3),
+			('NTA+TM1', self.oneAndThree),
+			('NTA+TM2', self.oneAndFour),
+			('NTA+TM3', self.oneAndFive),
+			('WNTA+TM1', self.twoAndThree),
+			('WNTA+TM2', self.twoAndFour),
+			('WNTA+TM3', self.twoAndFive),
 			('no heuristic', self.compute_distance_no_heuristic)
 		]
 
 		self.calc_nt_distances()
 		self.calc_min_terms_from_nt()
 		self.calc_rules_nt_cnts()
-
 
 	def calc_rules_nt_cnts(self) -> None:
 		for rule in self.rules:
@@ -266,23 +265,11 @@ class cWK_CFG:
 				distance += self.ntDistances[letter]
 		return distance
 
-	# 3m
-	def threeWithFirstLetter(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
 
-		if len(word) > 0 and is_term(word[0]):
-			for symbol in word[0][0]:
-				if len(goal) > goalIdx and symbol == goal[goalIdx]:
-					distance -= 1
-					goalIdx += 1
-				else:
-					return distance
-		return distance
-
-	# look at terminals with some upper strands only
+	# look only at terminals with some upper strands
 	# if symbol in upper strand match goal -> priority increases
 	# once you find one that doesn't, finish
-	def compute_distance_start_terms_match(self, word: tWord, goal: str) -> int:
+	def compute_distance_terms_match_var1(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -299,7 +286,7 @@ class cWK_CFG:
 	# look at terminals with some upper strands only
 	# if symbol in upper strand match goal -> priority increases
 	# but unlike previous case, if you find one that doesn't match input, just descrease priority and continue
-	def compute_distance_terms_match(self, word: tWord, goal: str) -> int:
+	def compute_distance_terms_match_var2(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -313,8 +300,22 @@ class cWK_CFG:
 						goalIdx += 1
 		return distance
 
-	# 1+3m
-	def oneAndThreeM(self, word: tWord, goal: str) -> int:
+	# look at first letter
+	# if it is terminal and has upper strand - check how it matches goal - increase priority
+	# else do nothing
+	def compute_distance_terms_match_var3(self, word: tWord, goal: str) -> int:
+		goalIdx, distance = 0, 0
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					distance -= 1
+					goalIdx += 1
+				else:
+					return distance
+		return distance
+	# 1+5
+	def oneAndFive(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -330,8 +331,8 @@ class cWK_CFG:
 					return distance
 		return distance
 
-	# 2+3m
-	def twoAndThreeM(self, word: tWord, goal: str) -> int:
+	# 2+5
+	def twoAndFive(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -349,7 +350,7 @@ class cWK_CFG:
 
 
 	# combination of previous heuristic and nt aversion
-	def compute_distance_terms_match_nt_aversion(self, word: tWord, goal: str) -> int:
+	def oneAndFour(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -833,7 +834,7 @@ class cWK_CFG:
 		initStatus = cWordStatus([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initStatus)
-		openQueueLen = 1
+		openQueueLen, openQueueMaxLen = 1, 1
 		allStates: Set[int] = set()
 		allStates.add(initStatus.hashNo)
 
@@ -842,20 +843,21 @@ class cWK_CFG:
 
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
-				return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
+				return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
 
 			currentWordStatus = openQueue.get()
 			openQueueLen -= 1
 			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
 				if self.is_result(nextWordStatus.word, upperStr):
 					self.printPath(nextWordStatus)
-					return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
+					return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
 				if nextWordStatus.hashNo not in allStates:
 					openQueueLen += 1
+					openQueueMaxLen = max(openQueueMaxLen, openQueueLen)
 					openQueue.put(nextWordStatus)
 					allStates.add(nextWordStatus.hashNo)
 
-		return openQueueLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
+		return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
 
 
 	def is_result(self, word: tWord, goal: str) -> bool:
