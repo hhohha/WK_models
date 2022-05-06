@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from lib.perf_tester import cPerfTester
-from grammars import *
+from lib.grammars import *
 
 def main():
 	t = cPerfTester()

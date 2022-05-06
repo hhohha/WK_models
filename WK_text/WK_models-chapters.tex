@@ -240,6 +240,28 @@ In summary, there are 12 node precedence heuristics considered in total (includi
 
 \chapter{Implementation of the state space search} \label{chapter:implementation}
 
+The implementation has been done in the language Python3. The main components are the following:
+\begin{itemize}
+  \item{The class representing a Watson-Crick context-free grammar, including the WK-CYK algorithm and the State space search algorithm}
+  \item{Set of grammar definitions and generators of the input strings}
+  \item{Set of test scripts that run the various tests comparing heurisctics, performance etc.}
+  \item{Test runner class which is a sort of middle layer between the test scripts and the main grammar class.}
+\end{itemize}
+
+\section{Implementation of the main class representing the grammar}
+The class representing a grammar is called \textit{cWK\_CFG}, the source file is \textit{lib/ctf\_WK\_grammar.py}. It contains the following data:
+\begin{itemize}
+  \item{\textit{nts}: set of non-terminals, which are represented by alpha-numeric characters}
+  \item{\textit{ts}: set of terminals, also represented by alpha-numeric characters}
+  \item{\textit{startSymbol: starting non-terminal}}
+  \item{\textit{rules}: set of grammar rules, which are objects of the class \textit{cRule}}
+  \item{\textit{relation}: list representing a complementarity relation, it contains tuples of two terminals}
+\end{itemize}
+
+\section{Implementation of the grammars and input generators}
+\section{Implementation of the test runner class and test scripts}
+
+
 \chapter{Testing the state space search and comparison to WK-CYK}
 
 \section{Watson-Crick grammars used for testing}

@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-import random
 from lib.perf_tester import cPerfTester
-from grammars import *
+from lib.grammars import *
 
 def main():
 	t = cPerfTester()

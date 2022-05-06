@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
-import time
-from ..lib.ctf_WK_grammar import *
+import time, sys
+sys.path.append("../")
+
+from lib.ctf_WK_grammar import *
 
 RES_TIMEOUT = '\033[93m' + 'TIMEOUT' + '\x1b[0m'
 RES_OK = '\033[92m' + 'OK' + '\x1b[0m'

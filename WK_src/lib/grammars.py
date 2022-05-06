@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from ctf_WK_grammar import *
+from lib.ctf_WK_grammar import *
 import random
 
 #####################################  GRAMMAR 1  #####################################

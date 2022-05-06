@@ -1,4 +1,4 @@
-import time, random
+import time
 
 class cPerfTester:
 	def __init__(self):

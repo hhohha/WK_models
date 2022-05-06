@@ -1,6 +1,8 @@
 #!/usr/bin/python3
+import sys
+sys.path.append("../")
 
-from ..lib.ctf_WK_grammar import *
+from lib.ctf_WK_grammar import *
 
 RES_OK = '\033[92m' + 'OK' + '\x1b[0m'
 RES_FAILED = '\033[91m' + 'FAILED' + '\x1b[0m'
