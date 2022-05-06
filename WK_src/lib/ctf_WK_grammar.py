@@ -132,13 +132,14 @@ class cWK_CFG:
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
 		self.lastCreatedNonTerm = 0
-		self.timeLimit = 30
+		self.timeLimit = 10
 		self.pruneCnts: Dict[Callable, int] = {
 			self.prune_check_strands_len: 0,
 			self.prune_check_total_len: 0,
 			self.prune_check_word_start: 0,
 			self.prune_check_relation: 0,
-			self.prune_check_regex: 0
+			self.prune_check_regex: 0,
+			self.prune_check_lower_regex: 0
 		}
 
 		self.pruningOptions: Dict[Callable, bool] = {
@@ -146,13 +147,15 @@ class cWK_CFG:
 			self.prune_check_total_len: True,
 			self.prune_check_word_start: True,
 			self.prune_check_relation: True,
-			self.prune_check_regex: True
+			self.prune_check_regex: True,
+			self.prune_check_lower_regex: True
 		}
 
 		if not self.is_consistent():
 			raise ValueError
 
 		self.generate_rule_dict()
+		self.generate_relation_dict()
 		self.find_erasable_nts()
 
 		self.distance_calc_strategy = 6
@@ -174,6 +177,16 @@ class cWK_CFG:
 		self.calc_nt_distances()
 		self.calc_min_terms_from_nt()
 		self.calc_rules_nt_cnts()
+
+
+	def generate_relation_dict(self) -> None:
+		self.relDict: Dict[tTerm, str] = {}
+		for t in self.ts:
+			self.relDict[t] = ''
+
+		for a, b in self.relation:
+			self.relDict[a] += b
+
 
 	def calc_rules_nt_cnts(self) -> None:
 		for rule in self.rules:
@@ -827,7 +840,7 @@ class cWK_CFG:
 			currentWordStatus = currentWordStatus.parent
 
 
-	def can_generate(self, upperStr: str) -> Tuple[int, List[Tuple[str, int]], Optional[bool]]:
+	def can_generate(self, upperStr: str) -> Tuple[int, int, List[Tuple[str, int]], Optional[bool]]:
 		for key in self.pruneCnts:
 			self.pruneCnts[key] = 0
 		distance = self.calculate_distance([self.startSymbol], upperStr)
@@ -904,6 +917,24 @@ class cWK_CFG:
 
 		return regex
 
+	def word_to_regex_lower(self, word: tWord) -> str:
+		if is_nonterm(word[0]):
+			regex = ''
+		else:
+			regex = '^'
+
+		for idx, letter in enumerate(word):
+			if is_nonterm(letter) and idx > 0 and is_term(word[idx-1]):
+				regex += '.*'
+			elif is_term(letter):
+				for symbol in letter[1]:
+					regex += '[' + self.relDict[symbol] + ']'
+
+		if is_term(word[-1]):
+			regex += '$'
+
+		return regex
+
 	def prune_check_strands_len(self, wordStatus: cWordStatus, goalStr: str) -> bool:
 		return max(wordStatus.upperStrLen, wordStatus.lowerStrLen) <= len(goalStr)
 
@@ -926,6 +957,11 @@ class cWK_CFG:
 		regex = self.word_to_regex(wordStatus.word)
 		return re.compile(regex).search(goalStr) is not None
 
+	def prune_check_lower_regex(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+		regex = self.word_to_regex_lower(wordStatus.word)
+		#print(f'   >>>      checking lower regex of {wordToStr(wordStatus.word)},   regex: {regex}')
+		return re.compile(regex).search(goalStr) is not None
+
 	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str) -> bool:
 		for pruningFunc, pruningOptActive in self.pruningOptions.items():
 			if pruningOptActive and not pruningFunc(wordStatus, goalStr):
@@ -935,38 +971,38 @@ class cWK_CFG:
 		return True
 
 
-	def is_word_feasible2(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+	#def is_word_feasible2(self, wordStatus: cWordStatus, goalStr: str) -> bool:
 
-		longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
-		shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
+		#longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
+		#shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
 
-		if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
-			#self.pruneCnts[0] += 1
-			debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
-			return False
+		#if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
+			##self.pruneCnts[0] += 1
+			#debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
+			#return False
 
-		word = wordStatus.word
-		if is_term(word[0]):
-			if not goalStr.startswith(''.join(word[0][0])):
-				#self.pruneCnts[1] += 1
-				debug('not feasible (doesn\'t match goal string)')
-				return False
+		#word = wordStatus.word
+		#if is_term(word[0]):
+			#if not goalStr.startswith(''.join(word[0][0])):
+				##self.pruneCnts[1] += 1
+				#debug('not feasible (doesn\'t match goal string)')
+				#return False
 
-			shorter_len = min(len(word[0][0]), len(word[0][1]))
-			for idx in range(shorter_len):
-				if (word[0][0][idx], word[0][1][idx]) not in self.relation:
-					#self.pruneCnts[2] += 1
-					debug('not feasible (doesn\'t fulfil relation)')
-					return False
+			#shorter_len = min(len(word[0][0]), len(word[0][1]))
+			#for idx in range(shorter_len):
+				#if (word[0][0][idx], word[0][1][idx]) not in self.relation:
+					##self.pruneCnts[2] += 1
+					#debug('not feasible (doesn\'t fulfil relation)')
+					#return False
 
-		regex = self.word_to_regex(word)
-		if re.compile(regex).search(goalStr) is None:
-			#self.pruneCnts[3] += 1
-			debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
-			return False
+		#regex = self.word_to_regex(word)
+		#if re.compile(regex).search(goalStr) is None:
+			##self.pruneCnts[3] += 1
+			#debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
+			#return False
 
-		debug('feasible')
-		return True
+		#debug('feasible')
+		#return True
 
 	def get_all_next_states(self, wordStatus: cWordStatus, goalStr: str) -> List[cWordStatus]:
 		retLst: List[cWordStatus] = []

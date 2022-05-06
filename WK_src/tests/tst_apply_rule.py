@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from ctf_WK_grammar import *
+from ..lib.ctf_WK_grammar import *
 
 RES_OK = '\033[92m' + 'OK' + '\x1b[0m'
 RES_FAILED = '\033[91m' + 'FAILED' + '\x1b[0m'
@@ -12,7 +12,6 @@ def runTest(word: tWord, ntIdx: int, ruleRhs: tWord, expected: str) -> None:
 	g = cWK_CFG(['A'], [], 'A' , [], [])
 	actual = wordToStr(g.apply_rule(word, ntIdx, rule))
 	status = RES_OK if actual == expected else RES_FAILED
-	#print(f'TEST {cnt:4}       {word:20} | {ntIdx:3} | {rule:20} | {expected:20} | {actual:20}         {status:10}')
 	print(f'| TEST {testNo:2}       |    {wordToStr(word):20}    |    {ntIdx:3}    |    {word[ntIdx] + " -> " + wordToStr(rule):20}    |    {expected:20}    |    {actual:20}    | {status:15}   |')
 	print(hline)
 	testNo += 1

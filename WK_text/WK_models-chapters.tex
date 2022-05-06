@@ -3,7 +3,10 @@
 I used the following stuff: \cite{A1}, \cite{DETERM_WKA}, \cite{A3}, \cite{A4}, \cite{A5}, \cite{A6}, \cite{A7}, \cite{WK_CYK}, \cite{WK_PUSHDOWN_AUT}, \cite{WK_FIN_AUT}
 
 
-\chapter{Watson-Crick models and DNA}
+\chapter{Watson-Crick models}
+Number of models working with double stranded sequences has been proposed. The purpuse of this chapter is to summarize these models and some of their key attributes that will be used in a later chapters.
+
+\section{DNA as an inspiration for Watson-Crick languages}
 The study of Watson-Crick models is motivated by DNA (deoxyribonucleic acid) computing. In order to study the DNA mathematically -- i.e. to perform mathematical operations, it is necessary to work with a suitable abstraction -- a model which captures its key characteristics. Specifically, there are two characterictics that the Watson-Crick models capture -- the fact that DNA is a double stranded chain and the Watson-Crick relation between DNA nucleotides.
 The two fundamental models that are used to define a language in computer theory are grammars and automata. Several versions of both have been proposed but all of them work with these two characterictics in a very similar manner.
 
@@ -16,9 +19,6 @@ The two fundamental models that are used to define a language in computer theory
 DNA consists of two chains of nucleotides that are connected by covalent bonds and together form a double helix. These two chains are represented in the Watson-Crick automata by two reading heads which read two inputs independetly but controlled by the same states. Similarly, Watson-Crick grammars produce by their rules not just a chain of symbols, but two chains.
 
 Each nucleotide contains one of the four nucleobases - cytosine (C), guanine (G), adenine (A), thymine (T). These bases are always connected with their counterpart: cytosine with guanine and adenine with thymine. That means that whenever one of the four appears in a chain, its counterpart appears in the other chain in the corresponding place being bound together by the covalent bond. The Watson-Crick models therefore introduce a complementary relation -- a relation between symbols which must be kept in the whole input for it to be valid. Typically, this relation is symmetric ($a R b \Leftrightarrow b R a$) and covers the whole alphabet (every symbol must have at least one counterpart). Often every symbol has exactly one counterpart -- just like in case of DNA (the relation is frequently defined as an identity which is still somewhat similar to the DNA pairing).
-
-\chapter{Watson-Crick models}
-Number of models working with double stranded sequences has been proposed. The purpuse of this chapter is to summarize these models and some of their key attributes that will be used in a later chapters.
 
 
 \section{Watson-Crick automata}
@@ -123,7 +123,7 @@ In practice the WK-CYK algorithm is feasible for input strings with roughly X sy
 \section{Using WK Pushdown automata}
 
 \chapter{Testing membership by searching the state space}
-This section will introduce the main algorithm of this thesis for testing memebership in WK context-free languages. In this thesis it is referred to as \textbf{space state search} or \textbf{tree search}. Its core is a standard Bread-first search algorithm (BFS) and then various optimizations are added.
+This section will introduce the main algorithm of this thesis for testing memebership in WK context-free languages. In this thesis it is referred to as \textbf{space state search} or \textbf{tree search}. Its core is a standard Breadth-first search algorithm (BFS) and then various optimizations are added.
 
 Standard BFS starts with a root node. In case of grammars, that is the starting non-terminal symbol. Then the tree is built by applying all possible rules to all possible non-terminals. Each rule application generates a new node. The node is a word which consists of some non-terminals, some terminals in the upper strand and terminals in the lower strand. The node that is the solution needs to meet the following criteria:
 \begin{enumerate}
@@ -497,7 +497,7 @@ In some cases, a certain heuristics don't work so well, but their combination do
 
 \begin{figure}[h]
   \includegraphics[scale=0.42]{four_heur_tests.png}
-  \caption{Selected comparisons of node precedence heuriscits}
+  \caption{Selected comparisons of node precedence heuristics}
   \label{fig:selected_tests}
 \end{figure}
 
@@ -781,12 +781,91 @@ After conversion of the grammar to CNF, the complexity usually goes up. This is 
 The worst results for grammar in the basic form are in the case of grammar 17 \ref{compl_result_grammar_17}. For all other grammars, the input length can be in hundrets and in most cases more that a thousand and more. With grammar 17 the tree search can handle only inputs with length of about 25 symbols within 10 seconds.
 
 \section{Comparing different inputs of the same length}
-Aa for grammars 1-4 the only unusual inputs that are possible are inputs with a unexpected termianal, a terminal which is not in the set of the grammar terminals.
-In case of grammar 5 it the key input part is the $ctg$ it can be at the beginning, or in the middle or at the end.
+There are some grammars which do not provide any possibility of an interesting or edge case input. Specifically, it is the case of grammars 1--4. Grammar 1 works only with a symbol $a$, grammars 2, 3 and 4 are only interested whether a string ends with specific symbols. But the rest of the grammars, grammars 5--20, all provide some space for trying to come up with a edge case input. Input, which has the key part on the very end or on the very beginning etc. For this test I tryed to think of these edge cases and tested what differences in performance there are. For this test I used a script \textit{var\_inputs\_test.py}. Its complete output can be again recreated by running the script and is attached in the file \textit{output/}
+
+I have selected three of these tests to show here. The tables \ref{tab:input_compl_test_2}, \ref{tab:input_compl_test_4}, \ref{tab:input_compl_test_8}  show the input of the tests from the script \textit{var\_inputs\_test.py}. The first column called Input displays the string that has been used as an input in a compact format $(ns)^*$ where n is a number of occurrences of the symbol or string $s$. For instance, $3a\:2ab$ would translate to string $aaaabab$.
+
+The advantage of State space search is, that sometimes it can recognise right away, that a certain input is not in a given language. It is usually when the string starts with a symbol that cannot be at the beginning. For instance the second input on table \ref{tab:input_compl_test_2} where the language is $a^nb^n$ and the input starts with $b$, which can never be accepted. Similarly case is the second input on table \ref{tab:input_compl_test_8} the language is $r^nd^nu^nr^n$ and it cannot start with anything other than $r$.
+On the other hand, sometimes the search has harder time finding a key part of the string which is at the end. This can take longer as is the case in the last input of \ref{tab:input_compl_test_2} (search has to get to the end of the string to see that there are not enough of the $b$ symbols). Some inputs on the table \ref{tab:input_compl_test_8} also suffer for the same reason. This is usually not a problem that could break the practical use completely. The result is typically still reached within a reasonable time. A extreme example is, however, on the table \ref{tab:input_compl_test_4} where the last input is not decided in time, even though other inputs were decided very quickly.
+
+\begin{figure}[h]
+\centering
+  \caption{Test of various inputs for grammar 6}
+  \label{tab:input_compl_test_2}
+\begin{tabular}{ |l|l|l|l|l|  }
+  \hline
+  \multicolumn{5}{|l|}{Test 2} \\
+  \hline
+  Grammar & \multicolumn{4}{|l|}{$a^n b^n$} \\
+  Rules / NTs / Ts & \multicolumn{4}{|l|}{6/3/2} \\
+  Timeout & \multicolumn{4}{|l|}{10 seconds} \\
+  \hline
+  Input & Time & States Q+C & Prunes(SL, TL, WS, RL, RE) & Accepted \\
+  \hline
+  500a & 0.1881 & 2 + 999 & 4, 0, 998, 0, 0 & FALSE \\
+  500b & 0.0 & 1 + 0 & 0, 0, 2, 0, 0 & FALSE \\
+  a 500b & 0.3448 & 3 + 502 & 2, 0, 2, 2, 500 & FALSE \\
+  500a b & 1.0903 & 3 + 1996 & 2, 0, 1000, 998, 0  & FALSE \\
+  \hline
+\end{tabular}
+\end{figure}
+
+
+\begin{figure}[h]
+\centering
+  \caption{Test of various inputs for grammar 8}
+  \label{tab:input_compl_test_4}
+\begin{tabular}{ |l|l|l|l|l|  }
+  \hline
+  \multicolumn{5}{|l|}{Test 4} \\
+  \hline
+  Grammar & \multicolumn{4}{|l|}{$w w^r$} \\
+  Rules / NTs / Ts & \multicolumn{4}{|l|}{3/1/2} \\
+  Timeout & \multicolumn{4}{|l|}{10 seconds} \\
+  \hline
+  Input & Time & States Q+C & Prunes(SL, TL, WS, RL, RE) & Accepted \\
+  \hline
+  2000ab 2000ba a & 0.0003 & 1 + 1 & 0, 0, 3, 0, 2, 0 & FALSE \\
+  a 2000ab 2000ba &  0.0003 & 1 + 1 & 0, 0, 2, 0, 3, 0 & FALSE \\
+  2000ab a 2000ba & 10.0079 & 1 + 1461 & 0, 0, 2921, 0, 1, 0 & TIMEOUT \\
+  \hline
+\end{tabular}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+  \caption{Test of various inputs for grammar 12}
+  \label{tab:input_compl_test_8}
+\begin{tabular}{ |l|l|l|l|l|  }
+  \hline
+  \multicolumn{5}{|l|}{Test 8} \\
+  \hline
+  Grammar & \multicolumn{4}{|l|}{$r^n d^n u^n r^n$} \\
+  Rules / NTs / Ts & \multicolumn{4}{|l|}{10/5/3} \\
+  Timeout & \multicolumn{4}{|l|}{10 seconds} \\
+  \hline
+  Input & Time & States Q+C & Prunes(SL, TL, WS, RL, RE) & Accepted \\
+  \hline
+ 500r 500d 500u 500r d & 8.9568 & 1500 + 3001 & 0, 0, 3002, 998, 501, 1 & FALSE \\
+ d 500r 500d 500u 500r & 0.0001 & 1 + 0 & 0, 0, 2, 0, 0, 0 & FALSE \\
+ 500r 500d 500u 501r & 8.9805 & 1500 + 3002 & 2, 0, 3000, 1000, 501, 0 & FALSE \\
+ 500r 500d 501u 500r & 3.0577 & 1000 + 2001 & 0, 0, 3000, 2, 0, 0 & FALSE \\
+ 500r 501d 500u 500r & 1.0785 & 1000 + 1001 & 0, 0, 2000, 2, 0, 0 & FALSE \\
+ 501r 500d 500u 500r & 1.0763 & 1001 + 1002 & 0, 0, 2002, 2, 0, 0 & FALSE \\
+ r 500d 500u 500r & 0.0003 & 2 + 3 & 0, 0, 4, 2, 0, 0 & FALSE \\
+ 500r d 500u 500r & 0.191 & 501 + 502 & 0, 0, 1002, 2, 0, 0 & FALSE \\
+ 500r 500d u 500r & 0.9625 & 1000 + 1003 & 0, 0, 2002, 2, 0, 0 & FALSE \\
+ 500r 500d 500u r & 3.0452 & 1001 + 2002 & 2, 0, 3000, 2, 0, 0 & FALSE \\
+
+  \hline
+\end{tabular}
+\end{figure}
+
 
 \section{Testing the efficiency of WK-CYK}
 
 I have tested the WK-CYK algorithm in a similar manner as the tree search. This time not all grammars can be used due to limitations of WK-CYK. Grammars must be in CNF form and grammars 5, 19 and 20 cannot be used at all, since WK-CYK requires the complementarity relation to be identity, which is not the case of these three grammas. Therefore there are 17 grammars that can be tested. The script \textit{wk\_cyk\_test} runs two tests for each of these grammrs. One with inputs that should be accepted and one with inputs that should be rejected. Again, each test increases the input string length until it the computation lasts more that a limit of 10 seconds. The output of each test is again a table similar to \ref{tab:wk_cyk_res}. The entire output can be remade by running the script again and is attached in file \textit{ouput/wk\_test.txt}.
+
 
 \begin{figure}[h]
 \centering
@@ -844,5 +923,16 @@ The advantage of WK-CYK, on the other hand, is its universality. It has roughly 
 The limit of ten seconds is reached by WK-CYK when the input has about 33 symbols.
 
 \chapter{Conclusion}
-Future work: It is possible to implement other pruning algorithms and test if they contribute to speed. It is possible to use the case where the algorithm was the least effective to try to desing new, better (generally or specificcaly for that case) node precedence heuristics.
-Implement paralelism.
+In the work I have presented various existing models for representing Watson-Crick languages, most importantly Watson Crick automata and Watson-Crick grammars. Then I have analysed the WK-CYK algorithm for testing membership of strings in a context-free Watson-Crick grammars. Than I have come up with the algorithm I call state space search or tree search, which is the most important contribution of this thesis.
+
+The state space search is based on standard Breadth-first search algorithm, where the starting non-terminal of the grammar is the root node and every applicable rule creates successors in the tree. State space search then introduces various optimizations, from which the most important are pruning and node precedence heuristics. Pruning uses five different methods of identifying, that a given node cannot produce the desired solution and removes the entire branch. Node precedence heuristics attempt to choose more promising nodes to be analysed first. I have tested twelve such heuristics and chosen the one, that had the best overall results (called NTA+TM2) as the default one.
+
+I have collected and created twenty Watson-Crick context-free grammars to test the WK-CYK and state space search.
+I have implemented both WK-CYK and state space search in the Python language and written scripts to test the algorithms with all these grammars and various inputs. The test results showed that for the majority of the grammars, state space search was very efficient and it can quickly decide membership problem of inputs that are hundrets or even thousands of symbols long. Another advantage of state space search is the fact that it can work with any WK-grammar --- it does not have to be in Chomsky normal form. Also the complementarity relation can be arbitrary, it does not have to be identity.
+
+Testing the WK-CYK algorithm showed that its theoretical complexity $O(n^6)$ woth respect to the input length corresponds to the real performance. In practice, it is able to decide membership problem of inputs up to length of 40--50 symbols. That is much less than state space search, but on the other hand, its performance is almost identical for any grammar and for any inputs. It is more efficient in case of some specific or complex grammars, where the performance of state space search struggles.
+
+The state space search is a suitable algorithm to be parallelized. More processes can take modes from the queue and analyse different branches of the tree independently. This would be a natural next step in the further development of state space search.
+It is possible to come up with other heuristics for both the pruning and node preference. As for pruning, one option would be to combine the idea of comparing the lower strand to a regular expression in a similar way as it is currently done with the upper strand. Another idea is to calculate how many terminals can be generated at minimum to the lower strand and to the upper strand (currently, it is calculated how many terminals a non-termianal produces to both strands) thus making the constraint of the words stronger.
+As for the node precedence heuristics, it may be worth while to use some of the grammars over which state space search is not efficient (in particular grammars 3 and 17) and design or improve node precedence heuristics with respect to these particular cases. Then it would be appropriate to test all these new heuristics and see if they contribute to the overall performance or not.
+Another promising improvent could be analysing the input from both sides at the same time. This could help with the cases, when the key part of the input is at or near its end and the State space search may struggle to get there in reasonable time.

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import time
-from ctf_WK_grammar import *
+from ..lib.ctf_WK_grammar import *
 
 RES_TIMEOUT = '\033[93m' + 'TIMEOUT' + '\x1b[0m'
 RES_OK = '\033[92m' + 'OK' + '\x1b[0m'
@@ -24,7 +24,7 @@ def runTest(grammar: cWK_CFG, inputStr: str, expected: bool):
 	#grammar.to_wk_cnf()
 
 	start = time.time()
-	openStates, closedStates, actual = grammar.can_generate(inputStr)
+	openStates, closedStates, prunes, actual = grammar.can_generate(inputStr)
 	statesO += openStates
 	statesC += closedStates
 	#openStates, closedStates, actual = 0, 0, grammar.run_wk_cyk(inputStr)

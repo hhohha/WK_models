@@ -5,7 +5,7 @@ from lib.perf_tester import cPerfTester
 from grammars import *
 
 def main():
-	times = 5
+	times = 1
 	t = cPerfTester()
 
 	############ grammar 1 #############################################################
