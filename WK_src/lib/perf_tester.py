@@ -66,10 +66,10 @@ class cPerfTester:
 		self.printHeader(grammar, inputStr, shouldAccept, " NODE PRECEDENCE HEURISTIC" + " "*38)
 
 		timesChart = []
-		for idx, t in enumerate(grammar.distance_calc_strategies_list):
-			grammar.distance_calc_strategy = idx
+		for idx, t in enumerate(grammar.nodePrecedenceList):
+			grammar.currentNodePrecedence = idx
 			statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
-			strategy = grammar.distance_calc_strategies_list[idx][0]
+			strategy = grammar.nodePrecedenceList[idx][0]
 			statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
 			prunesStr = str(prunes).replace('[', '').replace(']', '')
 			timesChart.append(timeTaken)
@@ -119,14 +119,14 @@ class cPerfTester:
 			self.timeouts[idx].append(result != 'TIMEOUT')
 			self.nodes[idx].append((statesOpen, statesAll-statesOpen))
 
-		## all pruning options off
-		#for k in grammar.pruningOptions:
-			#grammar.pruningOptions[k] = False
-		#statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
-		#pruning = 'ALL OFF'
-		#prunesStr = str(prunes).replace('[', '').replace(']', '')
-		#statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
-		#print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
+		# all pruning options off
+		for k in grammar.pruningOptions:
+			grammar.pruningOptions[k] = False
+		statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
+		pruning = 'ALL OFF'
+		prunesStr = str(prunes).replace('[', '').replace(']', '')
+		statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+		print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 		idx += 1
 		self.timesTaken[idx].append(timeTaken)
 		self.timeouts[idx].append(result != 'TIMEOUT')
@@ -163,7 +163,7 @@ class cPerfTester:
 			i += 1
 		self.tests.append(testRec)
 
-	def run_input_test(self, grammar, input_gen_func, shouldAccept, times=1):
+	def run_speed_test(self, grammar, input_gen_func, shouldAccept, times=1):
 		self.testCnt += 1
 		self.printHeader(grammar, None, shouldAccept, " INPUT LENGTH" + " "*51)
 		testRec = []

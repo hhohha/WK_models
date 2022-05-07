@@ -16,7 +16,6 @@ def debug(s):
 tNonTerm = str
 tTerm = str
 tTermLetter = Tuple[List[tTerm], List[tTerm]]
-#tLetter = Union[tNonTerm, tTermLetter]
 tLetter = TypeVar('tLetter')
 tWord = List[tLetter]
 tRelation = Tuple[tTerm, tTerm]
@@ -37,33 +36,6 @@ def is_nonterm(letter: tLetter) -> bool:
 def is_term(letter: tLetter) -> bool:
 	return isinstance(letter, tuple)
 
-E_STR_NO_HEURISTIC = 0
-E_STR_PREF_TERMS = 1
-E_STR_TERMS_MATCH = 2
-
-# TODO - rename word status to node
-class cWordStatus:
-	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cWordStatus'], distance: int) -> None:
-		self.word = word
-		self.upperStrLen = upperStrLen
-		self.lowerStrLen = lowerStrLen
-		self.ntLen = ntLen
-		self.parent = parent
-		self.hashNo = hash(str(word)) # TODO: improve this
-		self.distance = distance
-
-	def __hash__(self) -> int:
-		return self.hashNo
-
-	def __eq__(self, other: object) -> bool:
-		if not isinstance(other, cWordStatus):
-			return NotImplemented
-		return self.hashNo == other.hashNo
-
-	def __lt__(self, other: 'cWordStatus') -> bool:
-		return self.distance < other.distance
-
-
 def wordToStr(word: tWord) -> str:
 	rs = []
 	for symbol in word:
@@ -75,6 +47,27 @@ def wordToStr(word: tWord) -> str:
 			rs.append(symbol)
 
 	return(f'{" ".join(rs)}')
+
+class cTreeNode:
+	def __init__(self, word: tWord, upperStrLen: int, lowerStrLen: int, ntLen: int, parent: Optional['cTreeNode'], precedence: int) -> None:
+		self.word = word
+		self.upperStrLen = upperStrLen
+		self.lowerStrLen = lowerStrLen
+		self.ntLen = ntLen
+		self.parent = parent
+		self.hashNo = hash(str(word))
+		self.precedence = precedence
+
+	def __hash__(self) -> int:
+		return self.hashNo
+
+	def __eq__(self, other: object) -> bool:
+		if not isinstance(other, cTreeNode):
+			return NotImplemented
+		return self.hashNo == other.hashNo # TODO - check if this shouldn't be self.precedence
+
+	def __lt__(self, other: 'cTreeNode') -> bool:
+		return self.precedence < other.precedence
 
 class cRule:
 	#makes rules compact: A -> (a lambda)(lambda a) == A -> (a a)
@@ -93,14 +86,14 @@ class cRule:
 	def __init__(self, lhs: tNonTerm, rhs: tWord) -> None:
 		self.lhs = lhs
 		self.rhs = self.compactize(rhs)
-		self.ntCnt = 0
+		self.ntsLen = 0
 		self.upperCnt = 0
 		self.lowerCnt = 0
 
 		self.calculate_cnts()
 
 	def calculate_cnts(self):
-		self.ntCnt = 0
+		self.ntsLen = 0
 		self.upperCnt = 0
 		self.lowerCnt = 0
 		for letter in self.rhs:
@@ -108,7 +101,7 @@ class cRule:
 				self.upperCnt += len(letter[0])
 				self.lowerCnt += len(letter[1])
 			else:
-				self.ntCnt += 1
+				self.ntsLen += 1
 
 
 	def __eq__(self, other):
@@ -139,7 +132,7 @@ class cWK_CFG:
 			self.prune_check_word_start: 0,
 			self.prune_check_relation: 0,
 			self.prune_check_regex: 0,
-			self.prune_check_lower_regex: 0
+			#self.prune_check_lower_regex: 0
 		}
 
 		self.pruningOptions: Dict[Callable, bool] = {
@@ -148,8 +141,24 @@ class cWK_CFG:
 			self.prune_check_word_start: True,
 			self.prune_check_relation: True,
 			self.prune_check_regex: True,
-			self.prune_check_lower_regex: True
+			#self.prune_check_lower_regex: True
 		}
+
+		self.currentNodePrecedence = 6
+		self.nodePrecedenceList = [
+			('NTA', self.compute_distance_NTA),
+			('WNTA', self.compute_distance_WNTA),
+			('TM1', self.compute_distance_TM1),
+			('TM2', self.compute_distance_TM2),
+			('TM3', self.compute_distance_TM3),
+			('NTA+TM1', self.compute_distance_NTA_TM1),
+			('NTA+TM2', self.compute_distance_NTA_TM2),
+			('NTA+TM3', self.compute_distance_NTA_TM3),
+			('WNTA+TM1', self.compute_distance_WNTA_TM1),
+			('WNTA+TM2', self.compute_distance_WNTA_TM2),
+			('WNTA+TM3', self.compute_distance_WNTA_TM3),
+			('no heuristic', self.compute_distance_no_heuristic)
+		]
 
 		if not self.is_consistent():
 			raise ValueError
@@ -157,27 +166,9 @@ class cWK_CFG:
 		self.generate_rule_dict()
 		self.generate_relation_dict()
 		self.find_erasable_nts()
-
-		self.distance_calc_strategy = 6
-		self.distance_calc_strategies_list = [
-			('NTA', self.compute_distance_nts_aversion),
-			('WNTA', self.compute_distance_wighted_nts_aversion),
-			('TM1', self.compute_distance_terms_match_var1),
-			('TM2', self.compute_distance_terms_match_var2),
-			('TM3', self.compute_distance_terms_match_var3),
-			('NTA+TM1', self.oneAndThree),
-			('NTA+TM2', self.oneAndFour),
-			('NTA+TM3', self.oneAndFive),
-			('WNTA+TM1', self.twoAndThree),
-			('WNTA+TM2', self.twoAndFour),
-			('WNTA+TM3', self.twoAndFive),
-			('no heuristic', self.compute_distance_no_heuristic)
-		]
-
 		self.calc_nt_distances()
 		self.calc_min_terms_from_nt()
-		self.calc_rules_nt_cnts()
-
+		self.calc_rules_nt_lens()
 
 	def generate_relation_dict(self) -> None:
 		self.relDict: Dict[tTerm, str] = {}
@@ -187,27 +178,26 @@ class cWK_CFG:
 		for a, b in self.relation:
 			self.relDict[a] += b
 
-
-	def calc_rules_nt_cnts(self) -> None:
+	def calc_rules_nt_lens(self) -> None:
 		for rule in self.rules:
-			rule.ntCnt = -self.termsFromNts[rule.lhs]
+			rule.ntsLen = -self.termsFromNts[rule.lhs]
 			for letter in rule.rhs:
 				if is_nonterm(letter):
-					rule.ntCnt += self.termsFromNts[letter]
+					rule.ntsLen += self.termsFromNts[letter]
 
 	def restore(self) -> None:
-		self.rules = self.rules_backup
-		self.nts = self.nts_backup
-		self.ts = self.ts_backup
+		self.rules = self.rulesBackup
+		self.nts = self.ntsBackup
+		self.ts = self.tsBackup
 		self.generate_rule_dict()
 		self.calc_nt_distances()
 		self.calc_min_terms_from_nt()
 		self.find_erasable_nts()
 
 	def backup(self) -> None:
-		self.rules_backup = deepcopy(self.rules)
-		self.nts_backup = self.nts.copy()
-		self.ts_backup = self.ts.copy()
+		self.rulesBackup = deepcopy(self.rules)
+		self.ntsBackup = self.nts.copy()
+		self.tsBackup = self.ts.copy()
 
 	def calc_word_distance(self, word: tWord) -> int:
 		maxVal = 0
@@ -256,22 +246,22 @@ class cWK_CFG:
 					loop = True
 
 
-	def calculate_distance(self, word: tWord, goalStr: str) -> int:
-		return self.distance_calc_strategies_list[self.distance_calc_strategy][1](word, goalStr)
+	def compute_distance(self, word: tWord, goalStr: str) -> int:
+		return self.nodePrecedenceList[self.currentNodePrecedence][1](word, goalStr)
 
 
 	def compute_distance_no_heuristic(self, word: tWord, goal: str) -> int:
 		return 0
 
 
-	def compute_distance_nts_aversion(self, word: tWord, goal: str) -> int:
+	def compute_distance_NTA(self, word: tWord, goal: str) -> int:
 		distance = 0
 		for letter in word:
 			if is_nonterm(letter):
 				distance += 1
 		return distance
 
-	def compute_distance_wighted_nts_aversion(self, word: tWord, goal: str) -> int:
+	def compute_distance_WNTA(self, word: tWord, goal: str) -> int:
 		distance = 0
 		for letter in word:
 			if is_nonterm(letter):
@@ -282,7 +272,7 @@ class cWK_CFG:
 	# look only at terminals with some upper strands
 	# if symbol in upper strand match goal -> priority increases
 	# once you find one that doesn't, finish
-	def compute_distance_terms_match_var1(self, word: tWord, goal: str) -> int:
+	def compute_distance_TM1(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -299,7 +289,7 @@ class cWK_CFG:
 	# look at terminals with some upper strands only
 	# if symbol in upper strand match goal -> priority increases
 	# but unlike previous case, if you find one that doesn't match input, just descrease priority and continue
-	def compute_distance_terms_match_var2(self, word: tWord, goal: str) -> int:
+	def compute_distance_TM2(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -316,7 +306,7 @@ class cWK_CFG:
 	# look at first letter
 	# if it is terminal and has upper strand - check how it matches goal - increase priority
 	# else do nothing
-	def compute_distance_terms_match_var3(self, word: tWord, goal: str) -> int:
+	def compute_distance_TM3(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		if len(word) > 0 and is_term(word[0]):
@@ -327,8 +317,8 @@ class cWK_CFG:
 				else:
 					return distance
 		return distance
-	# 1+5
-	def oneAndFive(self, word: tWord, goal: str) -> int:
+	#
+	def compute_distance_NTA_TM3(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -345,7 +335,7 @@ class cWK_CFG:
 		return distance
 
 	# 2+5
-	def twoAndFive(self, word: tWord, goal: str) -> int:
+	def compute_distance_WNTA_TM3(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -363,7 +353,7 @@ class cWK_CFG:
 
 
 	# combination of previous heuristic and nt aversion
-	def oneAndFour(self, word: tWord, goal: str) -> int:
+	def compute_distance_NTA_TM2(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -380,7 +370,7 @@ class cWK_CFG:
 				distance += 1
 		return distance
 
-	def twoAndFour(self, word: tWord, goal: str) -> int:
+	def compute_distance_WNTA_TM2(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -398,7 +388,7 @@ class cWK_CFG:
 		return distance
 
 
-	def oneAndThree(self, word: tWord, goal: str) -> int:
+	def compute_distance_NTA_TM1(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -414,7 +404,7 @@ class cWK_CFG:
 				distance += 1
 		return distance
 
-	def twoAndThree(self, word: tWord, goal: str) -> int:
+	def compute_distance_WNTA_TM1(self, word: tWord, goal: str) -> int:
 		goalIdx, distance = 0, 0
 
 		for letter in word:
@@ -429,14 +419,6 @@ class cWK_CFG:
 			else:
 				distance += self.ntDistances[letter]
 		return distance
-
-
-	#def compute_distance_nt_distance(self, word: tWord, goal: str) -> int:
-		#distance = 0
-		#for letter in word:
-			#if is_nonterm(letter):
-				#distance += self.ntDistances[letter]
-		#return distance
 
 	def find_erasable_nts(self) -> None:
 		self.erasableNts = set()
@@ -563,7 +545,7 @@ class cWK_CFG:
 
 
 
-	def dismantleRule(self, rule: cRule) -> List[cRule]:
+	def dismantle_rule(self, rule: cRule) -> List[cRule]:
 		newRules: List[cRule] = []
 
 		for idx, letter in enumerate(rule.rhs):
@@ -637,11 +619,10 @@ class cWK_CFG:
 
 			# swap terminal letters for respective non-terminals and break down words longer than 2
 			elif len(rule.rhs) >= 2:
-				newRules.update(self.dismantleRule(rule))
+				newRules.update(self.dismantle_rule(rule))
 
 		self.rules = newRules
 		self.generate_rule_dict()
-
 
 	def to_wk_cnf(self) -> None:
 		#print('\nSTART    -----------------------------')
@@ -689,7 +670,7 @@ class cWK_CFG:
 		self.calc_nt_distances()
 		self.calc_min_terms_from_nt()
 		self.erasableNts.clear()
-		self.calc_rules_nt_cnts()
+		self.calc_rules_nt_lens()
 
 
 	def addToX(self, idx: t4DInt, nt: tNonTerm) -> None:
@@ -732,12 +713,12 @@ class cWK_CFG:
 				self.checkRules((0, 0, k, t), (i, j, t+1, l), (i, j, k, l))
 
 
-	def run_wk_cyk(self, sentence: str) -> Optional[bool]:
+	def run_wk_cyk(self, goalStr: str) -> Optional[bool]:
 		start_time = time.time()
-		n = len(sentence)
+		n = len(goalStr)
 		self.X: Dict[t4DInt, List[tNonTerm]] = {}
 
-		for i, word in enumerate(sentence):
+		for i, word in enumerate(goalStr):
 			current_time = time.time()
 			if current_time - start_time > self.timeLimit:
 				return None
@@ -785,7 +766,7 @@ class cWK_CFG:
 		return (1, n, 1, n) in self.X and self.startSymbol in self.X[(1, n, 1, n)]
 
 
-	def createNewNt(self, prefix: str = '') -> tNonTerm:
+	def createNewNt(self, prefix: str = 'N') -> tNonTerm:
 		self.lastCreatedNonTerm += 1
 		while prefix + str(self.lastCreatedNonTerm) in self.nts:
 			self.lastCreatedNonTerm += 1
@@ -833,23 +814,23 @@ class cWK_CFG:
 		return True
 
 
-	def printPath(self, wordStatus: cWordStatus) -> None:
-		currentWordStatus: Optional[cWordStatus] = wordStatus
-		while currentWordStatus:
-			debug(f' >>> {wordToStr(currentWordStatus.word)}')
-			currentWordStatus = currentWordStatus.parent
+	def printPath(self, node: cTreeNode) -> None:
+		currentNode: Optional[cTreeNode] = node
+		while currentNode:
+			debug(f' >>> {wordToStr(currentNode.word)}')
+			currentNode = currentNode.parent
 
 
 	def can_generate(self, upperStr: str) -> Tuple[int, int, List[Tuple[str, int]], Optional[bool]]:
 		for key in self.pruneCnts:
 			self.pruneCnts[key] = 0
-		distance = self.calculate_distance([self.startSymbol], upperStr)
-		initStatus = cWordStatus([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
+		distance = self.compute_distance([self.startSymbol], upperStr)
+		initNode = cTreeNode([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
 		openQueue: Any = PriorityQueue()
-		openQueue.put(initStatus)
+		openQueue.put(initNode)
 		openQueueLen, openQueueMaxLen = 1, 1
 		allStates: Set[int] = set()
-		allStates.add(initStatus.hashNo)
+		allStates.add(initNode.hashNo)
 
 		startTime = time.time()
 		while not openQueue.empty():
@@ -858,17 +839,17 @@ class cWK_CFG:
 			if currentTime - startTime > self.timeLimit:
 				return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
 
-			currentWordStatus = openQueue.get()
+			currentNode = openQueue.get()
 			openQueueLen -= 1
-			for nextWordStatus in self.get_all_next_states(currentWordStatus, upperStr):
-				if self.is_result(nextWordStatus.word, upperStr):
-					self.printPath(nextWordStatus)
+			for nextNode in self.get_all_successors(currentNode, upperStr):
+				if self.is_result(nextNode.word, upperStr):
+					self.printPath(nextNode)
 					return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
-				if nextWordStatus.hashNo not in allStates:
+				if nextNode.hashNo not in allStates:
 					openQueueLen += 1
 					openQueueMaxLen = max(openQueueMaxLen, openQueueLen)
-					openQueue.put(nextWordStatus)
-					allStates.add(nextWordStatus.hashNo)
+					openQueue.put(nextNode)
+					allStates.add(nextNode.hashNo)
 
 		return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
 
@@ -917,103 +898,70 @@ class cWK_CFG:
 
 		return regex
 
-	def word_to_regex_lower(self, word: tWord) -> str:
-		if is_nonterm(word[0]):
-			regex = ''
-		else:
-			regex = '^'
+	#def word_to_regex_lower(self, word: tWord) -> str:
+		#if is_nonterm(word[0]):
+			#regex = ''
+		#else:
+			#regex = '^'
 
-		for idx, letter in enumerate(word):
-			if is_nonterm(letter) and idx > 0 and is_term(word[idx-1]):
-				regex += '.*'
-			elif is_term(letter):
-				for symbol in letter[1]:
-					regex += '[' + self.relDict[symbol] + ']'
+		#for idx, letter in enumerate(word):
+			#if is_nonterm(letter) and idx > 0 and is_term(word[idx-1]):
+				#regex += '.*'
+			#elif is_term(letter):
+				#for symbol in letter[1]:
+					#regex += '[' + self.relDict[symbol] + ']'
 
-		if is_term(word[-1]):
-			regex += '$'
+		#if is_term(word[-1]):
+			#regex += '$'
 
-		return regex
+		#return regex
 
-	def prune_check_strands_len(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		return max(wordStatus.upperStrLen, wordStatus.lowerStrLen) <= len(goalStr)
+	def prune_check_strands_len(self, node: cTreeNode, goalStr: str) -> bool:
+		return max(node.upperStrLen, node.lowerStrLen) <= len(goalStr)
 
-	def prune_check_total_len(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		return wordStatus.upperStrLen + wordStatus.lowerStrLen + wordStatus.ntLen <= 2 * len(goalStr)
+	def prune_check_total_len(self, node: cTreeNode, goalStr: str) -> bool:
+		return node.upperStrLen + node.lowerStrLen + node.ntLen <= 2 * len(goalStr)
 
-	def prune_check_word_start(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		return is_nonterm(wordStatus.word[0]) or goalStr.startswith(''.join(wordStatus.word[0][0]))
+	def prune_check_word_start(self, node: cTreeNode, goalStr: str) -> bool:
+		return is_nonterm(node.word[0]) or goalStr.startswith(''.join(node.word[0][0]))
 
-	def prune_check_relation(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		if is_nonterm(wordStatus.word[0]):
+	def prune_check_relation(self, node: cTreeNode, goalStr: str) -> bool:
+		if is_nonterm(node.word[0]):
 			return True
-		shorterStrand = min(len(wordStatus.word[0][0]), len(wordStatus.word[0][1]))
+		shorterStrand = min(len(node.word[0][0]), len(node.word[0][1]))
 		for idx in range(shorterStrand):
-			if (wordStatus.word[0][0][idx], wordStatus.word[0][1][idx]) not in self.relation:
+			if (node.word[0][0][idx], node.word[0][1][idx]) not in self.relation:
 				return False
 		return True
 
-	def prune_check_regex(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		regex = self.word_to_regex(wordStatus.word)
+	def prune_check_regex(self, node: cTreeNode, goalStr: str) -> bool:
+		regex = self.word_to_regex(node.word)
 		return re.compile(regex).search(goalStr) is not None
 
-	def prune_check_lower_regex(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-		regex = self.word_to_regex_lower(wordStatus.word)
-		#print(f'   >>>      checking lower regex of {wordToStr(wordStatus.word)},   regex: {regex}')
+	def prune_check_lower_regex(self, node: cTreeNode, goalStr: str) -> bool:
+		regex = self.word_to_regex_lower(node.word)
+		#print(f'   >>>      checking lower regex of {wordToStr(node.word)},   regex: {regex}')
 		return re.compile(regex).search(goalStr) is not None
 
-	def is_word_feasible(self, wordStatus: cWordStatus, goalStr: str) -> bool:
+	def is_word_feasible(self, node: cTreeNode, goalStr: str) -> bool:
 		for pruningFunc, pruningOptActive in self.pruningOptions.items():
-			if pruningOptActive and not pruningFunc(wordStatus, goalStr):
+			if pruningOptActive and not pruningFunc(node, goalStr):
 				debug(f'not feasible - check failed in {pruningFunc.__name__}')
 				self.pruneCnts[pruningFunc] += 1
 				return False
 		return True
 
-
-	#def is_word_feasible2(self, wordStatus: cWordStatus, goalStr: str) -> bool:
-
-		#longerStrand = max(wordStatus.upperStrLen, wordStatus.lowerStrLen)
-		#shorterStrand = min(wordStatus.upperStrLen, wordStatus.lowerStrLen)
-
-		#if longerStrand > len(goalStr) or shorterStrand + longerStrand + wordStatus.ntLen > 2* len(goalStr):
-			##self.pruneCnts[0] += 1
-			#debug(f'not feasible (getting too long) >{wordStatus.upperStrLen}, {wordStatus.lowerStrLen}, {wordStatus.ntLen}')
-			#return False
-
-		#word = wordStatus.word
-		#if is_term(word[0]):
-			#if not goalStr.startswith(''.join(word[0][0])):
-				##self.pruneCnts[1] += 1
-				#debug('not feasible (doesn\'t match goal string)')
-				#return False
-
-			#shorter_len = min(len(word[0][0]), len(word[0][1]))
-			#for idx in range(shorter_len):
-				#if (word[0][0][idx], word[0][1][idx]) not in self.relation:
-					##self.pruneCnts[2] += 1
-					#debug('not feasible (doesn\'t fulfil relation)')
-					#return False
-
-		#regex = self.word_to_regex(word)
-		#if re.compile(regex).search(goalStr) is None:
-			##self.pruneCnts[3] += 1
-			#debug(f'no feasible (re search failed)   regex: {regex},  string: {goalStr},    word: {word}')
-			#return False
-
-		#debug('feasible')
-		#return True
-
-	def get_all_next_states(self, wordStatus: cWordStatus, goalStr: str) -> List[cWordStatus]:
-		retLst: List[cWordStatus] = []
-		for ntIdx, symbol in enumerate(wordStatus.word):
+	# TODO - make this a generator
+	def get_all_successors(self, node: cTreeNode, goalStr: str) -> List[cTreeNode]:
+		retLst: List[cTreeNode] = []
+		for ntIdx, symbol in enumerate(node.word):
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
-					newWord = self.apply_rule(wordStatus.word, ntIdx, rule.rhs)
-					newWordStatus = cWordStatus(newWord, wordStatus.upperStrLen + rule.upperCnt, wordStatus.lowerStrLen + rule.lowerCnt, wordStatus.ntLen + rule.ntCnt, wordStatus, 0)
-					if self.is_word_feasible(newWordStatus, goalStr):
-						newWordStatus.distance = self.calculate_distance(newWord, goalStr)
-						retLst.append(newWordStatus)
+					newWord = self.apply_rule(node.word, ntIdx, rule.rhs)
+					newNode = cTreeNode(newWord, node.upperStrLen + rule.upperCnt, node.lowerStrLen + rule.lowerCnt, node.ntLen + rule.ntsLen, node, 0)
+					if self.is_word_feasible(newNode, goalStr):
+						newNode.distance = self.compute_distance(newWord, goalStr)
+						retLst.append(newNode)
 				break
 		return retLst
 

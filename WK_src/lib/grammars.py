@@ -17,7 +17,7 @@ def input_gen_func(start, step, accept):
 	s, curLen = '', start
 
 	while True:
-		s += 'a' * step
+		s = 'a' * curLen
 		if accept and len(s) % 2 == 0:
 			s += 'a'
 		elif not accept and len(s) % 2 == 1:

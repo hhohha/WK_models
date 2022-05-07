@@ -68,7 +68,7 @@ There are three different variants of deterministic WKA proposed in \cite{DETERM
   \item{Stronly deterministic WKA}
 \end{itemize}
 
-It is not specified how to actually achieve weak determinism. In fact, \cite{DETERM_WKA} shows that this property is undecidable. Informally, for a WKA to be weakly deterministic but not deterministic, there must be at least two rules which could both be used in certain configuration (otherwise it would be deterministic). But such a configuration must not be reachable (otherwise it would not be weakly deterministic). The configuration may be unreachable trivially -- by such rules using an unreachable state or a symbols that have no related symbols in the complementarity relation. But a configuration may be unrechable non-trivially, if it is possible to tell how many symbols will be read from each strand before reaching certain state.
+It is not specified how to actually achieve weak determinism. In fact, \cite{DETERM_WKA} shows that this property is undecidable. Informally, for a WKA to be weakly deterministic but not deterministic, there must be at least two rules which could both be used in certain configuration (otherwise it would be deterministic). But such a configuration must not be reachable (otherwise it would not be weakly deterministic). The configuration may be unreachable trivially -- by such rules using an unreachable state or a symbols that have no related symbols in the complementarity relation. But a configuration may be unreachable non-trivially, if it is possible to tell how many symbols will be read from each strand before reaching certain state.
 
 Both weakly deterministic and deterministic WKA are in reality not deterministic (in an intuitive sense). Their determinism relies on the fact, that the configuration is known. But that is probably not a typical way how to work with WKA, since WKA decides the membership in a language for the upper strand only. That means that a compatible lower strand has to be found in the process of running the WKA. Theoretically, it is possible to approach this problem by first generating all possible lower strands for the given upper strand based solely on the complementarity relation and afterwards use all these pairs as inputs for the WKA. In such a case the weakly deterministic and deterministic automata would be truly deterministic, however this is clearly not feasible for non-trivial complementarity relations. Therefore, the strongly deterministic WKA is the only one witch is truly deterministic under all circumstances, because the identity relation required leaves no space these types of non-determinism.
 
@@ -243,23 +243,258 @@ In summary, there are 12 node precedence heuristics considered in total (includi
 The implementation has been done in the language Python3. The main components are the following:
 \begin{itemize}
   \item{The class representing a Watson-Crick context-free grammar, including the WK-CYK algorithm and the State space search algorithm}
+  \item{Classes representing a rule of a grammar and a tree node}
   \item{Set of grammar definitions and generators of the input strings}
-  \item{Set of test scripts that run the various tests comparing heurisctics, performance etc.}
+  \item{Set of test scripts that run the various tests comparing heuristics, performance etc.}
   \item{Test runner class which is a sort of middle layer between the test scripts and the main grammar class.}
 \end{itemize}
+
+In the code and its description I use the term \textbf{word} to refer to the right hand side of the rules and, in general, a list of letters. The term \textbf{letter} is a one element of the word, which is either a non-terminal, or a segment with terminals. Such segments with terminals are stored as a pair (tuple) of two lists --- upper and lower strand. For instance, a word
+$A \wkpair{abc}{\lambda} B$
+has three letters: non-terminals $A$ and $B$ and a segment of non-terminals $\wkpair{abc}{\lambda}$, which contains two lists, first (upper strand) with three items --- terminals $a$, $b$ and $c$ and the second one (lower strand) is a empty list.
+
+Any time two or more letters with terminals appear next to each other, they are merged. For instance, a three-letter word: $\wkpair{abc}{\lambda} A \wkpair{b}{b}$ after application of rule $A \rightarrow \wkpair{\lambda}{a}$, will result in a word with just one letter: $\wkpair{abcb}{ab}$.
+
 
 \section{Implementation of the main class representing the grammar}
 The class representing a grammar is called \textit{cWK\_CFG}, the source file is \textit{lib/ctf\_WK\_grammar.py}. It contains the following data:
 \begin{itemize}
-  \item{\textit{nts}: set of non-terminals, which are represented by alpha-numeric characters}
-  \item{\textit{ts}: set of terminals, also represented by alpha-numeric characters}
-  \item{\textit{startSymbol: starting non-terminal}}
-  \item{\textit{rules}: set of grammar rules, which are objects of the class \textit{cRule}}
-  \item{\textit{relation}: list representing a complementarity relation, it contains tuples of two terminals}
+  \item{the items which define the grammar: \textit{nts} --- set of non-terminals, which are represented by alpha-numeric characters; \textit{ts} --- set of terminals, also represented by alpha-numeric characters; \textit{startSymbol} --- starting non-terminal; \textit{rules} --- set of grammar rules, which are objects of the class \textit{cRule}; \textit{relation} --- list representing a complementarity relation, it contains tuples of two terminal. These five items are parameters, which need to be passed to a constructor, which corresponds to the way how a context-free WK grammar is theoretically defined.}
+
+  \item{\textit{nodePrecedenceList} --- a list of all implemented node precedence heuristics, it is stored as a list of pairs (tuples) of heuristic name and function; \textit{currentNodePrecedence} is the index of the active one}
+
+  \item{\textit{pruningOptions} --- a dictionary with a pruning function as a key and boolean as a value indicating which pruning heuristics are active; \textit{pruneCnts} --- a dictionary of pruning functions as keys and count, how many times the given pruning has been used, as a key}
+
+  \item{\textit{ruleDict} --- grammar rules stored in a dictionary with non-terminals as keys and list of letters as values. This is a more efficient way of accessing rules for a given non-terminal, then iterating over all rules and filtering them based on left-hend side non-terminal.}
+
+  \item{\textit{relDict} --- complementarity relation stored in a more convinient way in a dictionary with first symbol as a key and string of symbols as a value. This is more efficient way of finding all symbols related to a given symbol.}
+
+  \item{\textit{ntDistances} --- a precalculated dictionary, with all non-terminals as keys and distance to terminals as value. This distance is a minimum number of rules, which lead from the given non-terminal, to a word with terminals only. This is used for the node precedence heuristic WNTA.}
+
+  \item{\textit{erasableNts} --- a precalculated set of non-terminals, which can be erased by appling certain sequnce of rules. It is used for removing the $\lambda$-rules.}
+
+  \item{\textit{termsFromNts} --- a precalculated dictionary, which has all non-terminals as key and as a value minimum amount of terminals, which can be generated from this non-terminal. This is used in the pruning heuristic TL.}
+
+  \item{timeLimit --- after how long should the tree search or WK-CYK timeout}
 \end{itemize}
 
-\section{Implementation of the grammars and input generators}
-\section{Implementation of the test runner class and test scripts}
+A constructor of the \textit{cWK\_CFG} class requires a the five items described in the first bullet-point (in that order). Example of an object construction would then be (for rules definition, see \ref{later}):
+\begin{verbatim}
+  g = cWK_CFG(['S', 'A'], ['a', 'b'], 'S', rules, [('a', 'a'), ('b', 'b')])
+\end{verbatim}
+
+\bigskip
+The class \textit{cWK\_CFG} has these key functionalities:
+\begin{itemize}
+  \item{init, restore and backup}
+  \item{run of the parse tree algorithm}
+  \item{set of pruning heuristics}
+  \item{set of node precedence heuristics}
+  \item{transformation of grammar to CNF}
+  \item{run of the WK-CYK algorithm}
+\end{itemize}
+
+\subsection{Init, restore and backup}
+During the initialization of the class, several methods are run ensuring validity of the grammar and precalculating data.
+
+\begin{itemize}
+  \item{method \textit{is\_consistent} verifies that the construtor parameters that define the grammar are consistent: sets of terminals and non-terminals must be exclusive, the start symbols and all rule lefh-hand sides must be found among the non-terminals, rule right hand sides must contain only specified termianal and non-terminals and the complementarity relation list must refer only to the defined terminals. It the method fails, an exception is thrown and the class is not created.}
+  \item{method \textit{generate\_rule\_dict} parses the set of rules and creates \textit{ruleDic}}
+  \item{method \textit{generate\_relation\_dict} parses the complementarity relation and creates \textit{relDict}}
+  \item{method \textit{find\_erasable\_nts} creates the set \textit{erasableNts}, a set of non-terminals that can be erased by applying a sequence of rules. The set is empty if the grammar contains no $\lambda$-rule.}
+  \item{method calc\_nt\_distances creates the dictionary \textit{ntDistances} mapping non-terminals to the minimum number of rules needed to reach a terminal word}
+  \item{method calc\_min\_terms\_from\_nt creates the dictionary \textit{termsFromNts} mapping non-terminals to the minimum number of terminals, that they can generate}
+  \item{method calc\_rules\_nt\_lens calculates a rule length for each rule.}
+\end{itemize}
+
+A rule length is a value which indicates how the minimal length of a word will be changed after application of the rule. It is used by the TL (total length) pruning heuristic. The rule length is equal to the negative left-hand side non-terminal length plus lengths of all elements on the right-hand side.
+
+For instance, the word is $A \wkpair{ab}{c} B$, the rule being applied is $A \rightarrow B \wkpair{d}{d}$ and the minimum number of terminals generated from $A$ is 2 and from $B$ is 3. The resulting word will be $B \wkpair{dab}{dc} B$. The word at the start had total length of 8 (1 for each terminal symbol, 2 for $A$, 3 for $B$). The word afterwards has a total length of 11 (3 for each $B$ and 1 for each terminal). Therefore, the rule $A \rightarrow B \wkpair{d}{d}$ must have length of 3. And it does: $-2$ for the $A$ on the left-hand side, 1 for each of the two terminals and 3 for the $B$.
+
+Since the grammar is able to apply certain transformations (like to CNF or removing lambda rules), it is convinient to be able to save the state of the grammar and later restore it. This is what the methods \textit{backup} and \textit{restore} are for. The \textit{backup} method simply saves a copy of the set rules, non-terminals and terminals as \textit{rulesBackup}, \textit{ntsBackup}, \textit{tsBackup}. The \textit{restore} method then restores these backup sets and runs again the precalculating methods similarly to the class initialization phase.
+
+\subsection{Run of the state space search algorithm}
+The State space search algoritgm is run by the \textit{can\_generate} method which has one parameter: the string to be tested for language membership. It uses a priority queue (python \textit{PriorityQueue} class from the \textit{queue} modul) to store the nodes if the search tree. When getting items from this queue, it returns the smallest value item, which is in the queue. The class representing a node is \textit{cTreeNode} (described in \ref{later}). The method also uses a set of hashes all states that have been put in the queue (whether they are still there or have been taken out), so that duplicate nodes are skipped.
+
+At the beginning, the queue contains one node --- the starting non-terminal. If the queue is empty (and there is no node being parsed), it indicates that the whole state space has been searched and the methods ends with a negative response. Otherwise it gets next node from the queue, generates all possible successors of this node (method \textit{get\_all\_successors}). Each of the successor nodes is checked, if it is the desired solution (method \textit{is\_result}). If so, the search optionally prints the path to the solution and ends with the positive result. Otherwise it checks whether the node is new (has not been in the queue before) and is added to the queue. Also, it is checked during every iteraton if the time limit has been exceeded. If so, it returns an empty response (\textit{None} value).
+
+The return value of the method is a tuple containing following items: maximum number of items in the queue, number of all nodes in the queue, list of pruning statistics, the actual result (\textit{True}, \textit{False}, or \textit{None}).
+
+The \textit{get\_all\_successors} requires two parameters --- a node and the input string (which is then passed to the pruning methods). First, it finds the first non-terminal in the given word. It applies all the rules (method \textit{apply\_rule}) for this non-terminal that the grammar has, each time creating a new node. The node is then checked by the all the pruning algorithms (method \textit{is\_word\_feasible} described in \ref{later}) to see, if the node can lead to the solution. If so, the priority of the node is calculated (method \textit{calculate\_distance} described in \ref{later}) and the node is yielded as a result.
+
+The \textit{is\_result} method needs to check all the conditions that the node has to meet in order to be a solution (word contains only one letter, the letter is a segment of termianals, its upper strand and lower strand have the same length, all the symbols from the two strands correspond to the complementarity relation and the upper strand is equel to the input string). It takes a word and the input string as parameters and returns a boolean value indicating whether the word is the solution.
+
+The \textit{apply\_rule} method takes as parameter: a word, an index of non-terminal to be used, rule right-hand side. It removes the non-terminal specified by its index (because there can be more than one occurrence of this non-temrinal in the word) from the word, and replaces it with the word snippet specified by the rule left-hand side. It contains logic for merging letters containing terminals if they appear in the word next to each other. It returns the final word.
+
+\subsection{Pruning heuristics}
+In order to be able to work flexibly with the pruning methods the class contains a dictionary (called \textit{pruningOptions}) of the implemented pruning functions and indication whether they are active or not. The method \textit{is\_word\_feasible} iterates through all items in this dictionary and if the value is \textit{True} indicatind an active pruning, it runs the corresponding method.
+The pruning methods are:
+\begin{itemize}
+  \item{\textit{prune\_check\_strands\_len} (SL): checks that the sum of the symbols in the upper and the lower strand is not graeter that the input length}
+  \item{\textit{prune\_check\_total\_len} (TL): checks that the total length of the word (described in \ref{later}) is not greater then the doubled input length}
+  \item{\textit{prune\_check\_word\_start} (WS): checks that the starting terminals of the word correspond to the input string}
+  \item{\textit{prune\_check\_relation} (RL): checks that the starting terminals meet the coplementarity relation constraint}
+  \item{\textit{prune\_check\_regex} (RE): checks that the input matches the regular expression based on the word}
+\end{itemize}
+
+All the pruning methods require a word and the input string as parameters. They return a boolean value indicating, whether the word is feasible or not.
+
+\subsection{Node precedence heuristics}
+Just like with pruning, the node precedence functionality needs to be flexible --- it must be possible to switch between various node precedence methods. The functionality is implemented by the method \textit{compute\_distance}. This methods simply uses \textit{nodePrecedenceList} and \textit{currentNodePrecedence} to call the right specific method.
+There are 12 of these methods called \textit{compute\_distance\_[name]} where \textit{name} is the name of the specific heuristic (one of NTA, WNTA, TM1, TM2, TM3, NTA\_TM1, NTA\_TM2, NTA\_TM3, WNTA\_TM1, WNTA\_TM2, WNTA\_TM3, no\_heuristic).
+
+\subsection{Transformation of grammar to WK Chomsky normal form}
+The transformation of any grammar to the WK Chomsky normal form is described in \cite{WK_CYK}. It is quite similar to the transformation of standard context-free grammar to CNF. It is performed by the method \textit{to\_wk\_cnf} and it takes the following steps:
+
+\begin{enumerate}
+  \item{Removing $\lambda$-rules --- this is done by the method \textit{remove\_lambda\_rules}}
+
+  \item{Removing unit rules --- unit rules are rules in the form of $A \rightarrow B$ where $A$ and $B$ are non-terminals. These is performaed by method \textit{remove\_unit\_rules}.}
+
+  \item{Removing unterminatable symbols --- unterminatable symbols are non-terminals, which cannot be transformed into terminal strings by any sequence of rules. It is possible to remove them without affecting the grammar language, because if such a rule ever appeared in a word, the whole word would be automatically useless. Any rules containing such a symbol are useless, as well and also removed. This is performed by the method \textit{remove\_unterminatable\_symbols}.}
+
+  \item{Removing unreachable symbols --- unreachable symbols are symbols that can never appear in the word, because there is no sequence of rules leading from the starting symbol, that generates these rules. Therefore they can removed without affecting the grammar language. Any rules containing such a symbol are useless, as well and also removed. This is done by the method \textit{remove\_unreachable\_symbols}.}
+
+  \item{Dismanteling rules generating terminal letters --- WK-CNF requires all rules generating terminals to generate one symbol only, this means only rules in the form of $A \rightarrow \wkpair{a}{\lambda}$ and $A \rightarrow \wkpair{\lambda}{a}$ are allowed. This is achieved by method \textit{dismantle\_term\_letters}, which iterates through all the rules and replaces any terminal letters at the rule right-hand side with a newly generated non-terminal. Afterwards, new rules are and non-terminals are created which assure that the terminal letter is generated in steps, each rule having at maximum two items on the right-hand side.
+
+  If the rule is $A \rightarrow A B \wkpair{ab}{c}$ ($A$, $B$ being non-terminals, $a$, $b$, $c$ being terminals), then the $A$ and $B$ are skipped and the letter $\wkpair{ab}{c}$ is replaced by a new non-terminal, say $N_1$. Then, another rule is created: $N_1 \rightarrow \wkpair{ab}{c}$, which needs to be broken down further. For each terminal in this letter, a new rule is created and the terminal replaced by a new non-terminal, until there remains only one terminal in that letter. The final set of rules is then going to be: $A \rightarrow A B N_1$, $N_1 \rightarrow \wkpair{a}{\lambda} N_2$, $N_2 \rightarrow \wkpair{\lambda}{c} N_3$, $N_3 \rightarrow \wkpair{b}{\lambda}$
+  }
+
+  \item{Dismanteling rules generating non-terminals --- in the final stage of transformation, the method transform\_to\_wk\_cnf\_form} iterates through all the rules, it keeps rule in the WK-CNF form ($A \rightarrow BC$, $A \rightarrow \wkpair{a}{\lambda}$ and $A \rightarrow \wkpair{\lambda}{a}$) and breaks down other rules in a process analogous to the actions of \textit{remove\_lambda\_rules}.
+
+  \item{Recalculation of data --- runs the methods that precalculate data, similarly to the class init phase or after \textit{restore} method}
+\end{enumerate}
+
+The methods removing $\lambda$-rules, unit rules, unterminatable symbols and unreachable symbols are useful even outside of the transformation to the WK-CNF. Removing unterminatable symbols and unreachable symbols (and rules containing these symbols) are optional but useful steps in the transformation. The dismanteling of rules are two steps that make sense only in this context.
+
+
+\subsection{Run of the WK-CYK algorithm}
+The WK-CYK is implemented by method \textit{run\_wk\_cyk} which takes as a single parameter the input string and returns a boolean value indicating whether the input has been accepted or not. Similarly to Tree search, every iteration checks the elapsed time and if it exceed the time limit, it returns an empty value (\textit{None}). The implementation is taken from the section 6 of \cite{WK_CYK}. The \textit{run\_wk\_cyk} method corresponds to the \textit{sets construction} procedure of this paper. The \textit{compute set} procedure called from \textit{sets construction} then corresponds to the \textit{computeSet} method of the cWK\_CNF class.
+
+
+\section{Implementation of the rule and node classes}
+A rule of a grammar is modelled by the class \textit{cRule}. It contains following data:
+\begin{itemize}
+  \item{\textit{lhs} --- a non-terminal, left-hand side of the rule}
+  \item{\textit{rhs} --- a word, right-hand side of the rule}
+  \item{\textit{ntsLen} --- length of all non-terminals of the right-hand side}
+  \item{\textit{upperCnt} --- count of all terminals in the upper strand of the right-hand side}
+  \item{\textit{lowerCnt} --- count of all terminals in the lower strand of the right-hand side}
+\end{itemize}
+
+The items \textit{ntsLen}, \textit{upperCnt} and \textit{lowerCnt} are there for optimization purposes. It is always possible to iterate over the word and count them, but it is more efficient to count it once for every rule and store this value.
+
+The \textit{cRule} class then contains the following methods:
+\begin{itemize}
+  \item{\textit{compactize} --- method is called during the object initialization phase and ensures that the right-hand side does not contain any terminal letters next to each other, if it does, then these are merged together. For instance a rule $A \rightarrow \wkpair{a}{b} \wkpair{a}{b}$ is transformed to an equivalent rule $A \rightarrow \wkpair{aa}{bb}$.}
+  \item{\textit{calculate\_cnts} --- method is called during the object initialization phase and counts values for \textit{upperCnt} and \textit{lowerCnt}}. The length of non-teminals is calculated during the initialization of the cWK\_CFG object, because it needs to know the length of non-terminals.
+\end{itemize}
+
+A constructor of the \textit{cRule} function requires a left-hand side of the rule, which is a non-terminal, and a right-hand side of the rule, which is a word, i.e. a list of letters. An example of a rule object creation for rule $A \rightarrow A \wkpair{ab}{\lambda}$ would then be:
+
+\begin{lstlisting}[language=Python]
+  cRule('A', ['A', (['a', 'b'], [])])
+\end{lstlisting}
+
+\bigskip
+
+A tree node is modelled by the class \textit{cTreeNode}, which contains the following:
+\begin{itemize}
+  \item{\textit{word} --- the actual word of the grammar}
+  \item{\textit{upperStrLen} --- number of upper strand terminals in the word}
+  \item{\textit{lowerStrLen} --- number of lower strand terminals in the word}
+  \item{\textit{ntLen} --- length of all non-terminals}
+  \item{\textit{parent} --- node in the search tree, which is this node's  predecessor, this is not necessary for the search, but once a solution is found, it may be useful to know what path has been taken to reach it.}
+  \item{\textit{hashNo} --- a unique has of the node calculated during the object initialization}
+  \item{\textit{precedence} --- a value assigned by the active node precedence heuristic. This value is used to compare two objects of this class, which is needed by the prioroty queue used during the run of tree search.}
+\end{itemize}
+
+A \textit{cTreeNode} constructor requires a word, three integers specifing the \textit{upperStrLen}, \textit{lowerStrLen} and \textit{ntLen}, parent node, and precedence. An example of a creation of this class object (probably root node) could then be:
+
+\begin{lstlisting}[language=Python]
+  cTreeNode(['S'], 0, 0, 1, None, 1)
+\end{lstlisting}
+
+\bigskip
+
+Both of these classes, \textit{cTreeNode} and \textit{cRule}, as well as the main class cWK\_CFG, are in the source file \textit{lib/ctf\_WK\_grammar.py}, as they are quite closely related.
+
+
+\section{Implementation of the test runner class, test scripts and grammars}
+The grammars that are used for testing both the Tree search and the WK-CYK are stored in the file \textit{lib/grammars.py}. Each grammar is characterized primarily by its rules, those are created first. Then the instance of the cWK\_CFG is created and then a generator of inputs is assigned to each grammar.
+
+A generator of inputs is then a method of each grammar object called \textit{input\_gen\_func}. Its purpose is to generates inputs for the given grammar of increasing lengths. It takes 3 parameters, a starting number of characters, a step --- how many characters should be added in the next generated input, and a boolean indicating whether the generated inputs should be accepted by the grammar or not. The generator does not have to return the input string exactly of the length as it was specified. Sometimes it is not even possible. The generated string's length may be approximate to the stecified values.
+
+Here is an example of input generator use for grammar 1:
+\begin{lstlisting}[language=Python]
+generator = g1.input_gen_func(5, 2, True)
+input1 = next(generator)   # generates 'aaaaa'
+g1.can_generate(input1)
+input2 = next(generator)   # generates 'aaaaaaa'
+g1.can_generate(input2)
+\end{lstlisting}
+
+I have implemented the following five test script, which are in the root directory:
+\begin{itemize}
+  \item{\textit{ts\_node\_precedence\_tests.py} --- runs a test for all of the 40 grammars (20 in basic form and 20 in the CNF) with inputs which are going to be accepted. Each test runs the Parse tree on this input one time for each of the available node precedence heuristics.}
+
+  \item{\textit{ts\_pruning\_tests.py} --- runs two tests for each of the 40 grammars, one with an input that will be accepted and one that will be rejected by the Tree search. Each test runs the Parse tree with all pruning heuristics inactive, with all active, and then for each one it runs with activates all but the one heuristic. Thus comparing how each one heuristic contributes to the overall performance.}
+
+  \item{\textit{ts\_speed\_tests.py --- runs two tests (one positive, one negative) for each of the 40 grammars, in each test a Tree search is run repeatedly (up to 30 times or it is stopped if it exceeds time limit)} with increasing input length. This is used to analyse the time (possible also memory) complexity of the Parse tree with respect to the input length.}
+
+  \item{\textit{ts\_var\_inputs\_tests.py} --- runs tests for some hand-picked inputs of the same length in order to compare, how the different variants of the same length inputs affect the performance}
+
+  \item{\textit{wk\_cyk\_tests.py} --- runs two tests (one positive, one negative) for 17 grammars, which are ready for WK-CYK run. Those must be in the CNF and grammars 5, 19 and 20 are excluded, since they use other complementarity relation then identity. In each test, the grammar runs the WK-CYK repeatedly with increasing input length}
+\end{itemize}
+
+Each of these scripts print its output into a table where all the results are compared. Ouputs, which I received by running these test scripts, are in the output directory.
+
+All these scripts use the \textit{cPerfTester} class, which is a sort of middle layer between the grammar class and the test scripts. It helps with displaying the result table and gathering and parsing data returned by the algorithm runs.
+It contains the following methods:
+
+\begin{itemize}
+  \item{\textit{run\_test\_ntimes} --- runs the Tree search several times, calculates and returns averages over results these runs}
+  \item{\textit{run\_node\_precedence\_test} --- a wrapper used by the script \textit{ts\_node\_precedence\_tests.py}}
+  \item{\textit{run\_prune\_test} --- a wrapper used by the script \textit{ts\_pruning\_tests.py}}
+  \item{\textit{run\_speed\_test} ---a wrapper used by the script \textit{ts\_speed\_tests.py}}
+  \item{\textit{var\_inputs\_test} ---a wrapper used by the script \textit{ts\_var\_inputs\_tests.py}}
+  \item{\textit{run\_wk\_cyk\_test} ---a wrapper used by the script \textit{wk\_cyk\_tests.py}}
+\end{itemize}
+
+
+\section{How to use the cWK\_CFG class}
+It is possible to directly run the one or more of the test scripts from the root folder. They do not have other requirements than to have Python3 installed. In the application root directory in Linux terminal it can be run simply by typing:
+
+\begin{verbatim}
+  python3 ts_node_precedence_tests.py
+  python3 ts_pruning_tests.py
+  ...
+\end{verbatim}
+
+In order to use the \textit{cWK\_CFG} class directly there is a demo script in the root directory \textit{demo.py} which shows the use of pre-defined grammars and creating a new grammar step by step and can be called in the same way:
+
+\begin{verbatim}
+  python3 demo.py
+\end{verbatim}
+
+In a nutshell, when using a pre-defined grammar, it can be used right after import. To test if a grammar 1 can genarate a string $aaaaa$, one could write:
+\begin{lstlisting}[language=Python]
+  from lib.grammars import g1
+  o, a, p, result = g1.can_generate('aaaaa')
+  print(result)
+\end{lstlisting}
+
+And to define a grammar from scratch and, for instance, run the WK-CYK algorithm, one can write:
+\begin{lstlisting}[language=Python]
+  rules = [
+    cRule('S', ['S', 'S', 'S']),   # S -> S S S
+    cRule('S', [(['a'], ['a'])])   # S -> a/a
+  ]
+  g1 = cWK_CFG(['S'], ['a'], 'S', rules, [('a', 'a')])
+  g1.to_wk_cnf()
+  result = g1.run_wk_cyk('aaaaa')
+  print(result)
+\end{lstlisting}
 
 
 \chapter{Testing the state space search and comparison to WK-CYK}
