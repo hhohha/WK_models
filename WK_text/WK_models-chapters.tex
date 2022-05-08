@@ -1,22 +1,30 @@
 \chapter{Introduction}
 
-I used the following stuff: \cite{A1}, \cite{DETERM_WKA}, \cite{A3}, \cite{A4}, \cite{A5}, \cite{A6}, \cite{A7}, \cite{WK_CYK}, \cite{WK_PUSHDOWN_AUT}, \cite{WK_FIN_AUT}
+The ability to read DNA, to understand it or even to modify it, is certainly one of the ways that many people thing will define the future. But in order to work with DNA there needs to be a mathematical model that can actually compute with such structures and that is prepared to be run on computers. And working with this model must be efficient enough becasue genetic code has huge number of digits.
 
+This works follows the work of Zulkufli et al. \cite{WK_GRAMMARS_1}, \cite{WK_GRAMMARS_2}, \cite{WK_CYK} who have studied models for working with Watson-Crick languages and introduced the WK-CYK algorithm, a modification of the CYK algorithm, which works with Watson-Crick context-free grammars and is able to decide membership problem for these languages. The stated complexity of this algorithm is $\mathcal{O}(n^6)$ with respect to the input length. However, with this complexity the algorithm still does not seem to be useful for practical DNA computatons considering how long DNA code is.
 
-\chapter{Watson-Crick models}
-Number of models working with double stranded sequences has been proposed. The purpuse of this chapter is to summarize these models and some of their key attributes that will be used in a later chapters.
+Therefore this thesis introduces State space search algorithm. While its theoretical complexity is not as good as in case of WK-CYK, it takes more more practical approach. In practice, thanks to various heuristics, it is very often able to decide the membership problem with Watson-Crick context-free grammars of inputs far longer then what WK-CYK can handle.
+
+Chapter \ref{chapter:models} contains an overview of most common models for working with Watson-Crick languages. Chapter \ref{chapter:WK_CYK} discusses ways of deciding membership problem of those languages with the focus on the WK-CYK algorithm. Chapter \ref{chapter:parse_tree} introduces the State space search algorithm and the heuristics and optimizations that make it more efficient. Chapter \ref{chapter:implementation} focuses on the implementation of the State space search and is probably going to be useful to someone who wants to delve into the code and use it or build on it. Finally, chapter \ref{chapter:testing} containes twenty grammars that were used for testing both State space search and WK-CYK algorithms in practice. And present results of these tests.
+
+A integral component of this thesis is an implementation of the State space search algorithm, the WK-CYK algorithm and a number tests used to analyse the state and space complexities and compare the algorithms.
+
+\chapter{Watson-Crick models} \label{chapter:models}
+Number of models working with double stranded sequences has been proposed. The purpuse of this chapter is to present motivation for using them and to summarize these models and some of their key attributes that will be used in a later chapters.
 
 \section{DNA as an inspiration for Watson-Crick languages}
-The study of Watson-Crick models is motivated by DNA (deoxyribonucleic acid) computing. In order to study the DNA mathematically -- i.e. to perform mathematical operations, it is necessary to work with a suitable abstraction -- a model which captures its key characteristics. Specifically, there are two characterictics that the Watson-Crick models capture -- the fact that DNA is a double stranded chain and the Watson-Crick relation between DNA nucleotides.
+The study of Watson-Crick models is motivated by DNA (deoxyribonucleic acid) computing. In order to study the DNA mathematically, i.e. to perform mathematical operations, it is necessary to work with a suitable abstraction --- a model which captures its key characteristics. Specifically, there are two characterictics that the Watson-Crick models capture --- the fact that DNA is a double stranded chain and the Watson-Crick relation between DNA nucleotides.
 The two fundamental models that are used to define a language in computer theory are grammars and automata. Several versions of both have been proposed but all of them work with these two characterictics in a very similar manner.
 
-\begin{figure}
-  \includegraphics[width=8cm]{placeholder.pdf}
+DNA consists of two chains of nucleotides that are connected by covalent bonds and together form a double helix (figure \ref{fig:dna}). These two chains are represented in the Watson-Crick automata by two reading heads which read two inputs independetly but controlled by the same states. Similarly, Watson-Crick grammars produce by their rules not just a chain of symbols, but two chains.
+
+\begin{figure}[ht]
+  \includegraphics[height=8cm]{DNA.png}
   \centering
+  \label{fig:dna}
   \caption{The DNA double helix}
 \end{figure}
-
-DNA consists of two chains of nucleotides that are connected by covalent bonds and together form a double helix. These two chains are represented in the Watson-Crick automata by two reading heads which read two inputs independetly but controlled by the same states. Similarly, Watson-Crick grammars produce by their rules not just a chain of symbols, but two chains.
 
 Each nucleotide contains one of the four nucleobases - cytosine (C), guanine (G), adenine (A), thymine (T). These bases are always connected with their counterpart: cytosine with guanine and adenine with thymine. That means that whenever one of the four appears in a chain, its counterpart appears in the other chain in the corresponding place being bound together by the covalent bond. The Watson-Crick models therefore introduce a complementary relation -- a relation between symbols which must be kept in the whole input for it to be valid. Typically, this relation is symmetric ($a R b \Leftrightarrow b R a$) and covers the whole alphabet (every symbol must have at least one counterpart). Often every symbol has exactly one counterpart -- just like in case of DNA (the relation is frequently defined as an identity which is still somewhat similar to the DNA pairing).
 
@@ -90,40 +98,108 @@ $\delta$ is a set of rules in the following form: $(q, ({w_1 \atop w_2}), x) \ri
 
 \section{Comparison of expressing power of various models}
 
-\chapter{Existing ways of testing membership in Watson-Crick languages}
+\chapter{Existing ways of testing membership in Watson-Crick languages} \label{chapter:WK_CYK}
 
 \section{Using deterministic automata}
 
-\section{WK-CYK}
+\section{WK-CYK algorithm}
 The WK-CYK algorithm was introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK languages.
+
 \subsection{The CYK algorithm}
-The CYK algorithm, introduced in \todo{Look up the original paper} is used to decide the membership in a language defined by a context-free grammar which must be in Chomsky normal form.
+The CYK algorithm, is used to decide the membership in a language defined by a context-free grammar, which must be in the Chomsky normal form (CNF).
 
-There is a string and a grammar on the input. The algorithm uses bottom-up parsing. In CNF, there are two kinds of rules (disregarding the $S \rightarrow \epsilon$ rule which is used only to include empty string in the language): $A \rightarrow a$ and $A \rightarrow BC$ where $A, B, C$ are non-terminals and $a$ is a terminal. In the first stage, it analyses the first kind of rules -- each of the symbols from the input string has to be generated by a rule or several rules of this form. Thus it gets a set of candidate non-terminals for each symbol.
+On the input there is a string and a grammar and the algorithm decides whether the string belongs to the language defined by the grammar. There are two kinds of rules in a grammer in the CNF (disregarding the $S \rightarrow \epsilon$ rule which is used only to include empty string in the language): $A \rightarrow a$ and $A \rightarrow BC$ where $A, B, C$ are non-terminals and $a$ is a terminal. In the first stage, it analyses the first kind of rules --- each of the symbols from the input string has to be generated by a rule or several rules of this form. Thus it gets a set of candidate non-terminals for each symbol.
 
-In the next stage it uses the second kind of rules -- every non-terminal (except the starting one) has to be generated by such a rule. The algorithm is looking for rules which can generate the candidate non-terminals which have been found in the previous stage. All possible combinations need to be considered, for instance the sequence of non-terminals $ABC$ may be generated by rules $X \rightarrow AB$ and $Y \rightarrow XC$ or by rules $X \rightarrow BC$ and $Y \rightarrow AX$. In this way, the algorithm needs to find all possible ways to generate words of increasing length (all parse trees). Finally, it needs to find a non-terminal that can generate the whole word and it must be the starting non-terminal in the given grammar. If it succeeds, the word given on the input is in the language, otherwise it is not.
-A more detailed and formal description can be found in \todo{Look up the original paper}.
+In the next stage it uses the second kind of rules. Every non-terminal (except the starting one) has to be generated by such a rule.
+The algorithm is looking for rules which can generate the candidate non-terminals which have been found in the previous stage. All possible combinations need to be considered, for instance the sequence of non-terminals $ABC$ may be generated by rules $X \rightarrow AB$ and $Y \rightarrow XC$ or by rules $X \rightarrow BC$ and $Y \rightarrow AX$. In this way, the algorithm needs to find all possible ways to generate words of increasing length (all parse trees). Finally, it needs to find a non-terminal that can generate the whole word and it must be the starting non-terminal in the given grammar. If it succeeds, the word given on the input is in the language, otherwise it is not.
 
-The complexity of the CYK algorithm is $O(n^4)$.
+The complexity of the CYK algorithm is $O(n^3 \times R)$ where n is the input string length and R is the number of rules in the grammar.
 
 \todo{possibly show an example and the triangular visualization}
 
+\subsection{Watson-Crick Chomsky normal form}
+Just like the CYK algorithm works with grammars in the Chomsky normal form, the WK-CYK algorithm requires grammars to be in the Watcon-Crick Chomsky normal form. A Watcon-Crick Chomsky normal form (WK-CNF) is a modification of CNF for Watson-Crick context-free grammars. A grammar in the WK-CNF has only rules of one of the following forms:
+
+\begin{itemize}
+  \item{$A \rightarrow \wkpair{a}{\lambda}$}
+  \item{$A \rightarrow \wkpair{\lambda}{a}$}
+  \item{$A \rightarrow B C$}
+  \item{$S \rightarrow \wkpair{\lambda}{\lambda}$ (this rule is used only to include an empty word in the language)}
+\end{itemize}
+
+where $A$, $B$ and $C$ are non-terminals, $S$ is the starting non-terminal and $a$ is a terminal of the grammar. It is possible to transform any WK context-free grammar to the WK-CNF. The steps are mostly analogous to the transformation of the standard context-free grammar to CNF. This process includes:
+
+\begin{enumerate}
+  \item{removing $\lambda$-rules}
+  \item{removing unit rules (rules of the form $A \rightarrow B$)}
+  \item{removing useless rules and symbols (symbols that are unreachable from the starting symbol or cannot lead to a terminal string, and rules which use such symbols)}
+  \item{replacing every terminal on the left-hand side of each rule with a new nonterminal and adding a new corresponding rule}
+  \item{breaking down the non-terminals producing rules, so that they produce only two at a time}
+\end{enumerate}
+
+Detailed description of the transformation can be found in \cite{WK_CYK}.
+
 \subsection{Description of the WK-CYK algorithm}
-Just like the CYK algorithm works with grammars in Chomsky normal form (CNF), the WK-CYK algorithm works with WK-Chomsky normal form (WK-CNF) -- a modification of CNF for Watson-Crick grammars. Since WK grammars can have terminals only in upper or lower strand, so the CNF rules which generate terminals have the following form: $A \rightarrow ({a \atop \lambda})$ or $A \rightarrow ({\lambda \atop a})$ where $a$ is a terminal. And the empty rule has the form: $S \rightarrow ({\lambda \atop \lambda})$.
+A complication compared to CYK that WK-CYK has to deal with is the ambiguity in the order of generating terminals. In case of standart context-free grammar in the CNF, the order of non-terminals that generate a word, for instance $abcd$, is clear --- if the rules are $A \rightarrow a$, $B \rightarrow b$, $C \rightarrow c$ and $D \rightarrow d$, the word with non-terminals that generates that terminal string must be $ABCD$. The order cannot change.
 
-Just like any context free grammar can be transformed to CNF, any WK grammar can be transformed to WK-CNF. The algorithm to do that is analogous to CNF and is described in detail in \cite{WK_CYK}.
+But in case of WK grammars, the order is not clear. For the terminal string $\wkpair{ab}{cd}$, the only given order is $a$ before $b$ and $c$ before $d$, anything else is uncertain. If the rules are $A \rightarrow \wkpair{a}{\lambda}$, $B \rightarrow \wkpair{b}{\lambda}$, $C \rightarrow \wkpair{\lambda}{c}$ and $D \rightarrow \wkpair{\lambda}{d}$, that terminal word can be produced by six different orderings of the non-terminals:
+$ABCD$, $ACBD$, $ACDB$, $CABD$, $CADB$ and $CDAB$.
 
-\subsection{Results and some issues with WK-CYK}
-As mentioned WK-CYK algorithm only works with grammars in CNF. While every context-free WK grammar can be transformed to WK-CNF, it can result in a significantly more complex grammar. In some edge cases, there can even be an explosion in the resulting number of rules while removing the $\lambda$-rules.
+WK-CYK algorithm expects a grammar in the WK-CNF and a double stranded string on the input. Since one of the algorithm's requirements is that the complementarity relation must be identity, the upper and lower strands are always the same.
 
-The complexity of WK-CYK is said to be $O(n^6)$. That is true in relation to the length of the input string only -- when the number of rules is considered a constant. Otherwise the complexity would be $O(n^7)$ -- there are seven nested loops in the actual implementation while one of them is looping over the rules of the grammar.
-In practice the WK-CYK algorithm is feasible for input strings with roughly X symbols.
+WK-CYK uses sets $X_{a:b,c:d}$ --- sets of non-terminals, that can generate a part of the input double stranded string specified by the indexes $a$, $b$, $c$ and $d$. $a$ and $b$ are indexes of a terminals in the upper strand thus specifying an interval (starting index is 1 and borders are included). The lower strand interval is specified by indexes $c$ and $d$. If a pair of indexes is 0, no symbols for the corresponding strand are included. For instance, for the input $\wkpair{abcd}{abcd}$, $X_{2:2,0:0}$ will contain a set of non-terminals generating $\wkpair{b}{\lambda}$, $X_{2:4,1:3}$ non-teminals generating $\wkpair{bcd}{abc}$.
 
+\subsubsection{The main procedure of WK-CYK}
+In the first step, WK-CYK finds sets $X_{i:i,0:0}$ and $X_{0:0,i:i}$ for $0 < i \leq |input|$. These are non-terminals that directly generate single terminals. Then, it searches for ways to generate segments of the input of increasing lengths, beginning with length of 2 and up to the length of $2n$ where $n$ is the length of the input. It is beacuse in the input of length 2 there are actually $2n$ of terminals --- $n$ in the upper and $n$ in the lower strand. For each length of $n$ it takes all possible combinations of number of symbols from the upper and the lower strands. For instance, if the length of the current segment is 3, that could be 3 terminals from the upper strand and 0 from the lower, 2 and 2, 1 and 3 or 0 and 4.
+
+For each of these segments, it calls procedure \textit{compute set} (described below) which finds all non-terminals, that could generate the given segment.
+For computation of a set of non-terminals $X_{i:j,k:l}$ WK-CYK uses a procedure called \textit{compute set}. When WK-CYK uses this procedure to compute set $X$ of a segment of length $n$, it is necessary to have already computed sets $X$ for all segments of length $m < n$. Therefore it proceeds from the length 1 upward.
+
+Let us consider an example with input $\wkpair{abcd}{abcd}$. The first step looks for way of generating the individual terminals, in other words non-terminals that generate $\wkpair{a}{\lambda}$, $\wkpair{\lambda}{a}$, $\wkpair{b}{\lambda}$ etc. Then it looks for non-terminals that could generate two terminals, meaning either two terminals from the upper strand, two terminals from the lower strand or one from each. In each of these cases, all possible comninations need to be considered. If the two terminals are from the upper strand, the combinations are either $\wkpair{ab}{\lambda}$, $\wkpair{bc}{\lambda}$ or $\wkpair{cd}{\lambda}$ (or using the $X$ sets: $X_{1:2,0:0}$, $X_{2:3,0:0}$ or $X{3:4,0:0}$). It the two retminals are one from each strand, there are 16 combinations $\wkpair{x}{y}$ where $x, y \in \{a, b, c, d\}$ ($X_{1:1,1:1}$, $X_{2:2,1:1}$, $X_{1:1,2:2}$, ...). And for terminals from the lower strand, the combinations are $\wkpair{\lambda}{ab}$, $\wkpair{\lambda}{bc}$ or $\wkpair{\lambda}{cd}$ ($X_{0:0,1:2}$, $X_{0:0,2:3}$ and $X_{0:0,3:4}$).
+
+When the segment length of $2n$ has been computed, WK-CYK is finished. It succeeded if the starting symbol $S$ can generate the whole input, in other words: $S \in X_{1:n,1:n}$.
+
+\subsubsection{The compute set procedure}
+The \textit{compute set} procedure has as a parameter a segment of input specified by the four indexes. It searches all pairs of sets $X$ which could together produce the given segment. If the segment consists of symbols from one strand only ($X_{i:j,0:0}$ or $X_{0:0,i:j}$), the situation is siplier --- it needs to consider the pairs of sets $X$ that produce the segment split in any two parts. If the segment contains symbols from both strands, there are more ways to split it:
+
+\begin{itemize}
+  \item{one set could produce the entire upper strand and the second set could produce the entire lower strand, or the other way around}
+  \item{one set could produce and entire upper (or lower) strand and any part the lower (upper), the other the rest of the incomplete strand. In this casec all possible divisions of the divided strand need to be considered}
+  \item{both set could produce parts of both strands, again, all possible combinations of divisions of both strands need to be considered}
+\end{itemize}
+
+When all combinations of two $X$ sets potentially producing the input segment have been found, the procedure then needs to check the grammar rules to find those rules which actually generate non-terminal from these sets. For such a rule, the non-terminal on its left-hand side is going to be included in the procedure's result. The final result is then a set of all such non-terminals.
+
+Lets us consider an example, where the procedure computes $X_{1:2,1:2}$, in other words, the segment $\wkpair{ab}{ab}$. All possible division of this segment are:
+
+\begin{enumerate}
+  \item{$\wkpair{ab}{\lambda}$, $\wkpair{\lambda}{ab}$ --- $X_{1:2,0:0}$, $X_{0:0,1:2}$}
+  \item{$\wkpair{\lambda}{ab}$, $\wkpair{ab}{\lambda}$ --- $X_{0:0,1:2}$, $X_{1:2,0:0}$}
+  \item{$\wkpair{ab}{a}$, $\wkpair{\lambda}{b}$ --- $X_{1:2,1:1}$, $X_{0:0,2:2}$}
+  \item{$\wkpair{a}{ab}$, $\wkpair{b}{\lambda}$ --- $X_{1:1,1:2}$, $X_{2:2,0:0}$}
+  \item{$\wkpair{a}{\lambda}$, $\wkpair{b}{ab}$ --- $X_{1:1,0:0}$, $X_{2:2,1:2}$}
+  \item{$\wkpair{\lambda}{a}$, $\wkpair{ab}{b}$ --- $X_{0:0,1:1}$, $X_{1:2,2:2}$}
+  \item{$\wkpair{a}{a}$, $\wkpair{b}{b}$ --- $X_{1:1,1:1}$, $X_{2:2,2:2}$}
+\end{enumerate}
+
+All these seven $X$ sets must already be computed, they are sets for segments of lengths 1, 2 and 3. Each of these steps contains zero or more non-terminals that can produce the given subsegment. In last step, the procedure checks all rules of the grammar of type $A \rightarrow BC$ to find rules where $B$ is in the first $X$ set and $C$ is in the second $X$ set of one of the divisions of the segment. If it finds such a rule, it means that the non-terminal on the left-hand side can produce the givan segment.
+
+
+\subsubsection{Two remarks regarding WK-CYK}
+1. Zulkufli et al. provides the WK-CYK algorithm in pseudo-code in \cite{WK_CYK}, section 6.1. The loop on the line 13 iterates $\beta$ from 0 to $n$. In this context, $\beta$ represents the length of the lower strand segment, while $\alpha$ represents the length of the upper strand segment while $\alpha = y - \beta$ where $y$ is the length of the whole segment. Part of the loop actually calculates with non-sensical values. When calculating with segment that are shorter then one strand (i.e. $y < n$), it includes case when $\beta > y$ and so $\alpha < 0$. In other words, the algorithm splits the segment of length, say, 2 to part of lengths 3 and -1.
+
+And then, when calculating with segment that is longer than one strand, it includes case when $\beta$ is too short and so $\alpha$ is then longer then a strand length. In other words, it splits the segment of length, say, 8 when the length of the strands is 4, to lengths 7 and 1, but the maximum length can be the 4.
+
+This does not affect the correctness of the computation, because the non-sensical values find no result. However, more precise and efficient solution would be to iterate $\beta$ in the interval: $\langle max(y-n, 0), min(n, y)\rangle$, instead of interval $\langle 0, n\rangle$.
+
+\medskip
+
+2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As Zulkufli et al. \cite{WK_CYK} explain in section 6, the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{compute set} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input and $R$ is the number of rules in the grammar. The description of the procedure \textit{compute set} uses the operation of set union ($\cup$) as if it has constant time complexity, which, in reality, it does not --- it requires iterating over the rules of the grammar.
 
 \section{Using WK Pushdown automata}
 
-\chapter{Testing membership by searching the state space}
-This section will introduce the main algorithm of this thesis for testing memebership in WK context-free languages. In this thesis it is referred to as \textbf{space state search} or \textbf{tree search}. Its core is a standard Breadth-first search algorithm (BFS) and then various optimizations are added.
+\chapter{Testing membership by searching the state space} \label{chapter:parse_tree}
+This section will introduce the main algorithm of this thesis for testing memebership in WK context-free languages. In this thesis it is referred to as \textbf{Space state search} or \textbf{Tree search}. Its core is a standard Breadth-first search algorithm (BFS) and then various optimizations are added.
 
 Standard BFS starts with a root node. In case of grammars, that is the starting non-terminal symbol. Then the tree is built by applying all possible rules to all possible non-terminals. Each rule application generates a new node. The node is a word which consists of some non-terminals, some terminals in the upper strand and terminals in the lower strand. The node that is the solution needs to meet the following criteria:
 \begin{enumerate}
@@ -149,12 +225,21 @@ The figure \ref{fig:search_tree} shows an example of a tree search computation. 
 
 
 \section{Identifying a dead end in the state tree}
-A blind BFS would stop seaching a branch only when all non-terminals have been used to generate all possible end words (words with terminals only). But sometimes it is possible to tell in advance that a specific word cannot lead to the desired solution. If that is the case the whole branch can be removed from the tree. The next sections describes various ways of recognizing the dead branches.
+A blind BFS would stop seaching a branch only when all non-terminals have been used to generate all possible end words (words with terminals only). But sometimes it is possible to tell in advance that a specific word cannot lead to the desired solution. If that is the case the whole branch can be removed from the tree. The next sections describes various ways (heuristics) of recognizing the dead branches. These are called pruning heuristics, there are five of them and each one has an abbriviation which is used further on.
 
-\subsection{One of the strands is too long}
+\begin{enumerate}
+  \item{Detecting that one of the strands is already too long --- SL}
+  \item{Detecting that the overall word is already too long --- TL}
+  \item{Matching the starting terminals in the upper strand to the input --- WS}
+  \item{Checking the complementarity relation --- RL}
+  \item{Comparing the input to a regular expression generated from the word --- RE}
+\end{enumerate}
+
+
+\subsection{One of the strands is too long (SL)}
 A terminal symbol which appears both in the upper or lower strand can never disappear further in the branch. That means that the count of all symbols in upper and in the lower strand must not be grater then the length of the input string. Otherwise the solution can never be reached from that branch.
 
-\subsection{The word including non-terminals is too long}
+\subsection{The word including non-terminals is too long (TL)}
 Non-terminals present a more complex problem when dealing with the length of the word. First of all, the algorithm calculates in advance how many terminals each non-terminal produces at minimum. For instance, if the grammar contains rules: $A \rightarrow A A \:|\: \wkpair{ab}{cd} \:|\: B B$ and $B \rightarrow \wkpair{a}{\lambda}$, non-terminal $B$ produces always one terminal, that means one terminal at minimum. Non-terminal $A$ can produce various number of terminals, but two at minimum -- thanks to the rule $A \rightarrow B B$ and the fact that $B$ has the minimum of one. This value is than considered to be the length of the given non-terminal.
 This length can be applied both to the upper or to the lower strand because, in general, it is not known which strand will absorb the symbols generated from the non-terminal.
 This then leads to the following constraint on the word:
@@ -168,16 +253,16 @@ If the grammar contains no $\lambda$-rule (rule of the form $N \rightarrow ({\la
 
 If the grammar does contain $\lambda$-rules, the previous constrain can still be applied -- the non-terminals that can be erased are assinged the length of zero. In this case, it is not possible to guarentee that the search will end, because the non-terminals of length zero can be combined infinitely many times. However, it is possible to utilize the algorithm for removing $\lambda$-rules (which is described in \cite{WK_CYK} and which is implemented in the WK\_CFG class described in the next chapter).
 
-\subsection{The beginning of the word does not match the input}
+\subsection{The beginning of the word does not match the input (WS)}
 If the current word begins with some terminal symbols in the upper strand, these symbols will always stay at the beginning further in the given branch. If these symbols do not match the prefix of the input string of the same length, the input string can never be generated from this branch.
 If on the other hand, the word starts with a non-terminal, there is nothing to be said about what can be at the beginning of the word futher in the branch.
 
 It is possible to check the end of the word in the same manner, but as it will be described futher, the generation is performed from the left to the right and so there is no benefit in checking the end.
 
-\subsection{Checking the complementarity relation}
-As previously described, the symbols in the upper and lower strands with the same indexes must be related by the complementarity relation. Unfortunately, this can be checked only at the beginning of the word. Indexes of the symbols in the middle part (anywhere after the first nonterminal) are not known. Thus this check can be understood as an extension of the previous one -- if the word begins with some terminal symbols and there are some symbols in both the upper and lower strands, these symbols can be checked if they are in the relation -- as long as its counterpart is already known.
+\subsection{Checking the complementarity relation (RL)}
+As previously described, the symbols in the upper and lower strands with the same indexes must be related by the complementarity relation. Unfortunately, this can be checked only at the beginning of the word. Indexes of the symbols in the middle part (anywhere after the first non-terminal) are not known. Thus this check can be understood as an extension of the previous one -- if the word begins with some terminal symbols and there are some symbols in both the upper and lower strands, these symbols can be checked if they are in the relation -- as long as its counterpart is already known.
 
-\subsection{Checking the word correspondence to a regular expression}
+\subsection{Checking the word correspondence to a regular expression --- RE}
 It is possible to generate a regular expression that represents the current word. Each non-terminal serves as a wild card ($.*$). Each terminal in the upper strand stands for itself. Lower strand is ignored. This expression must be matchable to the input string, otherwise it is not possible to generate it from the current branch. For instance, if the word is this:
 $$\wkpair{abc}{f}N_1\wkpair{d}{gh}N_2\wkpair{e}{i}N_3$$
 
@@ -234,9 +319,13 @@ Following node precedence heuristics have been implemented and tested.
 In summary, there are 12 node precedence heuristics considered in total (including the first, empty heuristic). Unlike in case of pruning, where all methods can be applied at the same time, there can be only one node precedence heuristic at one time. Therefore section \todo{LINK} contains the tests and comparison of the effectiveness of these heutistics.
 \end{enumerate}
 
-\section{Theoretical complexity of state space search}
+\section{Theoretical complexity of the State space search}
+The State space search algorithm uses Breadth-first search (BFS) as its basis. Both the time and space complexity of BFS is $\mathcal{O}(b^d)$ where $b$ is the maximum number of successors of a node (branching factor) and $d$ is the depth of the tree. The branching factor is then equal to the maximum number of rules of the given grammar that have the same non-terminal on the left-hand side. This is because always only the first non-terminal in the word is used to generate sucessors in the tree. The depth of the tree is going to be different for different grammars and even for different inputs.
 
-\section{Parallelizing state space search algorithm}
+In general, the theoretical complexity of the State space search algorithm is not impressive, it is much worse then WK-CYK's $\mathcal{O}(n^6)$ or $\mathcal{O}(n^6 \times R)$. However, this is because it has been designed with a rather practical approach, it relies heavily on the heuristics and optimizations and thus has usually much better performance.
+
+\section{Parallelizing the State space search algorithm}
+The parallelization of State space search should be very much possible and straightforward. The algorithm uses a priority queue to store all the nodes which are to be analysed. Therefore, multiple processes could be taking nodes from the queue and analyse them independently. There are many variants how this could be done --- analysing one node at the time and returning result immediately to the queue shared by all process or analysing independetly whole segments of the tree with less need for synchronization but, perhaps, more redundant work --- these are questions of the efficiency of the actual implementation which is out of the scope of this work.
 
 \chapter{Implementation of the state space search} \label{chapter:implementation}
 
@@ -314,7 +403,7 @@ For instance, the word is $A \wkpair{ab}{c} B$, the rule being applied is $A \ri
 Since the grammar is able to apply certain transformations (like to CNF or removing lambda rules), it is convinient to be able to save the state of the grammar and later restore it. This is what the methods \textit{backup} and \textit{restore} are for. The \textit{backup} method simply saves a copy of the set rules, non-terminals and terminals as \textit{rulesBackup}, \textit{ntsBackup}, \textit{tsBackup}. The \textit{restore} method then restores these backup sets and runs again the precalculating methods similarly to the class initialization phase.
 
 \subsection{Run of the state space search algorithm}
-The State space search algoritgm is run by the \textit{can\_generate} method which has one parameter: the string to be tested for language membership. It uses a priority queue (python \textit{PriorityQueue} class from the \textit{queue} modul) to store the nodes if the search tree. When getting items from this queue, it returns the smallest value item, which is in the queue. The class representing a node is \textit{cTreeNode} (described in \ref{later}). The method also uses a set of hashes all states that have been put in the queue (whether they are still there or have been taken out), so that duplicate nodes are skipped.
+The State space search algorithm is run by the \textit{can\_generate} method which has one parameter: the string to be tested for language membership. It uses a priority queue (python \textit{PriorityQueue} class from the \textit{queue} modul) to store the nodes if the search tree. When getting items from this queue, it returns the smallest value item, which is in the queue. The class representing a node is \textit{cTreeNode} (described in \ref{later}). The method also uses a set of hashes all states that have been put in the queue (whether they are still there or have been taken out), so that duplicate nodes are skipped.
 
 At the beginning, the queue contains one node --- the starting non-terminal. If the queue is empty (and there is no node being parsed), it indicates that the whole state space has been searched and the methods ends with a negative response. Otherwise it gets next node from the queue, generates all possible successors of this node (method \textit{get\_all\_successors}). Each of the successor nodes is checked, if it is the desired solution (method \textit{is\_result}). If so, the search optionally prints the path to the solution and ends with the positive result. Otherwise it checks whether the node is new (has not been in the queue before) and is added to the queue. Also, it is checked during every iteraton if the time limit has been exceeded. If so, it returns an empty response (\textit{None} value).
 
@@ -369,7 +458,7 @@ The methods removing $\lambda$-rules, unit rules, unterminatable symbols and unr
 
 
 \subsection{Run of the WK-CYK algorithm}
-The WK-CYK is implemented by method \textit{run\_wk\_cyk} which takes as a single parameter the input string and returns a boolean value indicating whether the input has been accepted or not. Similarly to Tree search, every iteration checks the elapsed time and if it exceed the time limit, it returns an empty value (\textit{None}). The implementation is taken from the section 6 of \cite{WK_CYK}. The \textit{run\_wk\_cyk} method corresponds to the \textit{sets construction} procedure of this paper. The \textit{compute set} procedure called from \textit{sets construction} then corresponds to the \textit{computeSet} method of the cWK\_CNF class.
+The WK-CYK is implemented by method \textit{run\_wk\_cyk} which takes as a single parameter the input string and returns a boolean value indicating whether the input has been accepted or not. Similarly to Tree search, every iteration checks the elapsed time and if it exceed the time limit, it returns an empty value (\textit{None}). The implementation is taken from the section 6 of \cite{WK_CYK}. The \textit{run\_wk\_cyk} method corresponds to the \textit{sets construction} procedure of this paper. The \textit{compute set} procedure called from \textit{sets construction} then corresponds to the \textit{compute set} method of the cWK\_CNF class.
 
 
 \section{Implementation of the rule and node classes}
@@ -497,7 +586,7 @@ And to define a grammar from scratch and, for instance, run the WK-CYK algorithm
 \end{lstlisting}
 
 
-\chapter{Testing the state space search and comparison to WK-CYK}
+\chapter{Testing the state space search and comparison to WK-CYK} \label{chapter:testing}
 
 \section{Watson-Crick grammars used for testing}
 
@@ -830,7 +919,7 @@ The tree search algorithm needs to keep in memory the nodes, which have been gen
 
 Then it is necessary to remember states in the queue, the number of the states there can go up or down as the search progresses, but it is more likely to go up, unless the search is coming to an end. In any case, the important figure is the maximum number of states, that were in the queue at one point.
 
-Next parameter that needs to be considered is the size of one state in the memory. As mentioned in the section \ref{chapter:implementation}, there are six integers (storing the number of terminals in the two strands, number of nonterminals, hash number, the node parent and the node precedence evaluation) and the word itself. The word can contain up to twice the number of symbols then is the length of the input string. If it contains more, it is going to be pruned.
+Next parameter that needs to be considered is the size of one state in the memory. As mentioned in the section \ref{chapter:implementation}, there are six integers (storing the number of terminals in the two strands, number of non-terminals, hash number, the node parent and the node precedence evaluation) and the word itself. The word can contain up to twice the number of symbols then is the length of the input string. If it contains more, it is going to be pruned.
 
 This is not necessarily true, if the grammar contains some $\lambda$-rules and non-terminals that can be erased. Then the theoretical length of the word in memory has no limit, but this is not a typical scenario and can be avoided altogether by applying the $\lambda$-rules removal algorithm.
 
