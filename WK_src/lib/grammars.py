@@ -167,13 +167,14 @@ def input_gen_func(start, step, accept):
 		yield s
 g6.input_gen_func = input_gen_func
 ##################################### GRAMMAR 7 #####################################
+# accepted strings: wcw^R
 rules = [
 	cRule('S', [(['a'], ['a']), 'S', (['a'], ['a'])]),
 	cRule('S', [(['b'], ['b']), 'S', (['b'], ['b'])]),
 	cRule('S', [(['c'], ['c'])])
 ]
 g7 = cWK_CFG(['S'], ['a', 'b', 'c'], 'S', rules, [('a', 'a'), ('b', 'b'), ('c', 'c')])
-g7.desc = 'wcw^r'
+g7.desc = 'wcw^R'
 
 def input_gen_func(start, step, accept):
 	curLen = start

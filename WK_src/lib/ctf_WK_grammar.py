@@ -124,7 +124,7 @@ class cWK_CFG:
 		self.rules = set(rules)
 		self.relation = set(relation)
 		self.erasableNts: Set[tNonTerm] = set()
-		self.lastCreatedNonTerm = 0
+		self.lastCreatedNonTerm = 0  # TODO - add this to description in thesis maybe?
 		self.timeLimit = 10
 		self.pruneCnts: Dict[Callable, int] = {
 			self.prune_check_strands_len: 0,

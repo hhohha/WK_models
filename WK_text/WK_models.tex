@@ -88,10 +88,19 @@
   supervisor.surname={Křivka},
   supervisor.title.p={Ing.},
   supervisor.title.a={Ph.D.},
-  keywords.cs={Watson-Crick, Automaty},
-  keywords.en={Watson-Crick, Automata},
-  abstract.cs={Abstrakt bude zde.}, % abstrakt v českém či slovenském jazyce / abstract in czech or slovak language
-  abstract.en={Abstract will be here.},
+  keywords.cs={Watson-Crickovy jazyky, formální gramatiky, DNA výpočty, prohledávání stavového prostoru, problém členství v jazyce},
+  keywords.en={Watson-Crick languages, formal grammars, DNA computing, state space search, language membership problem},
+  abstract.cs={
+  Tato práce se zabývá Watson-Crikovými jazyky, které jsou inspirovány výpočty nad DNA, dále jejich modely a algoritmy pro rozhodování členství řetězců v těchto jazycích. Analyzoval jsem nedávno představený algoritmus nazvaný WK-CYK a presentuji algoritmus založený na prohledávání stavového prostoru, jehož základem je standardní prohledávání prostoru do šířky, ale používá množství optimalizací a heuristik, aby byl v praxi efektivnější a dokázal analyzovat delší vstupy. Klíčové jsou heuristiky pro prořezávání stavového prostoru (detekují slepé větve) a heuristiky pro výběr nejslibnějších větví pro další výpočet.
+
+  Testoval jsem tyto dva algoritmy na 20 (40 včetně jejich verzí v Chomského normalní formě) různých Watson-Crickových gramatikách. Zatímco WK-CYK je schopen rozhodnout členství v jazyce v rozumném čase u vstupů o délce zhruba 30--50 symbolů, jeho efektivnost je velmi konzistentní u různých gramatik a různých vstupů, algoritmus prohledávající stavový prostor je obvykle (v 90--95 \% případů) efektivnější a je schopen provést výpočet pro vstupy s délkou o stovkách často i tisících symbolů. Tedy tento algoritmus má potenciál být vhodným nástrojem pro praktické použití při rozhodování členství ve Watson-Crickových jazycích a nabízí vhodný základe pro další vývoj a vylepšení, které by dále zvyšovali efektivitu algoritmu.
+},
+  abstract.en={
+This work focuses on Watson-Crick languages inspired by DNA computing their models and algorithms of deciding the language membership of these strings. I have analyzed a recently introduced algorithm called WK-CYK and introduce a state space search algorithm which is based on regular Breath-first search algorithm but uses a number of optimizations and heuristics to be efficient in practical use and able to analyze inputs of greater lengths. The key heuristics are the heuristics for pruning the state space (detecting dead ends) and heuristics for choosing the most promising branches to continue the search.
+
+I have tested these two algorithms with 20 (40 including their Chomsky normal form versions) different Watson-Crick grammars. While WK-CYK is able to decide the language membership in a reasonable time for inputs of length of roughly 30--50 symbols and its performance very consistent for all kinds of grammars and inputs, state space search is usually (90--95 \% of cases) more efficient and able to do the computation for inputs with lengths of hundreds or even thousands symbols. Thus the state space search has a potential to be a good tool for practical Watson-Crick membership testing and is a good basis to further build on and improve the efficiency of the algorithm.
+
+},
   declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Mr. Křivka
   I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.},
   % Acknowledgement (optional, ideally in the language of the thesis)
