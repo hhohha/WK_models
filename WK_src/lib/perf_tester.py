@@ -1,13 +1,41 @@
+# Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
+# Project: WK Grammar Tree Search
+# Tester class
+
 import time
 
-class cPerfTester:
-	def __init__(self):
-		self.testCnt = 0
-		self.timesTaken = [[], [], [], [], [], [], [] ,[], [], [], [], []]
-		self.timeouts = [[], [], [], [], [], [], [] ,[], [], [], [], []]
-		self.nodes = [[], [], [], [], [], [], [] ,[], [], [], [], []]
+class cResult:
+	def __init__(self, name):
+		self.name = name
+		self.times = []
+		self.statesOpen = []
+		self.statesClosed = []
+		self.timeouts = []
+		self.inputLens = []
 
-		self.tests = []
+	def update(self, time, statesOpen, statesClosed, timeout, inputLen=None):
+		self.times.append(time)
+		self.statesOpen.append(statesOpen)
+		self.statesClosed.append(statesClosed)
+		self.timeouts.append(timeout)
+		self.inputLens.append(inputLen)
+
+class cPerfTester:
+	def __init__(self, casesLst = []):
+		self.testCnt = 0
+		self.allResults = [cResult(name) for name in casesLst]
+
+	def printResults(self):
+		print(f'|{"="*106}|')
+		print(f'|{" "*38} FINAL RESULTS from {len(self.allResults[0].times)} tests {" "*39} |')
+		print(f'|{"="*106}|')
+		print(f'| TEST CASE{" "*30}| time total | open states total | closed states total | timeouts |')
+		print(f'|{"-"*106}|')
+
+		for result in self.allResults:
+			totalTime = round(sum(result.times), 4)
+			print(f'| {result.name:39}| {totalTime:10} | {sum(result.statesOpen):17} | {sum(result.statesClosed):19} |  {sum(result.timeouts):7} |')
+		print(f'|{"="*106}|')
 
 	def printHeader(self, grammar, inputStr, shouldAccept, title):
 		print(f'|{"="*150}|')
@@ -31,7 +59,7 @@ class cPerfTester:
 		statesOpenTotal, statesAllTotal, prunesTotal, timeTotal, results = 0, 0, [0, 0, 0, 0, 0, 0], 0, []
 		for i in range(times):
 			start = time.time()
-			statesOpen, statesAll, prunes, result = grammar.can_generate(inputStr)
+			statesOpen, statesAll, prunes, result = grammar.run_tree_search(inputStr)
 			end = time.time()
 			timeTaken = round(end - start, 4)
 
@@ -65,26 +93,22 @@ class cPerfTester:
 		self.testCnt += 1
 		self.printHeader(grammar, inputStr, shouldAccept, " NODE PRECEDENCE HEURISTIC" + " "*38)
 
-		timesChart = []
 		for idx, t in enumerate(grammar.nodePrecedenceList):
 			grammar.currentNodePrecedence = idx
 			statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
 			strategy = grammar.nodePrecedenceList[idx][0]
 			statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
 			prunesStr = str(prunes).replace('[', '').replace(']', '')
-			timesChart.append(timeTaken)
 
-			self.timesTaken[idx].append(timeTaken)
-			self.timeouts[idx].append(result != 'TIMEOUT')
-			self.nodes[idx].append((statesOpen, statesAll-statesOpen))
-
+			self.allResults[idx].update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT')
 			print(f'| {strategy:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
+
+		print(f'|{"="*150}|\n\n\n')
 
 	def run_prune_test(self, grammar, inputStr, shouldAccept, times=1):
 
 		self.testCnt += 1
 		self.printHeader(grammar, inputStr, shouldAccept, " PRUNING HEURISTICS" + " "*45)
-		timesChart = []
 
 		# all pruning options on
 		for k in grammar.pruningOptions:
@@ -92,17 +116,17 @@ class cPerfTester:
 		statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
 
 		idx = 0
-		self.timesTaken[idx].append(timeTaken)
-		self.timeouts[idx].append(result != 'TIMEOUT')
-		self.nodes[idx].append((statesOpen, statesAll-statesOpen))
-
 		pruning = 'ALL ON'
 		prunesStr = str(prunes).replace('[', '').replace(']', '')
 		statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+
+		self.allResults[idx].update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT')
 		print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
+		# testing with one pruning option off
 		prevKey = None
 		for key in grammar.pruningOptions:
+			idx += 1
 			if prevKey is not None:
 				grammar.pruningOptions[prevKey] = True
 			grammar.pruningOptions[key] = False
@@ -112,32 +136,30 @@ class cPerfTester:
 			pruning = key.__name__ + ' OFF'
 			prunesStr = str(prunes).replace('[', '').replace(']', '')
 			statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
-			print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
-			idx += 1
-			self.timesTaken[idx].append(timeTaken)
-			self.timeouts[idx].append(result != 'TIMEOUT')
-			self.nodes[idx].append((statesOpen, statesAll-statesOpen))
+			self.allResults[idx].update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT')
+			print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
 
 		# all pruning options off
 		for k in grammar.pruningOptions:
 			grammar.pruningOptions[k] = False
+		idx += 1
 		statesOpen, statesAll, prunes, timeTaken, result = self.run_test_ntimes(grammar, inputStr, shouldAccept, times)
 		pruning = 'ALL OFF'
 		prunesStr = str(prunes).replace('[', '').replace(']', '')
 		statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
+
+		self.allResults[idx].update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT')
 		print(f'| {pruning:63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
-		idx += 1
-		self.timesTaken[idx].append(timeTaken)
-		self.timeouts[idx].append(result != 'TIMEOUT')
-		self.nodes[idx].append((statesOpen, statesAll-statesOpen))
+
 
 		print(f'|{"="*150}|\n\n\n')
 		
 	def run_wk_cyk_test(self, grammar, input_gen_func, shouldAccept):
 		self.testCnt += 1
 		self.printHeader(grammar, None, shouldAccept, " INPUT LENGTH" + " "*51)
-		testRec = []
+		resultObj = cResult(self.testCnt)
+
 		i = 0
 		while True:
 			inputStr = next(input_gen_func)
@@ -157,16 +179,20 @@ class cPerfTester:
 				result = 'FALSE'
 				
 			print(f'| {str(len(inputStr)):63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
-			testRec.append((len(inputStr), timeTaken, result))
-			if i > 30 or timeTaken > 10:
+			resultObj.update(timeTaken, 0, 0, result == 'TIMEOUT', len(inputStr))
+
+			if i > 30 or result == 'TIMEOUT':
 				break
 			i += 1
-		self.tests.append(testRec)
+
+		self.allResults.append(resultObj)
+		print(f'|{"="*150}|\n\n\n')
+
 
 	def run_speed_test(self, grammar, input_gen_func, shouldAccept, times=1):
 		self.testCnt += 1
 		self.printHeader(grammar, None, shouldAccept, " INPUT LENGTH" + " "*51)
-		testRec = []
+		resultObj = cResult(self.testCnt)
 
 		i = 0
 		while True:
@@ -175,12 +201,13 @@ class cPerfTester:
 			statesStr = str(statesOpen) + ' + ' + str(statesAll-statesOpen)
 			prunesStr = str(prunes).replace('[', '').replace(']', '')
 			print(f'| {str(len(inputStr)):63}| {timeTaken:9} | {statesStr:21} | {prunesStr:36} | {result:8} |')
-			testRec.append((len(inputStr), timeTaken, statesOpen, statesAll, result))
 
-			if i > 30 or timeTaken > 10:
+			resultObj.update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT', len(inputStr))
+
+			if i > 30 or result == 'TIMEOUT':
 				break
 			i += 1
-		self.tests.append(testRec)
+		self.allResults.append(resultObj)
 
 		print(f'|{"="*150}|\n\n\n')
 

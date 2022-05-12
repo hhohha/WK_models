@@ -22,7 +22,7 @@ inputStr3 = next(gen)
 
 # and then, let's run the tree search on these inputs and print the results
 for inputStr in [inputStr1, inputStr2, inputStr3]:
-	openStates, allStates, pruneStats, result = g6.can_generate(inputStr)
+	openStates, allStates, pruneStats, result = g6.run_tree_search(inputStr)
 	print(f'the input "{inputStr}" returned with result: {result}')
 
 # now we can try to run the wk-cyk, for that the grammar must be in WK-CNF
@@ -87,7 +87,7 @@ inputStr3 = next(gen)
 
 # and run tree search
 for inputStr in [inputStr1, inputStr2, inputStr3]:
-	openStates, allStates, pruneStats, result = g.can_generate(inputStr)
+	openStates, allStates, pruneStats, result = g.run_tree_search(inputStr)
 	print(f'the input "{inputStr}" returned with result: {result}')
 
 # and we can remove the lambda rule, we can save the current grammer form first
@@ -102,7 +102,7 @@ print('\n')
 
 # nothing changes when running the tree search, the grammars are equivalent
 for inputStr in [inputStr1, inputStr2, inputStr3]:
-	openStates, allStates, pruneStats, result = g.can_generate(inputStr)
+	openStates, allStates, pruneStats, result = g.run_tree_search(inputStr)
 	print(f'the input "{inputStr}" returned with result: {result}')
 
 # and we can restore the original form of the grammar

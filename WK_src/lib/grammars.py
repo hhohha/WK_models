@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+# Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
+# Project: WK Grammar Tree Search
+# list of grammars and input generators
 
 from lib.ctf_WK_grammar import *
 import random

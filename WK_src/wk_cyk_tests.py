@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+# Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
+# Project: WK Grammar Tree Search
+# Runs a test of wk-cyk using all 20 grammars increasing the input length by the step value, all grammars must be in CNF
 
 from lib.perf_tester import cPerfTester
 from lib.grammars import *
@@ -6,115 +8,29 @@ from lib.grammars import *
 def main():
 	t = cPerfTester()
 
-	############ grammar 1 #############################################################
-	g1.to_wk_cnf()
+	# not applicable for grammars 5, 19, 20 - not compl. relation not identity
+	allGrammars =   [g1, g2, g3, g4, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, g16, g17, g18]
 
-	t.run_wk_cyk_test(g1, g1.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g1, g1.input_gen_func(10, 2, False), False)
+	# all tests have the same starting length and step as the WK-CYK performance is very consistent
+	INPUT_START_LEN = 10
+	INPUT_STEP = 2
 
-	############ grammar 2 #############################################################
-	g2.to_wk_cnf()
+	#filter which tests will be run
+	runTests = range(1, len(allGrammars) * 2 + 1)
+	#runTests = [1, 6]
 
-	t.run_wk_cyk_test(g2, g2.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g2, g2.input_gen_func(10, 2, False), False)
+	testNo = 0
+	for grammar in allGrammars:
+		grammar.to_wk_cnf()
 
-	############ grammar 3 #############################################################
-	g3.to_wk_cnf()
+		testNo += 1
+		if testNo in runTests:
+			t.run_wk_cyk_test(grammar, grammar.input_gen_func(INPUT_START_LEN, INPUT_STEP, True), True)
 
-	t.run_wk_cyk_test(g3, g3.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g3, g3.input_gen_func(10, 2, False), False)
+		testNo += 1
+		if testNo in runTests:
+			t.run_wk_cyk_test(grammar, grammar.input_gen_func(INPUT_START_LEN, INPUT_STEP, False), False)
 
-	############ grammar 4 #############################################################
-	g4.to_wk_cnf()
-
-	t.run_wk_cyk_test(g4, g4.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g4, g4.input_gen_func(10, 2, False), False)
-
-	############ grammar 5 #############################################################
-	g5.to_wk_cnf()
-
-	t.run_wk_cyk_test(g5, g5.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g5, g5.input_gen_func(10, 2, False), False)
-
-	############ grammar 6 #############################################################
-	g6.to_wk_cnf()
-
-	t.run_wk_cyk_test(g6, g6.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g6, g6.input_gen_func(10, 2, False), False)
-
-	############ grammar 7 #############################################################
-	g7.to_wk_cnf()
-
-	t.run_wk_cyk_test(g7, g7.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g7, g7.input_gen_func(10, 2, False), False)
-
-	############ grammar 8 #############################################################
-	g8.to_wk_cnf()
-
-	t.run_wk_cyk_test(g8, g8.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g8, g8.input_gen_func(10, 2, False), False)
-
-	############ grammar 9 #############################################################
-	g9.to_wk_cnf()
-
-	t.run_wk_cyk_test(g9, g9.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g9, g9.input_gen_func(10, 2, False), False)
-
-	############ grammar 10 ############################################################
-	g10.to_wk_cnf()
-
-	t.run_wk_cyk_test(g10, g10.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g10, g10.input_gen_func(10, 2, False), False)
-
-	############ grammar 11 ############################################################
-	g11.to_wk_cnf()
-
-	t.run_wk_cyk_test(g11, g11.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g11, g11.input_gen_func(10, 2, False), False)
-
-	############ grammar 12 ############################################################
-	g12.to_wk_cnf()
-
-	t.run_wk_cyk_test(g12, g12.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g12, g12.input_gen_func(10, 2, False), False)
-
-	############ grammar 13 ############################################################
-	g13.to_wk_cnf()
-
-	t.run_wk_cyk_test(g13, g13.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g13, g13.input_gen_func(10, 2, False), False)
-
-	############ grammar 14 ############################################################
-	g14.to_wk_cnf()
-
-	t.run_wk_cyk_test(g14, g14.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g14, g14.input_gen_func(10, 2, False), False)
-
-	############ grammar 15 ############################################################
-	g15.to_wk_cnf()
-
-	t.run_wk_cyk_test(g15, g15.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g15, g15.input_gen_func(10, 2, False), False)
-
-	############ grammar 16 ############################################################
-	g16.to_wk_cnf()
-
-	t.run_wk_cyk_test(g16, g16.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g16, g16.input_gen_func(10, 2, False), False)
-
-	############ grammar 17 ############################################################
-	g17.to_wk_cnf()
-
-	t.run_wk_cyk_test(g17, g17.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g17, g17.input_gen_func(10, 2, False), False)
-
-	############ grammar 18 ############################################################
-	g18.to_wk_cnf()
-
-	t.run_wk_cyk_test(g18, g18.input_gen_func(10, 2, True), True)
-	t.run_wk_cyk_test(g18, g18.input_gen_func(10, 2, False), False)
-
-	print(t.tests)
 
 if __name__ == "__main__":
 	main()

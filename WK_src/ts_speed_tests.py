@@ -1,202 +1,64 @@
-#!/usr/bin/python3
+# Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
+# Project: WK Grammar Tree Search
+# Runs a tree search test using all 20 grammars increasing the input length by the step value
 
 from lib.perf_tester import cPerfTester
 from lib.grammars import *
 
 def main():
 	times = 1
-	t = cPerfTester()
-
-	############ grammar 1 #############################################################
-	t.run_speed_test(g1, input_gen_func(501, 100, True), True, times)
-	t.run_speed_test(g1, input_gen_func(100, 20, False), False, times)
-
-	g1.to_wk_cnf()
-
-	t.run_speed_test(g1, input_gen_func(100, 20, True), True, times)
-	t.run_speed_test(g1, input_gen_func(10, 2, False), False, times)
-
-	############ grammar 2 #############################################################
-	t.run_speed_test(g2, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g2, input_gen_func(200, 100, False), False, times)
-
-	g2.to_wk_cnf()
-
-	t.run_speed_test(g2, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g2, input_gen_func(100, 50, False), False, times)
-
-	############ grammar 3 #############################################################
-	t.run_speed_test(g3, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g3, input_gen_func(200, 100, False), False, times)
-
-	g3.to_wk_cnf()
-
-	t.run_speed_test(g3, input_gen_func(3, 1, True), True, times)
-	t.run_speed_test(g3, input_gen_func(3, 1, False), False, times)
-
-	############ grammar 4 #############################################################
-
-	t.run_speed_test(g4, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g4, input_gen_func(100, 50, False), False, times)
-
-	g4.to_wk_cnf()
-
-	t.run_speed_test(g4, input_gen_func(10, 10, True), True, times)
-	t.run_speed_test(g4, input_gen_func(5, 3, False), False, times)
-
-	############ grammar 5 #############################################################
-
-	############ grammar 6 #############################################################
-
-	t.run_speed_test(g6, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g6, input_gen_func(100, 50, False), False, times)
-
-	g6.to_wk_cnf()
-
-	t.run_speed_test(g6, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g6, input_gen_func(100, 50, False), False, times)
-
-	############ grammar 7 #############################################################
-
-	t.run_speed_test(g7, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g7, input_gen_func(200, 100, False), False, times)
-
-	g7.to_wk_cnf()
-
-	t.run_speed_test(g7, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g7, input_gen_func(200, 100, False), False, times)
-
-	############ grammar 8 #############################################################
-
-	t.run_speed_test(g8, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g8, input_gen_func(200, 100, False), False, times)
-
-	g8.to_wk_cnf()
-
-	t.run_speed_test(g8, input_gen_func(200, 50, True), True, times)
-	t.run_speed_test(g8, input_gen_func(200, 50, False), False, times)
-
-	############ grammar 9 #############################################################
-
-	t.run_speed_test(g9, input_gen_func(100, 20, True), True, times)
-	t.run_speed_test(g9, input_gen_func(50, 20, False), False, times)
-
-	g9.to_wk_cnf()
-
-	t.run_speed_test(g9, input_gen_func(50, 10, True), True, times)
-	t.run_speed_test(g9, input_gen_func(20, 10, False), False, times)
-
-	############ grammar 10 ############################################################
-
-	t.run_speed_test(g10, input_gen_func(50, 10, True), True, times)
-	t.run_speed_test(g10, input_gen_func(20, 10, False), False, times)
-
-	g10.to_wk_cnf()
-
-	t.run_speed_test(g10, input_gen_func(40, 10, True), True, times)
-	t.run_speed_test(g10, input_gen_func(30, 5, False), False, times)
-
-	############ grammar 11 ############################################################
-
-	t.run_speed_test(g11, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g11, input_gen_func(50, 5, False), False, times)
-
-	g11.to_wk_cnf()
-
-	t.run_speed_test(g11, input_gen_func(6, 2, True), True, times)
-	t.run_speed_test(g11, input_gen_func(6, 2, False), False, times)
-
-	############ grammar 12 ############################################################
-
-	t.run_speed_test(g12, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g12, input_gen_func(200, 100, False), False, times)
-
-	g12.to_wk_cnf()
-
-	t.run_speed_test(g12, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g12, input_gen_func(200, 100, False), False, times)
-
-	############ grammar 13 ############################################################
-
-	t.run_speed_test(g13, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g13, input_gen_func(200, 100, False), False, times)
-
-	g13.to_wk_cnf()
-
-	t.run_speed_test(g13, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g13, input_gen_func(200, 100, False), False, times)
-
-	############ grammar 14 ############################################################
-
-	t.run_speed_test(g14, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g14, input_gen_func(200, 100, False), False, times)
-
-	g14.to_wk_cnf()
-
-	t.run_speed_test(g14, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g14, input_gen_func(200, 100, False), False, times)
-
-	############ grammar 15 ############################################################
-
-	t.run_speed_test(g15, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g15, input_gen_func(100, 50, False), False, times)
-
-	g15.to_wk_cnf()
-
-	t.run_speed_test(g15, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g15, input_gen_func(100, 50, False), False, times)
-
-	############ grammar 16 ############################################################
-
-	t.run_speed_test(g16, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g16, input_gen_func(100, 50, False), False, times)
-
-	g16.to_wk_cnf()
-
-	t.run_speed_test(g16, input_gen_func(50, 30, True), True, times)
-	t.run_speed_test(g16, input_gen_func(50, 30, False), False, times)
-
-	############ grammar 17 ############################################################
-
-	t.run_speed_test(g17, input_gen_func(10, 2, True), True, times)
-	t.run_speed_test(g17, input_gen_func(10, 2, False), False, times)
-
-	g17.to_wk_cnf()
-
-	t.run_speed_test(g17, input_gen_func(10, 2, True), True, times)
-	t.run_speed_test(g17, input_gen_func(10, 2, False), False, times)
-
-	############ grammar 18 ############################################################
-
-	t.run_speed_test(g18, input_gen_func(200, 100, True), True, times)
-	t.run_speed_test(g18, input_gen_func(80, 30, False), False, times)
-
-	g18.to_wk_cnf()
-
-	t.run_speed_test(g18, input_gen_func(100, 20, True), True, times)
-	t.run_speed_test(g18, input_gen_func(80, 30, False), False, times)
-
-	############ grammar 19 ############################################################
-
-	t.run_speed_test(g19, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g19, input_gen_func(100, 20, False), False, times)
-
-	g19.to_wk_cnf()
-
-	t.run_speed_test(g19, input_gen_func(100, 30, True), True, times)
-	t.run_speed_test(g19, input_gen_func(50, 5, False), False, times)
-
-	############ grammar 20 ############################################################
-
-	t.run_speed_test(g20, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g20, input_gen_func(100, 50, False), False, times)
-
-	g20.to_wk_cnf()
-
-	t.run_speed_test(g20, input_gen_func(100, 50, True), True, times)
-	t.run_speed_test(g20, input_gen_func(100, 50, False), False, times)
-
-	print(t.tests)
+	tester = cPerfTester()
+
+	# lengths of inputs and steps for testing grammars in basic form and in CNF, positive and negative inputs
+	# suitable lens have been chosen so that the tests run a reasonable amount of time
+	testDataLst = [
+	#    grammar  basicFormPos   basicFormNeg    cnfPos      cnfNeg
+	#               len   step    len    step    len  step    len  step
+		(     g1,   500,   100,   100,     20,   100,   20,    10,    2),
+		(     g2,   200,   100,   200,    100,   100,   50,   100,   50),
+		(     g3,   200,   100,   200,    100,     3,    1,     3,    1),
+		(     g4,   100,    50,   100,     50,    10,   10,     5,    3),
+		(     g5,   300,    50,   300,     50,   300,   50,   300,   50),
+		(     g6,   100,    50,   100,     50,   100,   50,   100,   50),
+		(     g7,   200,   100,   200,    100,   200,  100,   200,  100),
+		(     g8,   200,   100,   200,    100,   200,   50,   200,   50),
+		(     g9,   100,    20,    50,     20,    50,   10,    20,   10),
+		(    g10,    50,    10,    20,     10,    40,   10,    30,    5),
+		(    g11,   200,   100,    50,      5,     6,    2,     6,    2),
+		(    g12,   200,   100,   200,    100,   200,  100,   200,  100),
+		(    g13,   200,   100,   200,    100,   200,  100,   200,  100),
+		(    g14,   200,   100,   200,    100,   200,  100,   200,  100),
+		(    g15,   100,    50,   100,     50,   100,   50,   100,   50),
+		(    g16,   100,    50,   100,     50,    50,   30,    50,   30),
+		(    g17,    10,     2,    10,      2,    10,    2,    10,    2),
+		(    g18,   200,   100,    80,     30,   100,   20,    80,   30),
+		(    g19,   100,    50,   100,     20,   100,   30,    50,    5),
+		(    g20,   100,    50,   100,     50,   100,   50,   100,   50),
+	]
+
+	#filter which tests will be run
+	runTests = range(1, len(testDataLst) * 4 + 1)
+	#runTests = [2, 5, 9]
+
+	testNo = 0
+	for grammar, basicPosLen, basicPosStep, basicNegLen, basicNegStep, cnfPosLen, cnfPosStep, cnfNegLen, cnfNegStep in testDataLst:
+		testNo += 1
+		if testNo in runTests:
+			tester.run_speed_test(grammar, grammar.input_gen_func(basicPosLen, basicPosStep, True), True, times)
+
+		testNo += 1
+		if testNo in runTests:
+			tester.run_speed_test(grammar, grammar.input_gen_func(basicNegLen, basicNegStep, False), False, times)
+
+		g1.to_wk_cnf()
+
+		testNo += 1
+		if testNo in runTests:
+			tester.run_speed_test(grammar, grammar.input_gen_func(cnfPosLen, cnfPosStep, True), True, times)
+
+		testNo += 1
+		if testNo in runTests:
+			tester.run_speed_test(grammar, grammar.input_gen_func(cnfNegLen, cnfNegStep, False), False, times)
 
 if __name__ == "__main__":
 	main()

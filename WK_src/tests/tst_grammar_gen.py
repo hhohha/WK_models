@@ -26,7 +26,7 @@ def runTest(grammar: cWK_CFG, inputStr: str, expected: bool):
 	#grammar.to_wk_cnf()
 
 	start = time.time()
-	openStates, closedStates, prunes, actual = grammar.can_generate(inputStr)
+	openStates, closedStates, prunes, actual = grammar.run_tree_search(inputStr)
 	statesO += openStates
 	statesC += closedStates
 	#openStates, closedStates, actual = 0, 0, grammar.run_wk_cyk(inputStr)
