@@ -11,10 +11,10 @@ Chapter \ref{chapter:models} contains an overview of most common models for work
 A integral component of this thesis is an implementation of the state space search algorithm, the WK-CYK algorithm and a number tests used to analyze the state and space complexities and to compare the algorithms.
 
 \chapter{Watson-Crick models} \label{chapter:models}
-A number of models working with double stranded sequences has been proposed. The purpose of this chapter is to present a motivation for using them and to summarize these models and some of their key attributes that will be used in a later chapters.
+A number of models working with double stranded sequences has been proposed. The purpose of this chapter is to present a motivation for using them and to summarize these models and some of their key attributes that will be important in later chapters.
 
 \section{DNA as an inspiration for Watson-Crick languages}
-The study of Watson-Crick models is motivated by DNA (deoxyribonucleic acid) computing. In order to study the DNA mathematically, i.e. to perform mathematical operations, it is necessary to work with a suitable abstraction --- a model which captures its key characteristics. Specifically, there are two characteristics that the Watson-Crick models capture --- the fact that DNA is a double stranded chain and the Watson-Crick relation between DNA nucleotides.
+The study of Watson-Crick models is motivated by DNA (deoxyribonucleic acid) computing. In order to study the DNA mathematically, i.e. to perform mathematical operations over it, it is necessary to work with a suitable abstraction --- a model which captures its key characteristics. Specifically, there are two characteristics that the Watson-Crick models capture --- the fact that the DNA is a double stranded chain and the Watson-Crick relation between DNA nucleotides.
 
 The two fundamental models that are used to define a language in computer theory are grammars and automata. Several versions of both have been proposed but all of them work with these two characteristics in a very similar manner.
 
@@ -29,15 +29,14 @@ DNA consists of two chains of nucleotides, one of which is marked as $5'$ end an
 
 Each nucleotide contains one of the four nucleobases - cytosine (C), guanine (G), adenine (A) and thymine (T). These bases are always connected with their counterpart: cytosine with guanine and adenine with thymine. That means that whenever one of the four appears in a chain, its counterpart appears in the other chain in the corresponding place being bound together by the covalent bond. The Watson-Crick models therefore introduce a complementarity relation --- a relation between symbols which must be kept in the whole input for it to be valid. Typically, this relation is symmetric ($a R b \Leftrightarrow b R a$) and covers the whole alphabet (every symbol must have at least one counterpart). Often every symbol has exactly one counterpart, just like in case of DNA. The relation is usually defined as an identity (i.e. each symbol is related to itself and only to itself) which is still somewhat similar to the DNA pairing.
 
-
 \section{Watson-Crick automata} \label{section:WKA}
-Watson-Crick automata have been first proposed in \cite{WK_FIN_AUT} as an enhancement of standard Finite Automata. Watson-Crick finite automaton is a 6-tuple $M = (V, \rho, Q, q_0, F, P)$ with the following meaning.
+Watson-Crick automata have first been proposed in \cite{WK_FIN_AUT} as an enhancement of standard Finite Automata. Watson-Crick finite automaton is a 6-tuple $M = (V, \rho, Q, q_0, F, P)$ with the following meaning.
 \begin{itemize}
   \item{$V$ -- finite input alphabet}
   \item{$\rho \subseteq V \times V$ -- complementarity relation}
   \item{$Q$ -- finite set of states}
   \item{$q_0 \in Q$ -- starting symbol}
-  \item{$F \subseteq Q$ -- set of finite states}
+  \item{$F \subseteq Q$ -- set of final states}
   \item{$P$ -- finite set of transition rules in a form $q \wkpair{w_1}{w_2} \rightarrow q'$ where $q, q' \in Q, w_1, w_2 \in V^*$}
 \end{itemize}
 
@@ -50,21 +49,21 @@ This implies that the both strands in a WK domain must have the same length.
 
 A configuration of a Watson-Crick automaton is a pair $(q, \wkpair{w_1}{w_2})$ where $q \in Q$ is a current state and $w_1, w_2 \in V^*$ are the parts of the upper and lower strands yet to be read.
 
-If $\wkpair{u_1}{u_2} \rightarrow q' \in P$ and $\wkpair{u_1 v_1}{u_2 v_2} \in \wkpair{V^*}{V^*}$ then $q \wkpair{u_1 v_1}{u_2 v_2} \Rightarrow q' \wkpair{v_1}{v_2}$ is a transition of the Watson-Crick automaton. $\Rightarrow^*$ denotes the transitive and reflexive closure of the relation $\Rightarrow$.
+If $q\wkpair{u_1}{u_2} \rightarrow q' \in P$ and $\wkpair{u_1 v_1}{u_2 v_2} \in \wkpair{V^*}{V^*}$ then $q \wkpair{u_1 v_1}{u_2 v_2} \Rightarrow q' \wkpair{v_1}{v_2}$ is a transition of the Watson-Crick automaton. $\Rightarrow^*$ denotes the transitive and reflexive closure of the relation $\Rightarrow$.
 
 A Watson-Crick automaton accepts the language $L(M)$:
 
 $$L(M) = \Big\{w_1 \in V^* | q_0 \wkdomain{w_1}{w_2} \Rightarrow^* f \wkpair{\lambda}{\lambda} \textnormal{ where } f \in F, w_2 \in V^*, \wkdomain{w_1}{w_2} \in WK_{\rho}(V)\Big\}$$
 
-This means that only the upper strand is accepted by this automaton to the language $L$. The lower strand has just an auxiliary purpose.
+$\lambda$ denotes a string of length zero (an empty string). This means that only the upper strand is accepted by this automaton to the language $L$. The lower strand has just an auxiliary purpose.
 
 \section{Special versions of Watson-Crick automata}
 Four special versions of Watson-Crick automata (WKA) are often used (\cite{DETERM_WKA}, \cite{STATE_COMPL}). These are:
 \begin{itemize}
   \item{stateless WKA --- the WKA has only one state: $Q = F = {q_0}$}
   \item{all final WKA --- all the states are final: $Q = F$}
-  \item{simple WKA --- each rule reads only one head: $(q \wkpair{w_1}{w_2} \rightarrow q' \in P) \Rightarrow (w_1 = \lambda \vee w_2 = \lambda)$}
-  \item{1-limited WKA --- similar to Simple WKA but also reads only one symbol at a time: $(q\wkpair{w_1}{w_2} \rightarrow q' \in P) \Rightarrow |w_1 w_2| = 1$}
+  \item{simple WKA --- each rule reads only one head: $(q \wkpair{w_1}{w_2} \rightarrow q' \in P) \Rightarrow (w_1 = \lambda \:\vee \:w_2 = \lambda)$}
+  \item{1-limited WKA --- reads only one symbol at a time: $(q\wkpair{w_1}{w_2} \rightarrow q' \in P) \Rightarrow |w_1 w_2| = 1$}
 \end{itemize}
 
 Three of these four special types of WKAs have the same power as the actual WKA, namely all final WKA, simple WKA and 1-limited WKA (stateless WKA is weaker). Therefore one possible approach to decide membership would be to limit the decision algorithm to one of these three types without any loss in expressing power.
@@ -73,24 +72,24 @@ There are three different variants of deterministic WKA proposed by in \cite{DET
 \begin{itemize}
   \item{Weakly deterministic WKA: WKA where in each reachable configuration, there is at most one possible continuation.}
   \item{Deterministic WKA: For any two rules which lead from the same state, either their upper strands or their lower strands must not be prefix comparable (one is not the prefix of the other). Formally: $(q \wkpair{u}{v} \rightarrow q_1 \in P \wedge q \wkpair{u'}{v'} \rightarrow q_2 \in P) \Rightarrow u \nsim_p u' \vee v \nsim_p v'$ where $\sim_p$ is the relation of prefix comparability.}
-  \item{Strongly deterministic WKA: these is a deterministic WKA and its complementarity relation is identity.}
+  \item{Strongly deterministic WKA: this is a deterministic WKA whose complementarity relation is identity.}
 \end{itemize}
 
-It is not specified how to actually achieve weak determinism. In fact, \cite{DETERM_WKA} shows that this property is undecidable. Intuitively, for a WKA to be weakly deterministic but not deterministic, there must be at least two rules which could both be used in certain configuration (otherwise it would be deterministic). But such a configuration must not be reachable (otherwise it would not be weakly deterministic). The configuration may be unreachable trivially -- by such rules using an unreachable state or a symbols that have no related symbols in the complementarity relation. But a configuration may be unreachable non-trivially if it is possible to tell how many symbols will be read from each strand before reaching certain state.
+It is not specified how to actually achieve weak determinism. In fact, \cite{DETERM_WKA} shows that this property is undecidable. Intuitively, for a WKA to be weakly deterministic but not deterministic, there must be at least two rules which could both be used in certain configuration (otherwise it would be deterministic). But such a configuration must not be reachable (otherwise it would not be weakly deterministic). The configuration may be unreachable trivially --- by such rules using an unreachable state or a symbols that have no related symbols in the complementarity relation. But a configuration may be unreachable non-trivially, if it is possible to tell how many symbols will be read from each strand before reaching certain state.
 
-Both weakly deterministic and deterministic WKA are in reality not deterministic (in an intuitive sense). Their determinism relies on the fact, that the configuration is known and for the configuration to be known, the entire input, meaning both strands of the input, needs to be specified. But that is often not a way how WKA are used, since WKA decides the membership in a language for the upper strand only. That means that a compatible strand has to be found in the process of running the WKA. Theoretically, it is possible to approach this problem by first generating all possible lower strands for the given upper strand based solely on the complementarity relation and afterwards use all these pairs as inputs for the WKA. In such a case, the weakly deterministic and deterministic automata would be truly deterministic, however this is clearly not feasible for non-trivial complementarity relations. Therefore, the strongly deterministic WKA is the only one witch is truly deterministic under all circumstances because the identity relation requirement leaves no space for these types of non-determinism.
+Both weakly deterministic and deterministic WKA are in reality not deterministic (in an intuitive sense). Their determinism relies on the fact that the configuration is known and for the configuration to be known, the entire input (meaning both strands of the input) needs to be specified. But that is often not a way how WKA are used, since WKA decides the membership in a language for the upper strand only. That means that a compatible strand has to be found in the process of running the WKA. Theoretically, it is possible to approach this problem by first generating all possible lower strands for the given upper strand based solely on the complementarity relation and afterwards use all these pairs as inputs for the WKA. In such a case, the weakly deterministic and deterministic automata would be truly deterministic, however this is clearly not feasible for non-trivial complementarity relations. Therefore, the strongly deterministic WKA is the only one witch is truly deterministic under all circumstances because the identity relation requirement leaves no space for these types of non-determinism.
 
 \section{Watson-Crick grammars}
 The first kind of Watson-Crick grammars that has been introduced were Watson-Crick regular grammars \cite{REG_GRAMMAR}. The key features are shared with Watson-Crick automata. Specifically, it it the complementarity relation $\rho$ and the double stranded strings that the grammar produces.
-The WK regular grammars have been used as a basis for Watson-Crick linear grammars and Watson-Crick context-free grammars introduced in \cite{WK_GRAMMARS_1}. Since a WK linear grammar is a generalization of WK linear grammar and WK context-free grammar is a generalization of WK linear grammar, it makes sense to start with the definition of the context-free version and then specify the constraints of linear and regular versions.
+The WK regular grammars have been used as a basis for Watson-Crick linear grammars and Watson-Crick context-free grammars introduced in \cite{WK_GRAMMARS_1}. Since a WK linear grammar is a generalization of WK regular grammar and WK context-free grammar is a generalization of WK linear grammar, it makes sense to start with the definition of the context-free version and then specify the constraints of linear and regular versions.
 
-A \textbf{Watson-Crick context-free grammar} is $G = (N, T, \rho, P, S)$ where $N$ is a finite set of non-terminals, $T$ is a finite set of terminals and $N \cup T = \emptyset$, $S \in N$ is a starting non-terminal, $\rho \subset T \times T$ is a symmetric complementarity relation, and $P$ is a finite set of rules that have the form $A \rightarrow \alpha$ where $A \in N \: \wedge \alpha \in (N \cup (\langle T^*/T^*)\rangle)^*$.
+A \textbf{Watson-Crick context-free grammar} is $G = (N, T, \rho, P, S)$ where $N$ is a finite set of non-terminals, $T$ is a finite set of terminals and $N \cup T = \emptyset$, $S \in N$ is a starting non-terminal, $\rho \subset T \times T$ is a symmetric complementarity relation, and $P$ is a finite set of rules that have the form $A \rightarrow \alpha$ where $A \in N \: \wedge \alpha \in (N \cup \wkpair{T^*}{T^*})^*$.
 
-The derivation of the grammar $G$ starts with the starting symbol $S$. $x \in (N \cup \langle T^*/T^* \rangle)^*$ directly derives $y \in (N \cup \langle T^*/T^* \rangle)^*$, denoted by $x \Rightarrow y$, if and only if:
+The derivation of the grammar $G$ starts with the starting symbol $S$. $x \in (N \cup  \wkpair{T^*}{T^*})^*$ directly derives $y \in (N \cup \wkpair{T^*}{T^*})^*$, denoted by $x \Rightarrow y$, if and only if:
 
 $$x = \beta A \gamma \: \wedge \: y = \beta \alpha \gamma$$
 
-where $A \in N \: \wedge \: \alpha, \beta, \gamma \in (N \cup \langle T^*/T^* \rangle)^* \: \wedge \: A \rightarrow \alpha \in P$.
+where $A \in N \: \wedge \: \alpha, \beta, \gamma \in (N \cup \wkpair{T^*}{T^*})^* \: \wedge \: A \rightarrow \alpha \in P$.
 
 The language generated by the grammar $G$ is:
 
@@ -100,9 +99,7 @@ where $\Rightarrow^*$ is a reflexive and transitive closure of $\Rightarrow$.
 
 A \textbf{Watson-Crick linear grammar} is a special version of a Watson-Crick context-free grammar where all the rules in the set of rules $P$ are in one of the following forms:
 
-$$A \rightarrow \wkpair{T^*}{T^*} B \wkpair{T^*}{T^*}$$
-
-$$A \rightarrow \wkpair{T^*}{T^*}$$
+$$A \rightarrow \wkpair{T^*}{T^*} B \wkpair{T^*}{T^*}, \:\:\: A \rightarrow \wkpair{T^*}{T^*}$$
 
 where $A, B \in N$
 
@@ -112,19 +109,19 @@ $$A \rightarrow \wkpair{T^*}{T^*} B, \:\:\: A \rightarrow \wkpair{T^*}{T^*}$$
 
 where $A, B \in N$
 
-A further specialization of Watson-Crick regular grammar has been defined in \cite{REG_GRAMMAR} called \textbf{1-limited Watson-Crick regular grammar} (N1WK grammar). All rules of such a grammar must contain exactly one terminal symbol on the left-hand side. In other words, the form of each rules must be one of the following:
+A further specialization of Watson-Crick regular grammar has been defined in \cite{REG_GRAMMAR} called \textbf{1-limited Watson-Crick regular grammar} (N1WK grammar). All rules of such a grammar must contain exactly one terminal symbol on the left-hand side and the starting non-terminal must be the only non-terminal in the grammar. In other words, the form of each rule must be one of the following:
 
 $$S \rightarrow \wkpair{a}{\lambda} S, \:\:\: S \rightarrow \wkpair{\lambda}{a} S, \:\:\: S \rightarrow \wkpair{a}{\lambda}, \:\:\: S \rightarrow \wkpair{\lambda}{a}$$
 
 \section{Some other models for Watson-Crick languages}
-This section mentions some other perhaps slightly less often used models for Watson-Crick languages --- Watson-Crick pushdown automata, Watson-Crick context-free systems and parallel communicating Watson-Crick automata.
+This section mentions some other, perhaps slightly less often used, models for Watson-Crick languages --- Watson-Crick pushdown automata, Watson-Crick context-free systems and parallel communicating Watson-Crick automata.
 
 \subsection{Watson-Crick pushdown automata}
-The Watson-Crick Pushdown automata (WCPDA) have been introduced in \cite{WK_PUSHDOWN_AUT}. It is basically a two-head pushdown automaton with the complementarity relation added on top. Formally a WCPDA $P$ is a 10-tuple $P = (Q, \#, \$, V, \Gamma, \delta, q_0, Z_0, F, \rho)$ with most symbols having the same standard meaning as in conventional Pushdown automaton -- $Q$ is a finite set of states, $V$ is an input alphabet, $\Gamma$ is a stack alphabet, $q_0 \in Q$ is a starting state, $Z_0 \in \Gamma$ is a starting stack symbol and $F \subseteq Q$ is the set of final states. Symbols $\#, \$ \notin V$ are left and right input markers on the two strands. $\rho$ is the complementarity relation similar to standard WKA.
+The Watson-Crick Pushdown automata (WCPDA) have been introduced in \cite{WK_PUSHDOWN_AUT}. It is basically a two-head pushdown automaton with the complementarity relation added on top. Formally a WCPDA $P$ is a 10-tuple $P = (Q, \#, \$, V, \Gamma, \delta, q_0, Z_0, F, \rho)$ with most symbols having the same standard meaning as in a conventional pushdown automaton --- $Q$ is a finite set of states, $V$ is an input alphabet, $\Gamma$ is a stack alphabet, $q_0 \in Q$ is a starting state, $Z_0 \in \Gamma$ is a starting stack symbol and $F \subseteq Q$ is the set of final states. Symbols $\#, \$ \notin V$ are left and right input markers on the two strands. $\rho$ is the complementarity relation similar to standard WKA.
 
-$\delta$ is a set of rules in the following form: $(q, \wkpair{w_1}{w_2}, x) \rightarrow (q', \gamma) \textnormal{ where } q, q' \in Q, w_1, w_2 \in V^* \cup \#V^* \cup V^*\$ \cup \#V^*\$, x \in \Gamma, \gamma \in \Gamma^*$. That means the automaton can transition from state $q$ to $q'$ reading the input $w_1$ with the first head and $w_2$ with the second and go to state $q'$ while putting a string (i.e. 0-n symbols) of the stack symbols onto the stack. The two strands on the input are enclosed in the beginning symbol $\#$ and the closing symbol $\$$, therefore the symbol $\#$ may appear in the beginning of $w_1$ or $w_2$ and similarly the closing symbol $\$$ at the end.
+$\delta$ is a set of rules in the following form: $(q, \wkpair{w_1}{w_2}, x) \rightarrow (q', \gamma) \textnormal{ where } q, q' \in Q, w_1, w_2 \in V^* \cup \#V^* \cup V^*\$ \cup \#V^*\$, x \in \Gamma, \gamma \in \Gamma^*$. It means that the automaton can transition from state $q$ reading the input $w_1$ with the first head and $w_2$ with the second head and go to state $q'$ while removing the top symbol from the stack and putting a string (i.e. 0-n symbols) of the stack symbols onto the stack. The two strands on the input are enclosed in the beginning symbol $\#$ and the closing symbol $\$$, therefore the symbol $\#$ may appear in the beginning of $w_1$ or $w_2$ and similarly the closing symbol $\$$ at the end.
 
-A configuration of $P$ consists is a triple $(q, \wkpair{x}{y}, \gamma)$ where $q \in Q$ is a state, $\wkpair{x}{y}$ is the remaining input to be read where $x, y \in \#V^*\$ \cup V^*\$ \cup \lambda$ and $\gamma \in \Gamma^*$ is the content of the stack. The initial configuration of the automaton is $(q_0, \wkpair{\#w_1\$}{\#w_2\$}, Z_0)$ where $\wkdomain{w_1}{w_2} \in WK_{\rho}(V)$.
+A configuration of $P$ is a triple $(q, \wkpair{x}{y}, \gamma)$ where $q \in Q$ is a state, $\wkpair{x}{y}$ is the remaining input to be read where $x, y \in \#V^*\$ \cup V^*\$ \cup \lambda$ and $\gamma \in \Gamma^*$ is the content of the stack. The initial configuration of the automaton is $(q_0, \wkpair{\#w_1\$}{\#w_2\$}, Z_0)$ where $\wkdomain{w_1}{w_2} \in WK_{\rho}(V)$.
 
 A transition $\vdash$ of $P$ is a relation between configurations defined as follows:
 
@@ -135,11 +132,11 @@ $\vdash^*$ is a transitive relation of $\vdash$ denoting zero or more transition
 The language accepted by $P$ is:
 $$L(P) = \Big\{w_1 \in V^*| w_2 \in V^* \wedge \wkdomain{w_1}{w_2} \in WK_{\rho}(V)  \wedge \big(q_0, \wkpair{\#w_1\$}{\#w_2\$}, Z_0\big) \vdash^* \big(q, \wkpair{\lambda}{\lambda}, \alpha \big) \wedge q \in F \wedge \alpha \in \Gamma^* \Big\}$$
 
-meaning that there exists a sequence of transitions ($\vdash^*$) from the initial configuration to a final configuration where the remaining input to be read input is ($\wkpair{\lambda}{\lambda}$), the content of the stack is arbitrary and the state is in the set of final states $F$. This means that WK pushdown automata accept by final states.
+meaning that there exists a sequence of transitions ($\vdash^*$) from the initial configuration to a final configuration where the remaining input to be read is $\wkpair{\lambda}{\lambda}$, the content of the stack is arbitrary and the state is in the set of final states $F$. This means that WK pushdown automata accept by final states.
 
 \cite {WK_PUSHDOWN_AUT} also defines two special versions of WK pushdown automata --- deterministic Watson-Crick pushdown automata (DWKPDA) and strongly deterministic Watson-Crick pushdown automata (SDWKPDA) which are inspired by the deterministic and strongly deterministic WKA.
 
-Watson-Crick pushdown automaton is deterministic if any two rules which start in the same state read inputs which are prefix incomparable in the upper or lower part. Formally:
+Watson-Crick pushdown automaton is deterministic if any two rules, which start in the same state, read inputs which are prefix incomparable in the upper or lower part. Formally:
 
 $$\big(q, \wkpair{u}{v}, X\big) \rightarrow (q', \gamma) \in \delta \wedge \big(q, \wkpair{u'}{v'}, X\big) \rightarrow (q'', \gamma') \in \delta \Rightarrow u \nsim_p u' \vee v \nsim_p v'$$
 
@@ -147,7 +144,7 @@ Watson-Crick pushdown automaton is strongly deterministic if it is deterministic
 
 
 \subsection{Watson-Crick context-free systems}
-A Watson-Crick context-free system (WKCFS) have been defined in \cite{WKCF_SYSTEMS} A WKCFS is: $S = (V, \Sigma, \rho, A, P)$ where $V$ is a finite alphabet, $\Sigma \subset V$, $\rho \subseteq \Sigma \times (V \setminus \Sigma)$ is a complementarity relation where if $(a, \overline{a}) \in \rho$ then $\overline{a} \in V - \Sigma$ is unique for $a \in \Sigma$. $A$ is a finite set of axioms in form $\wkdomain{w}{s}$ where $w \in \Sigma^*$, $s \in (V - \Sigma)^*$ and $(w, s) \in \rho$. $P$ is a finite set of rules in one of the forms:
+A Watson-Crick context-free systems (WKCFS) have been defined in \cite{WKCF_SYSTEMS} A WKCFS is: $S = (V, \Sigma, \rho, A, P)$ where $V$ is a finite alphabet, $\Sigma \subset V$, $\rho \subseteq \Sigma \times (V \setminus \Sigma)$ is a complementarity relation where if $(a, \overline{a}) \in \rho$ then $\overline{a} \in V - \Sigma$ is unique for $a \in \Sigma$. $A$ is a finite set of axioms in form $\wkdomain{w}{s}$ where $w \in \Sigma^*$, $s \in (V - \Sigma)^*$ and $(w, s) \in \rho$. $P$ is a finite set of rules in one of the forms:
 
 $$\wkpair{a}{\overline{a}} \rightarrow \wkpair{x}{y}, \:\: \wkpair{a}{\lambda} \rightarrow \wkpair{x}{y},\:\: \wkpair{\lambda}{a} \rightarrow \wkpair{x}{y}$$
 
@@ -182,12 +179,12 @@ The language of $S$ is: $L(S) = \big\{x| \wkdomain{w}{s} \Rightarrow^* \wkdomain
 \subsection{Parallel communicating Watson-Crick automata systems}
 Parallel communicating Watson-Crick automata systems (PCWK) have been defined in \cite{PARALLEL}. PCWK($n$) is a PCWK of degree $n$ which is a $(n + 3)$-tuple: $A = (V, \rho, A_1, A_2, ..., A_n, K)$
 
-where $V$ is an input alphabet, $\rho$ is a complementarity relation, $A_i = (V, \rho, Q_i, q_i, F_i, \delta_i)$ where $1 \leq i \leq n$ is a Watson-Crick automaton. $K = {K_1, K_2, ..., K_n} \subseteq \bigcup_{i=1}^{n} Q_i$ is a set of query states.
+where $V$ is an input alphabet, $\rho$ is a complementarity relation, $A_i = (V, \rho, Q_i, q_i, F_i, \delta_i)$ for $1 \leq i \leq n$ is a Watson-Crick automaton. $K = {K_1, K_2, ..., K_n} \subseteq \bigcup_{i=1}^{n} Q_i$ is a set of query states.
 
 The automata $A_{1-n}$ are the components of the system $A$. A configuration  of a PCWK is a $2n$-tuple $\big(s_1, \wkpair{u_1}{v_1}, s_2, \wkpair{u_2}{v_2}, ..., s_n, \wkpair{u_n}{v_n}\big)$
 where $s_i$ is a state of component $A_i$ and $\wkpair{u_i}{v_i}$ is part of the input word that has not yet been read by $A_i$ for $1 \leq i \leq n$.
 
-A transition is a relation $\vdash$ and is defined as follows:
+A transition is a relation $\vdash$ between two configurations and is defined as follows:
 
 $$\big(s_1, \wkpair{u_1}{v_1}, s_2, \wkpair{u_2}{v_2}, ..., s_n, \wkpair{u_n}{v_n}\big) \vdash \big(r_1, \wkpair{u'_1}{v'_1}, r_2, \wkpair{u'_2}{v'_2}, ..., r_n, \wkpair{u'_n}{v'_n}\big)$$ if one of the following conditions is met:
 
@@ -205,28 +202,30 @@ $L(A) = \Big\{w_1 \in V^*| \big(q_1, \wkdomain{w_1}{w_2}, q_2, \wkdomain{w_1}{w_
 
 \section{Expressing power of Watson-Crick models} \label{section:exp_power}
 
-The comparison of expressing power of WK language families in the context of Chomsky hierarchy has been studied in \cite{WK_GRAMMARS_1} and \cite{WK_GRAMMARS_2}. The main result is shown at the figure \ref{fig:expr-power}. The Chomsky hierarchy is represented on the right (REG --- regular languages, LIN --- linear languages, CF --- context-free languages, CS --- context sensitive languages, RE --- recursively enumerable languages) while the Watson-Crick languages are on the left. WKREG are languages defined by a non-deterministic Watson-Crick automata or a Watson-Crick regular grammars (\cite{REG_GRAMMAR} shows that these are equivalent). WKLIN are languages defined by WK linear grammars and WKCF are languages defined by WK context-free grammars (it has not been shown, yet, that WK pushdown automata have the same power). The full arrow denote proper inclusion, dotted arrow denote inclusion and dotted line denote incomparability.
+The comparison of expressing power of WK language families in the context of Chomsky hierarchy has been studied in \cite{WK_GRAMMARS_1} and \cite{WK_GRAMMARS_2}. The main result is shown at the figure \ref{fig:expr-power}. The Chomsky hierarchy is represented on the right (REG --- regular languages, LIN --- linear languages, CF --- context-free languages, CS --- context sensitive languages, RE --- recursively enumerable languages) while the Watson-Crick languages are on the left. WKREG are languages defined by a non-deterministic Watson-Crick automata or a Watson-Crick regular grammars (\cite{REG_GRAMMAR} shows that these are equivalent). WKLIN are languages defined by WK linear grammars and WKCF are languages defined by WK context-free grammars (it has not been shown, yet, that WK pushdown automata have the same power). The full arrows denote proper inclusion, dotted arrows denote inclusion and dotted lines denote incomparability.
 
 \begin{figure}[ht]
   \includegraphics[height=5.5cm]{exp_pow.png}
   \centering
   \label{fig:expr-power}
-  \caption{Comparison of WK language families in context of Chomsky hierarchy}
+  \caption{Comparison of WK language families in the context of Chomsky hierarchy}
 \end{figure}
 
-I has been shown in \cite{COMPL_REL} that the type of complementary relation which is used does not increase the expressing power of the Watson-Crick automata and grammars. Also \cite{SURVEY} provides an algorithm how to transform any WK automaton to an equivalent WK automaton with the relation being identity. Therefore, many models and algorithms limit themselves to working with identity complementarity relation.
+It has been shown in \cite{COMPL_REL} that the type of complementary relation which is used does not increase the expressing power of the Watson-Crick automata and grammars. Also \cite{SURVEY} provides an algorithm how to transform any WK automaton to an equivalent WK automaton with the relation being identity. Therefore, many models and algorithms limit themselves to working with identity complementarity relation.
 
 \chapter{Existing ways of testing membership in Watson-Crick languages} \label{chapter:WK_CYK}
 
-This chapter focuses mainly on the WK-CYK algorithm which is almost the only algorithm explicitly designed to decide a membership in Watson-Crick languages defined by a WK context-free grammars. Another way could be using WK automata, which is the latter part.
+This chapter focuses mainly on the WK-CYK algorithm which is almost the only algorithm explicitly designed to decide a membership in Watson-Crick languages defined by a WK context-free grammars. Another way could be using WK automata, which is discussed in the latter part.
 
 \section{WK-CYK algorithm}
-The WK-CYK algorithm has been introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK context-free languages.
+The WK-CYK algorithm has been introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK context-free languages. To understand it, it is good to be familiar with the way the original CYK algorithm works.
 
 \subsection{The CYK algorithm}
 The CYK algorithm, is used to decide the membership in a language defined by a context-free grammar, which must be in the Chomsky normal form (CNF).
 
-On the input there is a string and a grammar and the algorithm decides whether the string belongs to the language defined by the grammar (accepts or rejects the string). There are two kinds of rules in a grammar in the CNF (disregarding the $S \rightarrow \epsilon$ rule which is used only to include empty string in the language): $A \rightarrow a$ and $A \rightarrow BC$ where $A, B, C$ are non-terminals and $a$ is a terminal. In the first stage, it analyzes the first kind of rules --- each of the symbols from the input string has to be generated by a rule or several rules of this form. Thus, it gets a set of candidate non-terminals for each symbol.
+On the input there is a string and a grammar and the algorithm decides whether the string belongs to the language defined by the grammar (accepts or rejects the string). There are two kinds of rules in a grammar in the CNF (disregarding the $S \rightarrow \epsilon$ rule which is used only to include empty string in the language): $A \rightarrow a$ and $A \rightarrow BC$ where $A, B, C$ are non-terminals and $a$ is a terminal.
+
+In the first stage, it analyzes the first kind of rules --- each of the symbols from the input string has to be generated by a rule or several rules of this form. Thus, it gets a set of candidate non-terminals for each symbol.
 
 In the next stage it uses the second kind of rules. Every non-terminal (except the starting one) has to be generated by such a rule.
 The algorithm is looking for rules which can generate the candidate non-terminals which have been found in the previous stage. All possible combinations need to be considered, for instance the sequence of non-terminals $ABC$ may be generated by rules $X \rightarrow AB$ and $Y \rightarrow XC$ or by rules $X \rightarrow BC$ and $Y \rightarrow AX$. In this way, the algorithm needs to find all possible ways to generate words of increasing length (all parse trees). Finally, it needs to find a non-terminal that can generate the whole word and, at the same time, it must be the starting non-terminal in the given grammar. If it succeeds, the word given on the input is in the language, otherwise it is not.
@@ -243,10 +242,10 @@ Just like the CYK algorithm works with grammars in the Chomsky normal form, the 
   \item{$S \rightarrow \wkpair{\lambda}{\lambda}$ (this rule is used only to include an empty word in the language)}
 \end{itemize}
 
-where $A$, $B$ and $C$ are non-terminals, $S$ is the starting non-terminal and $a$ is a terminal of the grammar. It is possible to transform any WK context-free grammar to the WK-CNF. The steps are mostly analogous to the transformation of the standard context-free grammar to CNF. This process includes:
+where $A$, $B$ and $C$ are non-terminals, $S$ is the starting non-terminal and $a$ is a terminal of the grammar. It is possible to transform any WK context-free grammar to the WK-CNF. The steps are mostly analogous to the transformation of the standard context-free grammar to the CNF. This process includes:
 
 \begin{enumerate}
-  \item{removing $\lambda$-rules}
+  \item{removing $\lambda$-rules (rules of the form $A \rightarrow \wkpair{\lambda}{\lambda}$)}
   \item{removing unit rules (rules of the form $A \rightarrow B$)}
   \item{removing useless rules and symbols (symbols that are unreachable from the starting symbol or cannot lead to a terminal string and rules which use such symbols)}
   \item{replacing every terminal on the left-hand side of each rule with a new non-terminal and adding a new corresponding rule}
@@ -264,21 +263,74 @@ But in case of WK grammars, the order is not clear. For the terminal string $\wk
 $ABCD$, $ACBD$, $ACDB$, $CABD$, $CADB$ and $CDAB$.
 
 \subsection{Description of the WK-CYK algorithm}
+The WK-CYK algorithm taken from \cite{WK_CYK} is on the figures \ref{code:wk_cyk_main} and \ref{code:wk_cyk_compute_sets}.
+
+
+\begin{lstlisting}[caption={Procedure SetsConstruction of WK-CYK}, label={code:wk_cyk_main}, escapeinside={(*}{*)},numbers=left,
+numberstyle=\small, numbersep=8pt,frame = single, framexleftmargin=15pt]
+procedure SetsConstruction:
+Input: string [w/w] = [(*$x_{11}x_{12}...x_{1n} / x_{21}x_{22}...x_{2n}$*)]
+
+for (*1 $\leq i \leq n$*) do
+    (*$X_{i:i,0:0} = \{A: A \rightarrow (x_{1i}/\lambda)\}$*)
+    (*$X_{0:0,i:i} = \{A: A \rightarrow (\lambda/x_{2i})\}$*)
+
+for (*$2 \leq y \leq 2n $*) do
+    for (*$0 \leq \beta \leq n$*) fo
+        (*$\alpha = y - \beta$*)
+        if (*$\alpha = 0$*) then
+            i = j = 0
+            for (*$1 \leq k \leq n - y + 1$*) do
+                l = k + y - 1
+                ComputeSet (*$X_{i:j,k:l}$*)
+        else if (*$\beta = 0$*) then
+            k = l = 0
+            for (*$1 \leq i \leq n - y + 1$*) do
+                j = i + y - 1
+                ComputeSet (*$X_{i:j,k:l}$*)
+        else
+            for (*$1 \leq i \leq n - \alpha + 1$*) do
+                for (*$1 \leq k \leq n - \beta + 1$*) do
+                    j = i + (*$\alpha$*) - 1
+                    l = k + (*$\beta$*) - 1
+                    ComputeSet (*$X_{i:j,k:l}$*)
+if (*$S \in X_{1:n,1:n}$*) then
+    w (*$\in$*) L(G)
+else
+    w (*$\notin$*) L(G)
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Procedure ComputeSet of WK-CYK}, label={code:wk_cyk_compute_sets}, escapeinside={(*}{*)},
+numbers=left,numberstyle=\small, numbersep=8pt,frame = single, framexleftmargin=15pt]
+procedure ComputeSet:
+
+if i = j = 0 then
+    (*$ X_{0:0,k:l} = \big\{\bigcup_{t \in [k, l-1]} X_{0:0,k:t} X_{0:0,t+1:l}\big\}$*)
+else if k = l = 0 then
+    (*$ X_{i:j,0:0} = \big\{\bigcup_{s \in [i, j-1]} X_{i:s,0:0} X_{s+1:j,0:0}\big\}$*)
+else
+    (*$ X_{i:j,k:l} = \big\{X_{i:j,0:0}X_{0:0,k:l} \cup X_{0:0,k:l}X_{i:j,0:0}\big\} \cup$*)
+        (*$\bigcup_{s \in [i, j-1], t \in [k, l-1]} \big\{X_{i:s,k:t}X_{s+1:j,t+1:l}\big\} \cup$*)
+        (*$\bigcup_{s \in [i, j-1]} \big\{X_{i:s,k:l}X_{s+1:j,0:0} \cup X_{i:s,0:0}X_{s+1:j,k:l}\big\} \cup$*)
+        (*$\bigcup_{t \in [k, l-1]} \big\{X_{i:j,k:t}X_{0:0,t+1:l} \cup X_{0:0,k:t}X_{i:j,t+1:l}\big\}$*)
+\end{lstlisting}
+
+
 WK-CYK algorithm expects a grammar in the WK-CNF and a double stranded string on the input. Since one of the algorithm's requirements is that the complementarity relation must be identity, the upper and lower strands are always the same.
 
-WK-CYK uses sets marked as $X_{a:b,c:d}$. These are sets of non-terminals that can generate a part of the input double stranded string specified by the indexes $a$, $b$, $c$ and $d$. $a$ and $b$ are indexes of terminals in the upper strand and specify an interval where the index of the first symbol is 1 and the edge indexes are included. The lower strand interval is specified by indexes $c$ and $d$. If a pair of indexes is 0, no symbols from the corresponding strand are included. For instance, for the input $\wkpair{abcd}{abcd}$, $X_{2:2,0:0}$ would contain a set of non-terminals that generate $\wkpair{b}{\lambda}$, $X_{2:4,1:3}$ non-terminals that generate $\wkpair{bcd}{abc}$.
+WK-CYK uses sets marked as $X_{a:b,c:d}$. These are sets of non-terminals that can generate a segmant of the input double stranded string specified by the indexes $a$, $b$, $c$ and $d$. $a$ and $b$ are indexes of terminals in the upper strand and specify an interval where the index of the first symbol is 1 and the edge indexes are included. The lower strand interval is specified by indexes $c$ and $d$. If a pair of indexes is 0, no symbols from the corresponding strand are included. For instance, for the input $\wkpair{abcd}{abcd}$, $X_{2:2,0:0}$ would contain a set of non-terminals that generate $\wkpair{b}{\lambda}$, $X_{2:4,1:3}$ non-terminals that generate $\wkpair{bcd}{abc}$.
 
 \subsubsection{The main procedure of WK-CYK}
-In the first step WK-CYK finds sets $X_{i:i,0:0}$ and $X_{0:0,i:i}$ for $0 < i \leq |n|$ ($n$ is the length of the input). These are non-terminals that directly generate single terminals. Then, it searches for ways to generate segments of the input of increasing lengths, beginning with length of 2 and up to the length of $2n$. It is because in the input of length $n$ there are actually $2n$ of terminals --- $n$ in the upper and $n$ in the lower strand. For each length of the segment it takes all possible combinations of number of symbols from the upper and the lower strands. For instance, if the length of the current segment is 3, that could include 3 terminals from the upper strand and 0 from the lower or 2 and 2, 1 and 3, 0 and 4.
+In the first step (lines 4--6 of figure \ref{code:wk_cyk_main}) WK-CYK finds sets $X_{i:i,0:0}$ and $X_{0:0,i:i}$ for $0 < i \leq |n|$ ($n$ is the length of the input). These are non-terminals that directly generate single terminals. Then, it searches for ways to generate segments of the input of increasing lengths, beginning with length of 2 and up to the length of $2n$. It is because in the input of length $n$ there are actually $2n$ of terminals --- $n$ in the upper and $n$ in the lower strand. For each length of the segment it takes all possible combinations of number of symbols from the upper and the lower strands. For instance, if the length of the current segment is 3, that could include 3 terminals from the upper strand and 0 from the lower or 2 and 2, 1 and 3, 0 and 4.
 
-For each of these segments, it calls procedure \textit{compute set} (described below) which finds all non-terminals, that could generate the given segment. When WK-CYK uses this procedure to compute set $X$ of a segment of length $n$, it is necessary to have already computed sets $X$ for all segments of length $m < n$. Therefore it proceeds from the length 1 upward.
+For each of these segments, it calls the procedure \textit{ComputeSet} which finds all non-terminals, that could generate the given segment. When WK-CYK uses this procedure to compute set $X$ of a segment of length $n$, it is necessary to have already computed sets $X$ for all segments of length $m < n$. Therefore it proceeds from the length 1 upward.
 
 Let us consider an example with input $\wkpair{abcd}{abcd}$. The first step looks for way of generating the individual terminals, in other words non-terminals that generate $\wkpair{a}{\lambda}$, $\wkpair{\lambda}{a}$, $\wkpair{b}{\lambda}$ etc. Then it looks for non-terminals that could generate two terminals, meaning either two terminals from the upper strand, two terminals from the lower strand or one from each. In each of these cases, all possible combinations need to be considered. If the two terminals are from the upper strand, the combinations are either $\wkpair{ab}{\lambda}$, $\wkpair{bc}{\lambda}$ or $\wkpair{cd}{\lambda}$ (or using the $X$ sets: $X_{1:2,0:0}$, $X_{2:3,0:0}$ or $X_{3:4,0:0}$). It the two terminals are one from each strand, there are 16 combinations $\wkpair{x}{y}$ where $x, y \in \{a, b, c, d\}$ ($X_{1:1,1:1}$, $X_{2:2,1:1}$, $X_{1:1,2:2}$ etc.). And for terminals from the lower strand, the combinations are $\wkpair{\lambda}{ab}$, $\wkpair{\lambda}{bc}$ or $\wkpair{\lambda}{cd}$ ($X_{0:0,1:2}$, $X_{0:0,2:3}$ and $X_{0:0,3:4}$).
 
 When the segment length of $2n$ has been computed, WK-CYK is finished. It has succeeded if the starting symbol $S$ can generate the whole input, in other words: if $S \in X_{1:n,1:n}$.
 
-\subsubsection{The compute set procedure}
-The \textit{compute set} procedure has as a parameter a segment of input specified by the four indexes. It searches all pairs of sets $X$ which could together produce the given segment. If the segment consists of symbols from one strand only ($X_{i:j,0:0}$ or $X_{0:0,i:j}$), the situation is simpler --- it needs to consider the pairs of sets $X$ that produce the segment split in any two parts. If the segment contains symbols from both strands, there are more ways to split it:
+\subsubsection{The ComputeSet procedure}
+The \textit{ComputeSet} procedure has as a parameter a segment of input specified by the four indexes. It searches all pairs of sets $X$ which could together produce the given segment. If the segment consists of symbols from one strand only ($X_{i:j,0:0}$ or $X_{0:0,i:j}$), the situation is simpler --- it needs to consider the pairs of sets $X$ that produce the segment split in any two parts. If the segment contains symbols from both strands, there are more ways to split it:
 
 \begin{itemize}
   \item{the first set could produce the entire upper strand and the second set could produce the entire lower strand, or the other way around (the order matters)}
@@ -316,7 +368,7 @@ All these 14 $X$ sets must already be computed, they are sets for segments of le
 
 
 \subsubsection{Two remarks regarding WK-CYK}
-1. \cite{WK_CYK} provides the WK-CYK algorithm in pseudo-code in section 6.1. The loop on the line 13 iterates $\beta$ from 0 to $n$. In this context, $\beta$ represents the length of the lower strand segment, while $\alpha$ represents the length of the upper strand segment and $\alpha = y - \beta$ where $y$ is the length of the whole segment. Part of the loop actually calculates with non-sensical values. When calculating with segment that is shorter then one strand (i.e. $y < n$), it includes the case when $\beta > y$ and so $\alpha < 0$. In other words, the algorithm splits the segment of length, for instance, 2, to two parts of lengths 3 and -1.
+1. The loop on the line 9 of the procedure \textit{SetsConstruction} (figure \ref{code:wk_cyk_main}) iterates $\beta$ from 0 to $n$. In this context, $\beta$ represents the length of the lower strand segment, while $\alpha$ represents the length of the upper strand segment and $\alpha = y - \beta$ where $y$ is the length of the whole segment. Part of the loop actually calculates with non-sensical values. When calculating with segment that is shorter then one strand (i.e. $y < n$), it includes the case when $\beta > y$ and so $\alpha < 0$. In other words, the algorithm splits the segment of length, for instance, 2, to two parts of lengths 3 and -1.
 
 And when calculating with segment that is longer than the input, it includes the case where $\beta$ is too short and so $\alpha$ is then longer then a strand length. In other words, if the input length is, for instance, 4 and the segment length is 8, it splits the segment to lengths 7 and 1 which is not possible with the input length of 4.
 
@@ -324,7 +376,7 @@ This does not affect the correctness of the computation because the non-sensical
 
 \medskip
 
-2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As described in \cite{WK_CYK} (section 6), the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{compute set} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input and $R$ is the number of rules in the grammar. The description of the procedure \textit{compute set} uses the operation of set union ($\cup$), as if it has constant time complexity which, in reality, it does not --- it requires iterating over the rules of the grammar.
+2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As described in \cite{WK_CYK} (section 6), the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{ComputeSet} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input and $R$ is the number of rules in the grammar. The description of the procedure \textit{ComputeSet} uses the operation of set union ($\cup$), as if it has constant time complexity which, in reality, it does not --- it requires iterating over the rules of the grammar.
 
 \section{Using automata to test membership in Watson-Crick languages}
 In general, automata seem more suitable for deciding the membership in a language. In case of deterministic automata, the situation is quite straightforward --- every input deterministically leads to the next state and when the whole input is read, the automaton decides whether the input is accepted by finishing in a final state or not. The situation is not as clear in case of the weaker types of deterministic automata. A disadvantage may be the fact that strongly deterministic automata are weaker then deterministic automata.
@@ -789,7 +841,7 @@ When the best configuration is known, I test the performance of both the state s
 
 \section{Watson-Crick grammars used for testing}
 
-For the testing of the tree search algorithm and the WK-CYK algorithm, I have used the following Watson-Crick grammars. Unless stated otherwise, the set of non-terminals and the set of terminals is defined simply by the rules --- all the uppercase letters are non-terminals of the grammar and all the lowercase letters and digits are terminals. The starting non-terminal is $S$ and the complementarity relation is identity. With these specifications in mind the grammar can be defined by the rules only.
+For the testing of the tree search algorithm and the WK-CYK algorithm, I have used the following Watson-Crick grammars. Unless stated otherwise, the set of non-terminals and the set of terminals is defined simply symbols that apear in the rules --- all the uppercase letters are non-terminals of the grammar and all the lowercase letters and digits are terminals. The starting non-terminal is $S$ and the complementarity relation is identity. With these specifications in mind the grammar can be defined by the rules only.
 
 \begin{enumerate}
   \item{
@@ -826,9 +878,9 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$F \rightarrow \wkpair{f}{f} \:|\: \wkpair{\lambda}{\lambda}$$
     $$G \rightarrow \wkpair{g}{g} \:|\: \wkpair{\lambda}{\lambda}$$
 
-    The accepted language is: $a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)^*a$ ($x?$ denotes that the symbol $x$ is optional, i.e. $(x + \epsilon)$ )
+    The accepted language is: $a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)^*a$ ($x?$ denotes that the symbol $x$ is optional, i.e. $(x + \lambda)$ )
 
-    The problematic feature of this grammar may be the fact that during the transformation of this grammar to WK-CNF (more specifically, when removing the $\lambda$-rules) the number of rules increases rapidly.
+    The problematic feature of this grammar may be the fact, that during the transformation of this grammar to WK-CNF (more specifically, when removing the $\lambda$-rules) the number of rules increases rapidly.
   }
 
   \item{
@@ -837,11 +889,11 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$B \rightarrow \wkpair{c}{g} A \:|\: \wkpair{a}{t} S \:|\: \wkpair{t}{a} S \:|\: \wkpair{g}{c} C$$
     $$C \rightarrow \wkpair{a}{t} C \:|\: \wkpair{t}{a} C \:|\: \wkpair{g}{c} C \:|\: \wkpair{c}{g} C \:|\: \wkpair{\lambda}{\lambda}$$
 
-    The terminals in this grammar refer to the actual nucleobases in the DNA and the complementarity relation mirrors the relations among them: $\{(a, t), (t, a), (c, g), (g, c)\}$
+     The terminals in this grammar refer to the actual nucleobases in the DNA and the complementarity relation mirrors the relations among them: $\rho = \{(a, t), (t, a), (c, g), (g, c)\}$
 
     The accepted language is: $(\{a,t,c,g\}^*ctg\{a,t,c,g\}^*)^*$
 
-    This grammar is taken from \cite{WK_GRAMMARS_1} and is a first step towards an actual analysis of the DNA. In this case it simply looks for the substring $ctg$.
+    This grammar is taken from \cite{WK_GRAMMARS_1} and is a first step towards an actual analysis of the DNA. In this case, it simply looks for the substring $ctg$.
   }
 
   \item{
@@ -850,7 +902,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$B \rightarrow \wkpair{\lambda}{b} B \:|\: \wkpair{\lambda}{b}$$
 
 
-    The accepted language is: $a^nb^n$ where $n \geq 1$
+    The accepted language is: $a^nb^n$ where $n \geq 1$ (symbol $x^n$ denotes $n$ occurrences of the symbol $x$)
 
     The grammar is taken from \cite{REG_GRAMMAR}.
   }
@@ -888,7 +940,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$W \rightarrow \wkpair{l}{l} \:|\: Z$$
     $$Z \rightarrow \wkpair{0}{0} \:|\: \wkpair{1}{1} \:|\: Z Z$$
 
-    The accepted language includes regular expressions over symbols 0 and 1 with parenthesis ($o$ for opening and $c$ for closing parenthesis) operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
+    The accepted language includes regular expressions over symbols 0 and 1 with parenthesis ($o$ for opening and $c$ for closing parenthesis), operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
 
     The grammar is taken from \cite{GRAMMAR_10}.
   }
@@ -999,32 +1051,34 @@ In reality, there are not 20 but 40 grammars, because all of them can be used in
 
 \section{Testing the state space search}
 
-There is a lot of parameters that could be tested and analyzed in this section. How efficient are the various heuristics (both pruning and node preference) for different grammars. What inputs lengths are answered within a reasonable time? Or more generally, what is the relation between input length and time to get the answer? What are the memory requirements? What is the difference in decision time between input strings which are in the given language and those which are not? Is there a significant difference between some inputs of the same lengths?
+There is a lot of parameters that could be tested and analyzed. How efficient are the various heuristics (both pruning and node preference) for different grammars. What input lengths are answered within a reasonable time? Or more generally, what is the relation between input length and time to get the answer? What are the memory requirements? What is the difference in decision time between input strings which are in the given language and those which are not? Are there significant differences between some inputs of the same lengths?
 
 In order to analyze these questions, I have decided to test the state space search in the following stages.
 \begin{enumerate}
   \item{Comparison of the node precedence heuristics and analysis of their efficiency.}
   \item{Comparison of the pruning heuristics and analysis of their efficiency.}
-  \item{Analysis of the time and memory complexity based on the length of the input string for all grammars.}
+  \item{Analysis of the time and memory complexity based on the length of the input string.}
   \item{Testing if there are any different inputs of the same length which would result in a significant difference in the computation complexity.}
   \item{Testing the WK-CYK algorithm with various grammars and inputs and comparison to the state space search.}
 \end{enumerate}
 
 \subsection{Comparison of the node precedence heuristics efficiency}
 In section \ref{heur_node_pref}, 12 node precedence heuristics have been described and only one of them can be active at a time.
-In order to compare their effectiveness I used the script \textit{ts\_node\_precedence\_tests.py} which runs one test for each of the 40 grammars with an input that will be accepted. It is not useful to test node precedence heuristics with inputs that are not within the given language as in such cases, the whole space state needs to be searched and node precedence cannot help in any way. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time, specifically within the time limit of ten seconds, but also to last some measurable amount of time.
+In order to compare their effectiveness I used the script \textit{ts\_node\_prece\-dence\_tests.py} which runs one test for each of the 40 grammars with an input that will be accepted. It is not useful to test the node precedence heuristics with inputs that are not within the given language as in such cases, the whole space state needs to be searched and node precedence cannot help in any way. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time, specifically within the time limit of ten seconds, but also to last some measurable amount of time.
 
-Each of the 40 tests is run 12 times with a different node precedence heuristic. There are three metrics to observe:
+Each of the 40 tests consists of 12 runs, each with a different node precedence heuristic active. There are three metrics to observe:
 \begin{itemize}
   \item{How many times the search timed out?}
-  \item{What the total time in which all 40 tests were completed is for each of the heuristics. There should be a kind of penalty involved if the test times out because the time needed for the computation is in that case certainly greater then the time it actually ran before it was stopped by the time limit. Therefore, for the sake of the comparison, the time of the search is in this case doubled.}
+
+  \item{What is the total time in which all 40 tests were completed for each of the heuristics. There should be a kind of penalty involved if the test times out because the time needed for the computation is in that case certainly greater then the time it actually ran, before it was stopped by the time limit. Therefore, for the sake of the comparison, the time of the search is in this case doubled.}
+
   \item{The total time normalized for each test --- the time of the fastest heuristic for each test is normalized to one. This is probably the most telling metric as each test has roughly the same impact on the final number.}
 \end{itemize}
 
-Each test prints out the results in a table similar to \ref{tab:node_heuristics_table}. The upper part of the table displays the description of the accepted language, number of rules, non-terminals and terminals in the grammar, string on the input, whether the input is expected to be accepted and time limit. In the lower part the table shows for each of the node precedence heuristic how much time it took, how many states at most were in the queue at a time and how many states were analyzed, how many times each pruning heuristic was successful and the result of the search (True, False or Timeout). It would not be practical to present here the complete output, but it can be recreated simply by running the script again and is also attached in the file \textit{output/ts\_node\_precedence.txt}.
+Each test prints out the results in a table similar to \ref{tab:node_heuristics_table}. The upper part of the table displays the description of the accepted language, number of rules, non-terminals and terminals in the grammar, string on the input (if it is too long to be printed out, its beggining part and total length is printed out instead), whether the input is expected to be accepted and time limit. In the lower part the table shows for each of the node precedence heuristic how much time it took, how many states at most were in the queue at a time and how many states were analyzed, how many times each pruning heuristic was successful and the result of the search (True, False or Timeout). It would not be practical to present here the complete output, but it can be recreated simply by running the script again and is also attached in the file \textit{output/ts\_node\_precedence\_output.txt}.
 
-\begin{figure}[h]
-  \caption{An output of the node precedence heuristics test}
+\begin{figure}[h!]
+  \caption{An output of a node precedence heuristics test}
   \label{tab:node_heuristics_table}
 \begin{tabular}{ |l|l|l|l|l|  }
   \hline
@@ -1055,36 +1109,36 @@ Each test prints out the results in a table similar to \ref{tab:node_heuristics_
 \end{tabular}
 \end{figure}
 
-It is interesting to notice how different heuristics are better in different test cases. This is illustrated by selected test cases which are on figure \ref{fig:selected_tests}. There are some cases where the best heuristic is the empty one which assigns zero to each node, like in case of test 23. This is because this heuristic is the simplest one to compute and if no heuristic is effective in a particular test case, this one wins. But since it does not win by a large margin, so these cases are at the and not decisive.
+It is interesting to notice how different heuristics are better in different test cases. This is illustrated by selected test cases which are on figure \ref{fig:selected_tests}. There are some cases where the best heuristic is the empty one which assigns zero to each node, like in the case of test 23. This is because this heuristic is the simplest one to compute and if no heuristic is effective in a particular test case, this one wins. But since it does not win by a large margin, these cases do not have a decisive impact on the overall result. There was only one timeout of heuristic TM2 and the empty heuristics.
 
 In some cases, a certain heuristics do not work so well, but their combination does. This can be seen in test 22 --- NTA and WNTA have poor result, comparable to no heuristic. TM1, TM2, TM3 have somewhat better result, but by far the best result is achieved by combination of NTA with any version of TN.
 
-\begin{figure}[h]
-  \includegraphics[scale=0.42]{four_heur_tests.png}
+\begin{figure}[h!]
+  \includegraphics[scale=0.45]{four_heur_tests.png}
   \caption{Selected comparisons of node precedence heuristics}
   \label{fig:selected_tests}
 \end{figure}
 
-The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 40 tests. The right bar of each heuristic shows the total time for the 40 tests and the left bar shows the normalized time. It is clear that the best results are achieved by the combination NTA+TM2. This heuristic did not timeout in any of the tests and is the fastest overall. Even if in some cases there are some faster heuristics, it's usually not by much. Interestingly, even though TM2 turns out to have the worst results of them all, even worse than no heuristic, with the combination of NTA the results are best. Therefore, for all of the following tests, the winning node precedence heuristic NTA+TM2 will be used.
+The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 40 tests. The right bar of each heuristic shows the total time for the 40 tests and the left bar shows the normalized time. It turns out that the best results are achieved by the combination NTA+TM1. The best time overall was achieved by TM3 by very narrow margin. The normalized times show that all NTA+TM1, NTA+TM2 and NTA+TM3 heuristics are very close but the narrow winner is NTA+TM1. Even if in some cases there are some faster heuristics, it's usually not by much. Interestingly, even though TM2 turns out to have the worst results of them all, often worse than no heuristic, with the combination of NTA the results are among the best. Therefore, for all of the following tests, the winning node precedence heuristic NTA+TM1 will be used.
 
-\begin{figure}[h]
-  \includegraphics[scale=0.44]{node_heuristics_comp.png}
+\begin{figure}[h!]
+  \includegraphics[scale=0.45]{node_heuristics_comp.png}
   \caption{Comparison of the node precedence heuristic functions}
   \label{fig:node_heuristics_comp}
 \end{figure}
 
 \subsection{Comparison of the pruning heuristics efficiency}
 
-Pruning has the advantage of being useful whether the input string is going to be accepted or rejected by the tree search. Also, all of the pruning can be on at the same time. Each node can be tested by all available checks to see if it can be pruned or not.
+Pruning has the advantage of being useful whether the input string is going to be accepted or rejected by the tree search. Also, all of the pruning can be active at the same time. Each node can be tested by all available checks to see if it can be pruned or not.
 
 The testing is performed over 80 tests --- each of the 40 grammars is used for a positive test (where the input will be accepted) and a negative test (the input will be rejected).
-Each test contains seven runs of the tree search algorithm --- one where all pruning heuristics are on, one where all are turned off, and one for each heuristic where all are turned on except the given one.
+Each test contains seven runs of the tree search algorithm --- one where all pruning heuristics are active, one where all are inactive, and one for each heuristic where all are active except the given one.
 
-Similarly to the node precedence heuristics comparison, the metrics that are important are the total time needed to compute the 80 tests and a number of timeouts.
+Similarly to the node precedence heuristics comparison, the metrics that are important are the total time needed to compute the 80 tests and a number of timeouts for each of the seven cases.
 
 The tests are run by the script \textit{ts\_pruning\_tests.py} and each test prints out a table similar to the table \ref{tab:prune_heuristics_table}. Again, it would not be practical to include the entire output here. The complete set of results can be recreated by running the script again and it is included in the file \textit{output/ts\_pruning.txt}.
 
-\begin{figure}[h]
+\begin{figure}[h!]
   \caption{An output of the pruning heuristics test}
   \label{tab:prune_heuristics_table}
 \begin{tabular}{ |l|l|l|l|l|  }
@@ -1113,22 +1167,22 @@ The tests are run by the script \textit{ts\_pruning\_tests.py} and each test pri
 
 The summary of results is displayed on figure \ref{fig:prune_timeouts_comp} --- the number of timeouts and \ref{fig:prune_times_comp} --- the amount of time for each of the seven cases across the 80 tests. The smaller the individual bars are, the better the result. But in case of the bars representing a specific pruning heuristic being turned off, the bigger the bar, the more important the given heuristic is, because the result is that much worse without it.
 
-\begin{figure}[h]
-  \includegraphics[scale=0.5]{prune_timeouts_comp.png}
-  \caption{TIMEOUTS}
+\begin{figure}[h!]
+  \includegraphics[scale=0.45]{prune_timeouts_comp.png}
+  \caption{Number of timeouts of all pruning tests}
   \label{fig:prune_timeouts_comp}
 \end{figure}
 
-\begin{figure}[h]
-  \includegraphics[scale=0.7]{prune_times_comp.png}
-  \caption{TOTAL TIMES}
+\begin{figure}[h!]
+  \includegraphics[scale=0.6]{prune_times_comp.png}
+  \caption{Total time of all pruning tests}
   \label{fig:prune_times_comp}
 \end{figure}
 
 
-From these results it is clear that the tree pruning is the key feature of the tree search algorithm. After turning off the pruning, the results are very poor -- 67 out of 80 tests timed out. The total time is then not relevant at all. The middle bars, which represent the individual pruning heuristics being turned off, needs to be compared to the first one, where all heuristics are active, to see how important the given heuristic actually is. Thus, the figure suggests, that the RL (complementarity relation) check is the most important one, because turning it off had the biggest impact on the result. This can be a bit misleading, as some heuristics can be sometimes backed up by another one. This is the reason why the WS (match of leftmost terminals and the input string) seem to have a rather small impact. If this heuristic is turned off, the dead branch can be identified by the RE (regular expression) check and so the impact is not so big. Similarly, turning off the SL (strands length) heuristic is of smaller impact, because it is backed up by TL (total length) heuristic.
+From these results it is clear that the tree pruning is the key feature of the tree search algorithm. After turning off the pruning, the results are quite poor --- 67 out of 80 tests timed out. The total time is then not relevant at all. The middle bars, which represent the individual pruning heuristics being turned off, needs to be compared to the first one, where all heuristics are active, to see how important the given heuristic actually is. Thus, the figure suggests, that the RL (complementarity relation) check is the most important one because turning it off had the biggest impact on the result. This can be a bit misleading, as some heuristics can be sometimes backed up by another one. This is the reason why the WS (match of leftmost terminals to the input string) seem to have a rather small impact. If this heuristic is turned off, the dead branch can be identified by the RE (regular expression) check and so the impact is not so big. Similarly, turning off the SL (strands length) heuristic has smaller impact, because it is backed up by TL (total length) heuristic.
 
-Nevertheless, all heuristic are useful according to this result, because no other bar is as small as the first one. This means that the best result is achieved when all heuristics are on active the same time. This is especially important in the case of the RE heuristic. This one is quite demanding with regards to computation power --- regular expression match is performed each time this check is executed. It is the reason why it is the last check that is used, if there is another heuristic able to prune the node, a lot of computational power is saved. However, the figure shows clearly, that the RE heuristic contributes significantly to the overall performance (still, some tests cannot take advantage of this heuristic and turning it off would improve the results).
+Nevertheless, all heuristic are useful according to this result, because no other bar is as small as the first one. This means that the best result is achieved when all heuristics are active the same time. This is especially important in the case of the RE heuristic. This one is quite demanding with regards to computation power --- regular expression match is performed each time this check is executed. It is the reason why it is the last check that is used, if there is another heuristic able to prune the node, a lot of computational power is saved. However, the figure shows clearly, that the RE heuristic contributes significantly to the overall performance (still, some tests cannot take advantage of this heuristic and turning it off would improve the results).
 
 
 \subsection{Analysis of the memory requirements}
@@ -1152,7 +1206,7 @@ I've chosen grammar 3 in CNF to test the results in practice, as this grammar is
 
 The figure \ref{fig:mem_consumption} on the left shows the amount of memory requirements in relation to the input length. The middle graph shows the memory consumption in relation to the time needed for computation. To the right is the experimental result where I measured real memory consumption of the program in time.
 
-\begin{figure}[h]
+\begin{figure}[h!]
   \includegraphics[scale=0.5]{mem_consumption.png}
   \caption{Memory consumption of tree search}
   \label{fig:mem_consumption}

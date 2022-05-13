@@ -38,7 +38,7 @@ def main():
 
 	#filter which tests will be run
 	runTests = range(1, len(testDataLst) * 4 + 1)
-	#runTests = [2, 5, 9]
+	runTests = [11, 12]
 
 	testNo = 0
 	for grammar, basicPosLen, basicPosStep, basicNegLen, basicNegStep, cnfPosLen, cnfPosStep, cnfNegLen, cnfNegStep in testDataLst:
@@ -60,5 +60,8 @@ def main():
 		if testNo in runTests:
 			tester.run_speed_test(grammar, grammar.input_gen_func(cnfNegLen, cnfNegStep, False), False, times)
 
+	tester.printResults()
+	for result in tester.allResults:
+		print(f't = "{result.name}", {result.times}, {result.timeouts}\ndata.append(t)')
 if __name__ == "__main__":
 	main()

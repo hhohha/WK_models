@@ -27,7 +27,7 @@ class cPerfTester:
 
 	def printResults(self):
 		print(f'|{"="*106}|')
-		print(f'|{" "*38} FINAL RESULTS from {len(self.allResults[0].times)} tests {" "*39} |')
+		print(f'|{" "*38} FINAL RESULTS{" "*53} |')
 		print(f'|{"="*106}|')
 		print(f'| TEST CASE{" "*30}| time total | open states total | closed states total | timeouts |')
 		print(f'|{"-"*106}|')

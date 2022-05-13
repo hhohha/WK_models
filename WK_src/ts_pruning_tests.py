@@ -20,7 +20,7 @@ def main():
 
 	#filter which tests will be run
 	runTests = range(1, len(allGrammars) * 4 + 1)
-	#runTests = [25]
+	#runTests = [25, 26, 27]
 
 	testNo = 0
 	for grammar, lenBasicPos, lenBasicNeg, lenCNFPos, lenCNFNeg in zip(allGrammars, lensBasicFormPos, lensBasicFormNeg, lensCNFPos, lensCNFNeg):
@@ -47,6 +47,7 @@ def main():
 			tester.run_prune_test(grammar, inputStr, False, times)
 
 	tester.printResults()
-
+	for result in tester.allResults:
+		print(f't = "{result.name}", {result.times}, {result.timeouts}\ndata.append(t)')
 if __name__ == "__main__":
 	main()

@@ -130,7 +130,7 @@ class cWK_CFG:
 		self.relation = set(relation)             # set of relations - tuples (term, term)
 		self.erasableNts: Set[tNonTerm] = set()   # nonterms that can be erased by lambda-rules
 		self.lastCreatedNonTerm = 0               # dynamically created non-term last index
-		self.timeLimit = 1                        # max computation time before timeout
+		self.timeLimit = 10                       # max computation time before timeout
 
 		# pruning heuristics - which are active
 		self.pruningOptions: Dict[Callable, bool] = {
@@ -151,7 +151,7 @@ class cWK_CFG:
 		}
 
 		# idx of active node precedence
-		self.currentNodePrecedence = 6
+		self.currentNodePrecedence = 5
 
 		# node precedence heuristics - name and function
 		self.nodePrecedenceList = [
@@ -177,6 +177,13 @@ class cWK_CFG:
 
 ################# function for init, backup and precalcualtions   ##########################################
 
+	# backups and restores a form of the grammar - can reverse to_wk_cnf
+	def backup(self) -> None:
+		self.rulesBackup = deepcopy(self.rules)
+		self.ntsBackup = self.nts.copy()
+		self.tsBackup = self.ts.copy()
+
+
 	def restore(self) -> None:
 		self.rules = self.rulesBackup
 		self.nts = self.ntsBackup
@@ -185,22 +192,21 @@ class cWK_CFG:
 		self.precalculate_data()
 
 
-	def backup(self) -> None:
-		self.rulesBackup = deepcopy(self.rules)
-		self.ntsBackup = self.nts.copy()
-		self.tsBackup = self.ts.copy()
-
-
+	# check grammar definition consistecy
 	def is_consistent(self) -> bool:
+
+		# is starting symbol among nonterminals?
 		if self.startSymbol not in self.nts:
 			print(f'the starting symbol {self.startSymbol} not found among non-terminals')
 			return False
 
+		# are terminals and non-terminals exclusive?
 		for t in self.ts:
 			if t in self.nts:
 				print(f'terminal {t} found among non-terminals')
 				return False
 
+		# are all symbols in rules among non-terminals or terminals?
 		for rule in self.rules:
 			if rule.lhs not in self.nts:
 				print(f'rule left-hand side {rule.lhs} not found among non-terminals')
@@ -216,6 +222,7 @@ class cWK_CFG:
 							print(f'rule rhs symbol {rule.lhs} not found among terminals')
 							return False
 
+		# are all symbols in the relation among terminas?
 		for r in self.relation:
 			if r[0] not in self.ts or r[1] not in self.ts:
 				print(f'relation {r} is invalid')
@@ -224,6 +231,7 @@ class cWK_CFG:
 		return True
 
 
+	# precalculations done during init or restore or grammar transformations
 	def precalculate_data(self) -> None:
 		self.generate_rule_dict()
 		self.generate_relation_dict()
@@ -232,6 +240,8 @@ class cWK_CFG:
 		self.calc_min_terms_from_nt()
 		self.calc_rules_nt_lens()
 
+
+	# parse rules and create rule dictionary for more efficient access
 	def generate_rule_dict(self) -> None:
 		self.ruleDict: Dict[tNonTerm, List[cRule]] = {}
 		for nt in self.nts:
@@ -240,6 +250,7 @@ class cWK_CFG:
 			self.ruleDict[rule.lhs].append(rule)
 
 
+	# parse the relation and create dictionary for more efficient access
 	def generate_relation_dict(self) -> None:
 		self.relDict: Dict[tTerm, str] = {}
 		for t in self.ts:
@@ -249,91 +260,129 @@ class cWK_CFG:
 			self.relDict[a] += b
 
 
+	# can all letters in the word be erased bu a lambda rule
+	# helper function - called only from find_erasable_nts
 	def _is_word_erasable(self, word: tWord) -> bool:
 		for letter in word:
-			if is_term(letter):
-				if letter == ([], []):
-					continue
-				else:
-					return False
-
-			if letter not in self.erasableNts:
+			# non-terminals must be in the erasableNts set to be erasable
+			if is_nonterm(letter) and letter not in self.erasableNts:
+				return False
+			# terminals must be empty
+			elif letter != ([], []):
 				return False
 
 		return True
 
 
+	# make a set of all nonterms that can be erased by lambda-rules
 	def find_erasable_nts(self) -> None:
 		self.erasableNts = set()
+
+		# continue looping until there is no new addition to the set
 		loop = True
 		while loop:
 			loop = False
 			for rule in self.rules:
 				if self._is_word_erasable(rule.rhs) and rule.lhs not in self.erasableNts:
+					# found a new addition - will continue looping
 					loop = True
 					self.erasableNts.add(rule.lhs)
 
+
+	#
 	def _calc_word_distance(self, word: tWord) -> int:
 		maxVal = 0
 		for letter in word:
 			if is_nonterm(letter):
-				maxVal = max(maxVal, self.ntDistances[letter])
+				maxVal += self.ntDistances[letter]
+				#maxVal = max(maxVal, self.ntDistances[letter])
 		return maxVal
 
+
+	# computes minimum number of rules for each nonterminal which lead to terminal string
 	def calc_nt_distances(self) -> None:
 		MAX_DIST = 20
 		self.ntDistances: Dict[tNonTerm, int] = {}
+
+		# init the dictionary with maximum distance
 		for nt in self.nts:
 			self.ntDistances[nt] = MAX_DIST
 
+		# continue looping until there is no decrement
 		loop = True
 		while loop:
 			loop = False
 			for rule in self.rules:
-				d = self._calc_word_distance(rule.rhs) + 1
-				if d < self.ntDistances[rule.lhs]:
-					self.ntDistances[rule.lhs] = d
+				distance = self._calc_word_distance(rule.rhs) + 1
+				if distance < self.ntDistances[rule.lhs]:
+					# decrement found - continue looping
+					self.ntDistances[rule.lhs] = distance
 					loop = True
 
-
-	def _calc_terms_cnt(self, word: tWord) -> int:
+	# calculates how many terminal can be generated from a word
+	# helper function - only called from calc_min_terms_from_nt
+	def _calc_terms_from_word(self, word: tWord) -> int:
 		retVal = 0
 		for letter in word:
 			if is_term(letter):
+				# for term segments simply count the terminals
 				retVal += len(letter[0]) + len(letter[1])
 			else:
+				# for nonterminals count with their current value
 				retVal += self.termsFromNts[letter]
 		return retVal
 
+
+	# calculates minimum amount of terminals that each non-terminal can generates
 	def calc_min_terms_from_nt(self):
 		MAX_TERMS = 20
 		self.termsFromNts: Dict[tNonTerm, int] = {}
+
+		# init the dictionary with max values
 		for nt in self.nts:
 			self.termsFromNts[nt] = MAX_TERMS
 
+		# loop until there is no change
 		loop = True
 		while loop:
 			loop = False
 			for rule in self.rules:
-				d = self._calc_terms_cnt(rule.rhs)
-				if d < self.termsFromNts[rule.lhs]:
-					self.termsFromNts[rule.lhs] = d
+				termsCnt = self._calc_terms_from_word(rule.rhs)
+				if termsCnt < self.termsFromNts[rule.lhs]:
+					# decrement has been found - continue looping
+					self.termsFromNts[rule.lhs] = termsCnt
 					loop = True
 
+
+	# for each grammar rule calculate the rule non-terms len
 	def calc_rules_nt_lens(self) -> None:
 		for rule in self.rules:
+			# len of non term on the left is subtracted
 			rule.ntsLen = -self.termsFromNts[rule.lhs]
 			for letter in rule.rhs:
+				# len of all nonterms on the right is added
 				if is_nonterm(letter):
 					rule.ntsLen += self.termsFromNts[letter]
 
 ################# function for tree search           #######################################################
 
+	# the main space state searching algorithm
+	# has an input string for which we test the membership
+	# outputs 4-tuple - 1. max number of open states
+	#                   2. number of closed states
+	#                   3. successful pruning statistics
+	#                   4. actual result - True, False, None
 	def run_tree_search(self, upperStr: str) -> Tuple[int, int, List[Tuple[str, int]], Optional[bool]]:
+
+		# all pruning active on default
 		for key in self.pruneCnts:
 			self.pruneCnts[key] = 0
+
+		# create the root node
 		distance = self.compute_precedence([self.startSymbol], upperStr)
 		initNode = cTreeNode([self.startSymbol], 0, 0, self.termsFromNts[self.startSymbol], None, distance)
+
+		# init the prio queue and the closed states set
 		openQueue: Any = PriorityQueue()
 		openQueue.put(initNode)
 		openQueueLen, openQueueMaxLen = 1, 1
@@ -341,26 +390,37 @@ class cWK_CFG:
 		allStates.add(initNode.hashNo)
 
 		startTime = time.time()
+
+		# loop until open queue is empty, solution has been found or time limit reached
 		while not openQueue.empty():
 
+			# check the time limit, if exceeded, stop and return None
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
 				return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
 
+			# get another node with highest priority
 			currentNode = openQueue.get()
 			openQueueLen -= 1
+
+			# generate all possible sucessors (pruning happens within get_all_successors)
 			for nextNode in self.get_all_successors(currentNode, upperStr):
+				# check if the node is by chance the solution, if so, return True
 				if self.is_result(nextNode.word, upperStr):
 					self.printPath(nextNode)
 					return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
+				# if the current node new, add it to the queue
 				if nextNode.hashNo not in allStates:
 					openQueueLen += 1
 					openQueueMaxLen = max(openQueueMaxLen, openQueueLen)
 					openQueue.put(nextNode)
 					allStates.add(nextNode.hashNo)
 
+		# queue empty, solution not found - return False
 		return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
 
+
+	# calls active pruning functions one by one, if false is returned, the node will be pruned
 	def is_word_feasible(self, node: cTreeNode, goalStr: str) -> bool:
 		for pruningFunc, pruningOptActive in self.pruningOptions.items():
 			if pruningOptActive and not pruningFunc(node, goalStr):
@@ -369,94 +429,117 @@ class cWK_CFG:
 				return False
 		return True
 
+
+	# generates node successors
 	def get_all_successors(self, node: cTreeNode, goalStr: str) -> Generator:
 		for ntIdx, symbol in enumerate(node.word):
+			# find the first non terminal
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
+					# apply every possible rule of the given non-term and create a node
 					newWord = self.apply_rule(node.word, ntIdx, rule.rhs)
 					newNode = cTreeNode(newWord, node.upperStrLen + rule.upperCnt, node.lowerStrLen + rule.lowerCnt, node.ntLen + rule.ntsLen, node, 0)
+					# if the node is not pruned, compute it's precedence and yield it
 					if self.is_word_feasible(newNode, goalStr):
 						newNode.precedence = self.compute_precedence(newWord, goalStr)
 						yield newNode
-				break
+				# since only the first non-terminal is supposed to be used, finish
+				return
 
+	# replace a nonterm with a rule right side within a word
+	# needs to merge term segments if possible
 	def apply_rule(self, word: tWord, ntIdx: int, ruleRhs: tWord) -> tWord:
-		if DEBUG:
-			debug(f'\nword: {wordToStr(word)}')
-			debug(f'ntIdx: {ntIdx}')
-			debug(f'rule: {word[ntIdx] + " -> " + wordToStr(ruleRhs)}')
+		debug(f'\nword: {wordToStr(word)}')
+		debug(f'ntIdx: {ntIdx}')
+		debug(f'rule: {word[ntIdx] + " -> " + wordToStr(ruleRhs)}')
 
-		mergePrev = ntIdx > 0 and is_term(word[ntIdx - 1]) # can we merge with the previous terminal
-		mergeNext = ntIdx < len(word) - 1 and is_term(word[ntIdx + 1]) # can we merge with the next terminal
+		# we can merge with the previous letter if there is one and its terminal segment
+		mergePrev = ntIdx > 0 and is_term(word[ntIdx - 1])
 
-		if len(ruleRhs) == 1 and is_term(ruleRhs[0]):    # rule right side is just a terminal pair
+		# can we merge with the next terminal?
+		mergeNext = ntIdx < len(word) - 1 and is_term(word[ntIdx + 1])
+
+		# rule right side is just one letter - a terminal segment
+		# in that case we might need to merge on both sides
+		if len(ruleRhs) == 1 and is_term(ruleRhs[0]):
 			if mergePrev and mergeNext:
+				# merge on both sides
 				mergedUpper = word[ntIdx - 1][0] + ruleRhs[0][0] + word[ntIdx + 1][0]
 				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1] + word[ntIdx + 1][1]
 				retval = word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
-
 			elif mergePrev:
+				# merge only with previous segment
 				mergedUpper = word[ntIdx - 1][0] + ruleRhs[0][0]
 				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1]
 				retval = word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 1:]
-
 			elif mergeNext:
+				# merge with followinf segment
 				mergedUpper = ruleRhs[0][0] + word[ntIdx + 1][0]
 				mergedLower = ruleRhs[0][1] + word[ntIdx + 1][1]
 				retval = word[:ntIdx] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
-
 			else:
+				# nothing to merge, just replace the non-term
 				retval = word[:ntIdx] + [ruleRhs[0]] + word[ntIdx + 1:]
 		else:
+			# there is a terminal segment as the first letter of rule rhs
 			mergePrev = mergePrev and is_term(ruleRhs[0])
+
+			# there is a terminal segment as the last letter of rule rhs
 			mergeNext = mergeNext and is_term(ruleRhs[-1])
 
 			if ntIdx > 0 and mergePrev and mergeNext:
+				# merge on both sides
 				mergedUpperPrev = word[ntIdx - 1][0] + ruleRhs[0][0]
 				mergedLowerPrev = word[ntIdx - 1][1] + ruleRhs[0][1]
 				mergedUpperNext = ruleRhs[-1][0] + word[ntIdx + 1][0]
 				mergedLowerNext = ruleRhs[-1][1] + word[ntIdx + 1][1]
 				retval = word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + ruleRhs[1:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
 			elif mergePrev:
+				# merge only with previous segment
 				mergedUpperPrev = word[ntIdx - 1][0] + ruleRhs[0][0]
 				mergedLowerPrev = word[ntIdx - 1][1] + ruleRhs[0][1]
 				retval = word[:ntIdx - 1] + [(mergedUpperPrev, mergedLowerPrev)] + ruleRhs[1:] + word[ntIdx + 1:]
 			elif mergeNext:
+				# merge only with following segment
 				mergedUpperNext = ruleRhs[-1][0] + word[ntIdx + 1][0]
 				mergedLowerNext = ruleRhs[-1][1] + word[ntIdx + 1][1]
 				retval = word[:ntIdx] + ruleRhs[:-1] + [(mergedUpperNext, mergedLowerNext)] + word[ntIdx + 2:]
 			else:
+				# nothing to merge, just replace the non-term
 				retval = word[:ntIdx] + ruleRhs + word[ntIdx + 1:]
 
 		debug(f'result: {wordToStr(retval)}')
 		return retval
 
+
+	# is a word a solution?
 	def is_result(self, word: tWord, goal: str) -> bool:
-		# word lenght must be 1
-		# word must be terminal
+		# there is a number of conditions that must be fullfilled
 		# upper and lower strands must have the same length
 		# upper and lower strands must fulfil compl. relation
 		# upper strand must equal goal string
-		#return False
 
-		if len(word) != 1:
+		# word lenght must be of len 1 and it must be terminal segment
+		if len(word) != 1 or is_nonterm(word[0]):
 			return False
 
-		if isinstance(word[0], tNonTerm):
+		# the len of both strands must be the same as the input length
+		if len(word[0][0]) != len(word[0][1]) or len(word[0][0]) != len(goal) :
 			return False
 
-		if len(word[0][0]) != len(word[0][1]):
-			return False
-
+		# the complementarity relation must hold
 		for symbol1, symbol2 in zip(word[0][0], word[0][1]):
 			if (symbol1, symbol2) not in self.relation:
 				return False
 
+		# the upper strand must be equal to the input
 		if ''.join(word[0][0]) != goal:
 			return False
 
 		return True
 
+
+	# in debug mode prints path of found solution
 	def printPath(self, node: cTreeNode) -> None:
 		currentNode: Optional[cTreeNode] = node
 		while currentNode:
@@ -465,15 +548,22 @@ class cWK_CFG:
 
 ################# pruning functions                  #######################################################
 
+	# SL - is one of the strands too long?
 	def prune_check_strands_len(self, node: cTreeNode, goalStr: str) -> bool:
 		return max(node.upperStrLen, node.lowerStrLen) <= len(goalStr)
 
+
+	# TL - is the word overall too long (counting with nonterm lens)?
 	def prune_check_total_len(self, node: cTreeNode, goalStr: str) -> bool:
 		return node.upperStrLen + node.lowerStrLen + node.ntLen <= 2 * len(goalStr)
 
+
+	# WS - does the first letter (if it's term segment) correspond to the input start?
 	def prune_check_word_start(self, node: cTreeNode, goalStr: str) -> bool:
 		return is_nonterm(node.word[0]) or goalStr.startswith(''.join(node.word[0][0]))
 
+
+	# RL - is the complementary relation met?
 	def prune_check_relation(self, node: cTreeNode, goalStr: str) -> bool:
 		if is_nonterm(node.word[0]):
 			return True
@@ -483,225 +573,257 @@ class cWK_CFG:
 				return False
 		return True
 
+
+	# make word into regex
+	# helper function only called from prune_check_regex
 	def _word_to_regex(self, word: tWord) -> str:
-		if is_nonterm(word[0]):
-			regex = ''
-		else:
-			regex = '^'
+
+		# starting nonterm is repesented by omitting ^
+		regex = '^' if is_term(word[0]) else ''
 
 		for idx, letter in enumerate(word):
 			if is_nonterm(letter) and idx > 0 and is_term(word[idx-1]):
+				# nonterm can generate in general anything - use wildcard
 				regex += '.*'
 			elif is_term(letter):
+				# term from the upper strand stand for themselves
 				regex += ''.join(letter[0])
 
 		if is_term(word[-1]):
+			# ending nonterm is repesented by omitting $
 			regex += '$'
 
 		return regex
 
+
+	# RE - does the input correspond to the regex made from word?
 	def prune_check_regex(self, node: cTreeNode, goalStr: str) -> bool:
 		regex = self._word_to_regex(node.word)
 		return re.compile(regex).search(goalStr) is not None
 
 ################# node precedence functons           #######################################################
 
+	# just call the right precedence method based on currentNodePrecedence
 	def compute_precedence(self, word: tWord, goalStr: str) -> int:
 		return self.nodePrecedenceList[self.currentNodePrecedence][1](word, goalStr)
 
+
+	# no heurictic - return 0
 	def compute_precedence_no_heuristic(self, word: tWord, goal: str) -> int:
 		return 0
 
-	def compute_precedence_NTA(self, word: tWord, goal: str) -> int:
-		distance = 0
-		for letter in word:
-			if is_nonterm(letter):
-				distance += 1
-		return distance
 
-	def compute_precedence_WNTA(self, word: tWord, goal: str) -> int:
-		distance = 0
+	# return number of nonterms
+	def compute_precedence_NTA(self, word: tWord, goal: str) -> int:
+		evaluation = 0
 		for letter in word:
 			if is_nonterm(letter):
-				distance += self.ntDistances[letter]
-		return distance
+				evaluation += 1
+		return evaluation
+
+
+	# return sum of distances of all nonterms
+	def compute_precedence_WNTA(self, word: tWord, goal: str) -> int:
+		evaluation = 0
+		for letter in word:
+			if is_nonterm(letter):
+				evaluation += self.ntDistances[letter]
+		return evaluation
 
 
 	# look only at terminals with some upper strands
 	# if symbol in upper strand match goal -> priority increases
 	# once you find one that doesn't, finish
 	def compute_precedence_TM1(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
+		goalIdx, evaluation = 0, 0
 
 		for letter in word:
 			if is_term(letter):
 				for symbol in letter[0]:
 					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 1
+						evaluation -= 1
 						goalIdx += 1
 					else:
-						return distance
-		return distance
+						return evaluation
+		return evaluation
 
 
 	# look at terminals with some upper strands only
 	# if symbol in upper strand match goal -> priority increases
 	# but unlike previous case, if you find one that doesn't match input, just descrease priority and continue
 	def compute_precedence_TM2(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
+		goalIdx, evaluation = 0, 0
 
 		for letter in word:
 			if is_term(letter):
 				for symbol in letter[0]:
 					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 1
-						goalIdx += 1
+						evaluation -= 1
 					else:
-						distance += 1
-						goalIdx += 1
-		return distance
+						evaluation += 1
+					goalIdx += 1
+		return evaluation
+
 
 	# look at first letter
 	# if it is terminal and has upper strand - check how it matches goal - increase priority
 	# else do nothing
 	def compute_precedence_TM3(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
+		goalIdx, evaluation = 0, 0
 
 		if len(word) > 0 and is_term(word[0]):
 			for symbol in word[0][0]:
 				if len(goal) > goalIdx and symbol == goal[goalIdx]:
-					distance -= 1
+					evaluation -= 1
 					goalIdx += 1
 				else:
-					return distance
-		return distance
-	#
-	def compute_precedence_NTA_TM3(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
-
-		for letter in word:
-			if is_nonterm(letter):
-				distance += 1
-
-		if len(word) > 0 and is_term(word[0]):
-			for symbol in word[0][0]:
-				if len(goal) > goalIdx and symbol == goal[goalIdx]:
-					distance -= 10
-					goalIdx += 1
-				else:
-					return distance
-		return distance
-
-	# 2+5
-	def compute_precedence_WNTA_TM3(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
-
-		for letter in word:
-			if is_nonterm(letter):
-				distance += self.ntDistances[letter]
-
-		if len(word) > 0 and is_term(word[0]):
-			for symbol in word[0][0]:
-				if len(goal) > goalIdx and symbol == goal[goalIdx]:
-					distance -= 10
-					goalIdx += 1
-				else:
-					return distance
-		return distance
+					return evaluation
+		return evaluation
 
 
-	# combination of previous heuristic and nt aversion
-	def compute_precedence_NTA_TM2(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
-
-		for letter in word:
-			if is_term(letter):
-				for symbol in letter[0]:
-					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 10
-						goalIdx += 1
-					else:
-						distance += 10
-						goalIdx += 1
-
-			else:
-				distance += 1
-		return distance
-
-	def compute_precedence_WNTA_TM2(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
-
-		for letter in word:
-			if is_term(letter):
-				for symbol in letter[0]:
-					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 10
-						goalIdx += 1
-					else:
-						distance += 10
-						goalIdx += 1
-
-			else:
-				distance += self.ntDistances[letter]
-		return distance
-
-
+	# NTA + TM1 combination
 	def compute_precedence_NTA_TM1(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
+		goalIdx, evaluation = 0, 0
 
 		for letter in word:
 			if is_term(letter):
 				for symbol in letter[0]:
 					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 10
+						evaluation -= 10
 						goalIdx += 1
 					else:
-						return distance
+						return evaluation
 
 			else:
-				distance += 1
-		return distance
+				evaluation += 1
+		return evaluation
 
+
+	# NTA + TM2 combination
+	def compute_precedence_NTA_TM2(self, word: tWord, goal: str) -> int:
+		goalIdx, evaluation = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						evaluation -= 10
+						goalIdx += 1
+					else:
+						evaluation += 10
+						goalIdx += 1
+
+			else:
+				evaluation += 1
+		return evaluation
+
+
+	# NTA + TM3 combination
+	def compute_precedence_NTA_TM3(self, word: tWord, goal: str) -> int:
+		goalIdx, evaluation = 0, 0
+
+		for letter in word:
+			if is_nonterm(letter):
+				evaluation += 1
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					evaluation -= 10
+					goalIdx += 1
+				else:
+					return evaluation
+		return evaluation
+
+
+	# WNTA + TM1 combination
 	def compute_precedence_WNTA_TM1(self, word: tWord, goal: str) -> int:
-		goalIdx, distance = 0, 0
+		goalIdx, evaluation = 0, 0
 
 		for letter in word:
 			if is_term(letter):
 				for symbol in letter[0]:
 					if len(goal) > goalIdx and symbol == goal[goalIdx]:
-						distance -= 10
+						evaluation -= 10
 						goalIdx += 1
 					else:
-						return distance
+						return evaluation
 
 			else:
-				distance += self.ntDistances[letter]
-		return distance
+				evaluation += self.ntDistances[letter]
+		return evaluation
+
+
+	# WNTA + TM2 combination
+	def compute_precedence_WNTA_TM2(self, word: tWord, goal: str) -> int:
+		goalIdx, evaluation = 0, 0
+
+		for letter in word:
+			if is_term(letter):
+				for symbol in letter[0]:
+					if len(goal) > goalIdx and symbol == goal[goalIdx]:
+						evaluation -= 10
+					else:
+						evaluation += 10
+					goalIdx += 1
+
+			else:
+				evaluation += self.ntDistances[letter]
+		return evaluation
+
+
+	# WNTA + TM3 combination
+	def compute_precedence_WNTA_TM3(self, word: tWord, goal: str) -> int:
+		goalIdx, evaluation = 0, 0
+
+		for letter in word:
+			if is_nonterm(letter):
+				evaluation += self.ntDistances[letter]
+
+		if len(word) > 0 and is_term(word[0]):
+			for symbol in word[0][0]:
+				if len(goal) > goalIdx and symbol == goal[goalIdx]:
+					evaluation -= 10
+					goalIdx += 1
+				else:
+					return evaluation
+		return evaluation
 
 ################# transformation to CBF              #######################################################
 
+	# create new nonterm Ni where i increases can specify differnt prefix than N
 	def createNewNt(self, prefix: str = 'N') -> tNonTerm:
 		self.lastCreatedNonTerm += 1
+		# double check the the nonterm is unique (should be)
 		while prefix + str(self.lastCreatedNonTerm) in self.nts:
 			self.lastCreatedNonTerm += 1
 		return prefix + str(self.lastCreatedNonTerm)
 
+
+	# remove lambda rules (A -> lambda/lamda)
 	def remove_lambda_rules(self) -> None:
 		newRules: Set[cRule] = set()
 
 		for rule in self.rules:
+
+			# we need to differentiate between more occurences of the same nonterm in the word
+			# hence we use erasableIdxs
 			erasableIdxs: List[int] = []
 			for idx, letter in enumerate(rule.rhs):
 				if is_nonterm(letter) and letter in self.erasableNts:
 					erasableIdxs.append(idx)
 
+			# get all combinations of word with or without all erasable nonterms
 			for idxLst in get_all_combinations(erasableIdxs):
 				newRuleRhs = []
+				# for each such combination create a special rule
 				for idx, letter in enumerate(rule.rhs):
+					# compose the rule rhs - add erasable nonterms according to the current combination
 					if idx not in erasableIdxs or idx in idxLst:
 						newRuleRhs.append(deepcopy(letter))
 
 				newRule = cRule(rule.lhs, newRuleRhs)
+				# make sure the rule isn't empty (we removing those and is unique)
 				if newRule.rhs != [([], [])] and newRule.rhs != [] and newRule not in newRules:
 					newRules.add(newRule)
 
@@ -709,12 +831,15 @@ class cWK_CFG:
 		self.precalculate_data()
 
 
+	# remove unit rules (A -> B)
 	def remove_unit_rules(self) -> None:
 
 		simpleRules: Dict[tNonTerm, List[tNonTerm]] = {}
+		# dictionary - which nonterm can generate key nonterm
 		for nt in self.nts:
 			simpleRules[nt] = [nt]
 
+		# loop until no change occures
 		loop = True
 		while loop:
 			loop = False
@@ -723,6 +848,7 @@ class cWK_CFG:
 					# find all non terminals which have lhs in their N but no rhs
 					for k, v in simpleRules.items():
 						if rule.lhs in v and rule.rhs[0] not in v:
+							# a new simple rule found - keep looping
 							simpleRules[k].append(rule.rhs[0])
 							loop = True
 
