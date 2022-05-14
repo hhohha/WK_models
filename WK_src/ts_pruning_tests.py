@@ -47,7 +47,6 @@ def main():
 			tester.run_prune_test(grammar, inputStr, False, times)
 
 	tester.printResults()
-	for result in tester.allResults:
-		print(f't = "{result.name}", {result.times}, {result.timeouts}\ndata.append(t)')
+
 if __name__ == "__main__":
 	main()

@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+# Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
+# Project: WK Grammar Tree Search
+# demonstrates how to use the cWK_CFG class
 
 # one option is to use one of the grammars (g1-g20) from lib/grammars.py
 from lib.grammars import *

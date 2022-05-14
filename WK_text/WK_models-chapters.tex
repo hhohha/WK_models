@@ -215,7 +215,7 @@ It has been shown in \cite{COMPL_REL} that the type of complementary relation wh
 
 \chapter{Existing ways of testing membership in Watson-Crick languages} \label{chapter:WK_CYK}
 
-This chapter focuses mainly on the WK-CYK algorithm which is almost the only algorithm explicitly designed to decide a membership in Watson-Crick languages defined by a WK context-free grammars. Another way could be using WK automata, which is discussed in the latter part.
+This chapter focuses mainly on the WK-CYK algorithm which is practically the only algorithm explicitly designed to decide a membership in Watson-Crick languages defined by a WK context-free grammars. Another way could be using WK automata, which is discussed in the latter part.
 
 \section{WK-CYK algorithm}
 The WK-CYK algorithm has been introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK context-free languages. To understand it, it is good to be familiar with the way the original CYK algorithm works.
@@ -233,7 +233,7 @@ The algorithm is looking for rules which can generate the candidate non-terminal
 The complexity of the CYK algorithm is $O(n^3 \times R)$ where $n$ is the input string length and $R$ is the number of rules in the grammar.
 
 \subsection{Watson-Crick Chomsky normal form}
-Just like the CYK algorithm works with grammars in the Chomsky normal form, the WK-CYK algorithm requires grammars to be in the Watson-Crick Chomsky normal form. A Watson-Crick Chomsky normal form (WK-CNF) is a modification of CNF for Watson-Crick context-free grammars. A grammar in the WK-CNF has only rules of one of the following forms:
+Just like the CYK algorithm works with grammars in the Chomsky normal form, the WK-CYK algorithm requires grammars to be in the Watson-Crick Chomsky normal form. The Watson-Crick Chomsky normal form (WK-CNF) is a modification of CNF for Watson-Crick context-free grammars. A grammar in the WK-CNF has only rules of one of the following forms:
 
 \begin{itemize}
   \item{$A \rightarrow \wkpair{a}{\lambda}$}
@@ -248,8 +248,8 @@ where $A$, $B$ and $C$ are non-terminals, $S$ is the starting non-terminal and $
   \item{removing $\lambda$-rules (rules of the form $A \rightarrow \wkpair{\lambda}{\lambda}$)}
   \item{removing unit rules (rules of the form $A \rightarrow B$)}
   \item{removing useless rules and symbols (symbols that are unreachable from the starting symbol or cannot lead to a terminal string and rules which use such symbols)}
-  \item{replacing every terminal on the left-hand side of each rule with a new non-terminal and adding a new corresponding rule}
-  \item{breaking down the non-terminals producing rules, so that they produce only two at a time}
+  \item{replacing every terminal on the left-hand side of each rule (except the rules already in the right form) with a new non-terminal and adding a new corresponding rule}
+  \item{breaking down the rules producing non-terminals, so that they produce only two at a time}
 \end{enumerate}
 
 The procedure of the transformation is described formally in \cite{WK_CYK}.
@@ -257,9 +257,9 @@ The procedure of the transformation is described formally in \cite{WK_CYK}.
 
 \subsection{Order of generating terminals in WK grammar}
 
-A complication compared to the CYK algorithm that WK-CYK has to deal with, is the ambiguity in the order of generating terminals. In case of a standard context-free grammar in the CNF, the order of non-terminals that generate a word, for instance $abcd$, is clear --- if the rules are $A \rightarrow a$, $B \rightarrow b$, $C \rightarrow c$ and $D \rightarrow d$, the word with non-terminals that generates that terminal string must be $ABCD$. The order cannot change.
+A complication compared to the CYK algorithm that WK-CYK has to deal with, is the ambiguity in the order of generating terminals. In case of a standard context-free grammar in the CNF, the order of non-terminals that generate a word, for instance $abcd$, is clear --- if the rules are $A \rightarrow a$, $B \rightarrow b$, $C \rightarrow c$ and $D \rightarrow d$, the non-terminal word that generates the terminal string $abcd$ must be $ABCD$. The order cannot change.
 
-But in case of WK grammars, the order is not clear. For the terminal string $\wkpair{ab}{cd}$, the only given order of generating is $a$ before $b$ and $c$ before $d$, anything else is uncertain. If the rules are $A \rightarrow \wkpair{a}{\lambda}$, $B \rightarrow \wkpair{b}{\lambda}$, $C \rightarrow \wkpair{\lambda}{c}$ and $D \rightarrow \wkpair{\lambda}{d}$, that terminal word can be produced by six different orderings of the non-terminals:
+But in case of WK grammars, the order is not clear. For the terminal string $\wkpair{ab}{cd}$, the only given order of generation is $a$ before $b$ and $c$ before $d$, anything else is uncertain. If the rules are $A \rightarrow \wkpair{a}{\lambda}$, $B \rightarrow \wkpair{b}{\lambda}$, $C \rightarrow \wkpair{\lambda}{c}$ and $D \rightarrow \wkpair{\lambda}{d}$, that terminal word can be produced by six different orderings of the non-terminals:
 $ABCD$, $ACBD$, $ACDB$, $CABD$, $CADB$ and $CDAB$.
 
 \subsection{Description of the WK-CYK algorithm}
@@ -318,27 +318,27 @@ else
 
 WK-CYK algorithm expects a grammar in the WK-CNF and a double stranded string on the input. Since one of the algorithm's requirements is that the complementarity relation must be identity, the upper and lower strands are always the same.
 
-WK-CYK uses sets marked as $X_{a:b,c:d}$. These are sets of non-terminals that can generate a segmant of the input double stranded string specified by the indexes $a$, $b$, $c$ and $d$. $a$ and $b$ are indexes of terminals in the upper strand and specify an interval where the index of the first symbol is 1 and the edge indexes are included. The lower strand interval is specified by indexes $c$ and $d$. If a pair of indexes is 0, no symbols from the corresponding strand are included. For instance, for the input $\wkpair{abcd}{abcd}$, $X_{2:2,0:0}$ would contain a set of non-terminals that generate $\wkpair{b}{\lambda}$, $X_{2:4,1:3}$ non-terminals that generate $\wkpair{bcd}{abc}$.
+WK-CYK uses sets marked as $X_{a:b,c:d}$. These are sets of non-terminals that can generate a segmant of the input double stranded string specified by the indexes $a$, $b$, $c$ and $d$. $a$ and $b$ are indexes of terminals in the upper strand and specify an interval (the indexing starts with the index 1 and the edge indexes are included). The lower strand interval is specified by indexes $c$ and $d$. If a pair of indexes is 0, no symbols from the corresponding strand are included. For instance, for the segment $\wkpair{abcd}{abcd}$, $X_{2:2,0:0}$ would contain a set of non-terminals that generate $\wkpair{b}{\lambda}$, $X_{2:4,1:3}$ non-terminals that generate $\wkpair{bcd}{abc}$.
 
 \subsubsection{The main procedure of WK-CYK}
-In the first step (lines 4--6 of figure \ref{code:wk_cyk_main}) WK-CYK finds sets $X_{i:i,0:0}$ and $X_{0:0,i:i}$ for $0 < i \leq |n|$ ($n$ is the length of the input). These are non-terminals that directly generate single terminals. Then, it searches for ways to generate segments of the input of increasing lengths, beginning with length of 2 and up to the length of $2n$. It is because in the input of length $n$ there are actually $2n$ of terminals --- $n$ in the upper and $n$ in the lower strand. For each length of the segment it takes all possible combinations of number of symbols from the upper and the lower strands. For instance, if the length of the current segment is 3, that could include 3 terminals from the upper strand and 0 from the lower or 2 and 2, 1 and 3, 0 and 4.
+In the first step (lines 4--6 of figure \ref{code:wk_cyk_main}) WK-CYK finds sets $X_{i:i,0:0}$ and $X_{0:0,i:i}$ for $0 < i \leq |n|$ ($n$ is the length of the input). These are non-terminals that directly generate single terminals. Then, it searches for ways to generate segments of the input of increasing lengths, beginning with length of 2 and up to the length of $2n$. It is because in the input of length $n$ there are actually $2n$ of terminals --- $n$ in the upper and $n$ in the lower strand. For each length of the segment it takes all possible combinations of number of symbols from the upper and the lower strands. For instance, if the length of the current segment is 3, that can include 3 terminals from the upper strand and 0 from the lower or 2 and 1, 1 and 2, 0 and 3.
 
 For each of these segments, it calls the procedure \textit{ComputeSet} which finds all non-terminals, that could generate the given segment. When WK-CYK uses this procedure to compute set $X$ of a segment of length $n$, it is necessary to have already computed sets $X$ for all segments of length $m < n$. Therefore it proceeds from the length 1 upward.
 
 Let us consider an example with input $\wkpair{abcd}{abcd}$. The first step looks for way of generating the individual terminals, in other words non-terminals that generate $\wkpair{a}{\lambda}$, $\wkpair{\lambda}{a}$, $\wkpair{b}{\lambda}$ etc. Then it looks for non-terminals that could generate two terminals, meaning either two terminals from the upper strand, two terminals from the lower strand or one from each. In each of these cases, all possible combinations need to be considered. If the two terminals are from the upper strand, the combinations are either $\wkpair{ab}{\lambda}$, $\wkpair{bc}{\lambda}$ or $\wkpair{cd}{\lambda}$ (or using the $X$ sets: $X_{1:2,0:0}$, $X_{2:3,0:0}$ or $X_{3:4,0:0}$). It the two terminals are one from each strand, there are 16 combinations $\wkpair{x}{y}$ where $x, y \in \{a, b, c, d\}$ ($X_{1:1,1:1}$, $X_{2:2,1:1}$, $X_{1:1,2:2}$ etc.). And for terminals from the lower strand, the combinations are $\wkpair{\lambda}{ab}$, $\wkpair{\lambda}{bc}$ or $\wkpair{\lambda}{cd}$ ($X_{0:0,1:2}$, $X_{0:0,2:3}$ and $X_{0:0,3:4}$).
 
-When the segment length of $2n$ has been computed, WK-CYK is finished. It has succeeded if the starting symbol $S$ can generate the whole input, in other words: if $S \in X_{1:n,1:n}$.
+When the segment of length $2n$ has been computed, WK-CYK is finished. It has succeeded if the starting symbol $S$ can generate the whole input, in other words: if $S \in X_{1:n,1:n}$.
 
 \subsubsection{The ComputeSet procedure}
 The \textit{ComputeSet} procedure has as a parameter a segment of input specified by the four indexes. It searches all pairs of sets $X$ which could together produce the given segment. If the segment consists of symbols from one strand only ($X_{i:j,0:0}$ or $X_{0:0,i:j}$), the situation is simpler --- it needs to consider the pairs of sets $X$ that produce the segment split in any two parts. If the segment contains symbols from both strands, there are more ways to split it:
 
 \begin{itemize}
-  \item{the first set could produce the entire upper strand and the second set could produce the entire lower strand, or the other way around (the order matters)}
-  \item{the first set could produce and entire upper (or lower) strand and any part the lower (upper), the second one would produce the rest of the divided strand. Again, all possible divisions of the divided strand need to be considered.}
-  \item{both set could produce parts of both strands. Again, all possible combinations of divisions of both strands need to be considered.}
+  \item{The first set could produce the entire upper strand and the second set could produce the entire lower strand or the other way around (the order matters)}
+  \item{The first set could produce the entire upper (or lower) strand and any part the lower (upper), the second one would produce the rest of the divided strand. Again, all possible divisions of the divided strand need to be considered.}
+  \item{Both sets could produce parts of both strands. Again, all possible combinations of divisions of both strands need to be considered.}
 \end{itemize}
 
-When all combinations of two $X$ sets potentially producing the input segment have been found, the procedure then needs to check the grammar rules to find those rules which actually generate non-terminal from these sets. For each such a rule, the non-terminal on its left-hand side is going to be included in the procedure's result. The final result is then a set of all such non-terminals.
+When all combinations of two $X$ sets potentially producing the input segment have been found, the procedure then needs to check the grammar rules to find those rules which actually generate non-terminal from these sets. This step is not explicitly described in the \textit{ComputeSet} procedure. For each such a rule, the non-terminal on its left-hand side is going to be included in the procedure's result. The final result is then a set of all such non-terminals.
 
 Lets us consider an example, where the procedure computes $X_{1:2,1:2}$, in other words, the segment $\wkpair{ab}{ab}$. All possible divisions of this segment are in the table \ref{tab:segment_divisions}:
 
@@ -363,33 +363,33 @@ Lets us consider an example, where the procedure computes $X_{1:2,1:2}$, in othe
 \end{figure}
 
 
-All these 14 $X$ sets must already be computed, they are sets for segments of lengths 1, 2 and 3. Each of these sets contains zero or more non-terminals that can produce the given sub-segment. In last step, the procedure checks all rules of the grammar of type $A \rightarrow BC$ to find rules where $B$ is in the first $X$ set and $C$ is in the second $X$ set of one of the divisions of the segment. In the example, there are three combinations of non-terminals that could lead to a result: $N_1N_2$, $N_3N_4$ and $N_3N_5$ ($N6$ is alone --- that is not not enough to produce the segment). Therefore, the result will be a set $\{X, Y, Z\}$ if there are rules $X \rightarrow N_1N_2$, $Y \rightarrow N_3N_4$ and $Z \rightarrow N_3N_5$. If only subset of these rules is found, the resulting set will contain only left-hand sides of those rules (or could even be an empty set).
+All the 14 $X$ sets from the middle column must already be computed, they are sets for segments of lengths 1, 2 and 3. Each of these sets contains zero or more non-terminals that can produce the given sub-segment. In last step, the procedure checks all rules of the grammar of type $A \rightarrow BC$ to find rules where $B$ is in the first $X$ set and $C$ is in the second $X$ set of one of the divisions of the segment. In the example, there are three combinations of non-terminals that could lead to a result: $N_1N_2$, $N_3N_4$ and $N_3N_5$ ($N_6$ is alone --- that is not not enough to produce the segment). Therefore, the result will be a set $\{X, Y, Z\}$ if there are rules $X \rightarrow N_1N_2$, $Y \rightarrow N_3N_4$ and $Z \rightarrow N_3N_5$. If only subset of these rules is found, the resulting set will contain only left-hand sides of those rules (or could even be an empty set).
 
 
 
 \subsubsection{Two remarks regarding WK-CYK}
-1. The loop on the line 9 of the procedure \textit{SetsConstruction} (figure \ref{code:wk_cyk_main}) iterates $\beta$ from 0 to $n$. In this context, $\beta$ represents the length of the lower strand segment, while $\alpha$ represents the length of the upper strand segment and $\alpha = y - \beta$ where $y$ is the length of the whole segment. Part of the loop actually calculates with non-sensical values. When calculating with segment that is shorter then one strand (i.e. $y < n$), it includes the case when $\beta > y$ and so $\alpha < 0$. In other words, the algorithm splits the segment of length, for instance, 2, to two parts of lengths 3 and -1.
+1. The loop on the line 9 of the procedure \textit{SetsConstruction} (figure \ref{code:wk_cyk_main}) iterates $\beta$ from 0 to $n$. In this context, $\beta$ represents the length of the lower strand segment while $\alpha$ represents the length of the upper strand segment and $\alpha = y - \beta$ where $y$ is the length of the whole segment. Part of the loop actually calculates with non-sensical values. When calculating with segment that is shorter then one strand (i.e. $y < n$), it includes the case when $\beta > y$ and so $\alpha < 0$. In other words, the algorithm splits the segment of length, for instance, 2, to two parts of lengths 3 and -1.
 
-And when calculating with segment that is longer than the input, it includes the case where $\beta$ is too short and so $\alpha$ is then longer then a strand length. In other words, if the input length is, for instance, 4 and the segment length is 8, it splits the segment to lengths 7 and 1 which is not possible with the input length of 4.
+When calculating with segment that is longer than the input, it includes the case where $\beta$ is too short and so $\alpha$ is then longer then a strand length. In other words, if the input length is, for instance, 4 and the segment length is 8, it splits the segment to lengths 7 and 1 which is not possible with the input length of 4.
 
-This does not affect the correctness of the computation because the non-sensical values find no result. However, more precise and efficient solution would be to iterate $\beta$ in the interval: $\langle max(y-n, 0), min(n, y)\rangle$ instead of interval $\langle 0, n\rangle$.
+This does not affect the correctness of the computation because the non-sensical values find no result. However, more precise and efficient solution would be to iterate $\beta$ over the interval: $\langle max(y-n, 0), min(n, y)\rangle$ instead of interval $\langle 0, n\rangle$.
 
 \medskip
 
-2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As described in \cite{WK_CYK} (section 6), the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{ComputeSet} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input and $R$ is the number of rules in the grammar. The description of the procedure \textit{ComputeSet} uses the operation of set union ($\cup$), as if it has constant time complexity which, in reality, it does not --- it requires iterating over the rules of the grammar.
+2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As described in \cite{WK_CYK} (section 6), the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{ComputeSet} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input length and $R$ is the number of rules in the grammar. The description of the procedure \textit{ComputeSet} uses the operation of set union ($\cup$), as if it has constant time complexity which, in reality, it does not --- it requires iterating over the rules of the grammar.
 
 \section{Using automata to test membership in Watson-Crick languages}
-In general, automata seem more suitable for deciding the membership in a language. In case of deterministic automata, the situation is quite straightforward --- every input deterministically leads to the next state and when the whole input is read, the automaton decides whether the input is accepted by finishing in a final state or not. The situation is not as clear in case of the weaker types of deterministic automata. A disadvantage may be the fact that strongly deterministic automata are weaker then deterministic automata.
+In general, automata seem more suitable for deciding the membership in a language than grammars. In case of deterministic automata, the situation is quite straightforward --- every input deterministically leads to the next state and when the whole input is read, the automaton decides whether the input is accepted by finishing in a final state or not. The situation is not as clear in case of the weaker types of deterministic automata.
 
 \subsection{Strongly deterministic Watson-Crick automata}
-The strongly deterministic automata represent the simplest case as they have clearly linear complexity.
+The strongly deterministic automata represent the simplest case as they have clearly linear complexity. A disadvantage may be the fact that strongly deterministic automata are weaker then deterministic automata.
 
 \subsection{Weakly deterministic and deterministic Watson-Crick automata}
-Weakly deterministic and deterministic automata are similar in the sense that their determinism depends on the configuration being known. But the membership of a string in a WK language is defined by the string being equal to upper strand only (see section \ref{section:WKA}). A corresponding lower strand simply needs to exist but is not automatically known in advance. If this is not the case and the entire input with both strands is available at the beginning then there is practically no difference between the three types of deterministic WKA. The strongly deterministic WKA knows the lower strand thanks to the fact that the complementarity relation is identity --- the strands must be identical.
+Weakly deterministic and deterministic automata are similar in the sense that their determinism depends on the configuration being known. But the membership of a string in a WK language is defined by the string being equal to upper strand only (see section \ref{section:WKA}). A corresponding lower strand simply needs to exist but is not automatically known in advance. If this is not the case and the entire input with both strands is available at the beginning, then there is practically no difference between the three types of deterministic WKA. The strongly deterministic WKA knows the lower strand thanks to the fact that the complementarity relation is identity --- the strands must be identical.
 
-If the lower strand is not known the deterministic WK automata are in practice the same as non-deterministic WK automata. In general, it is not necessarily clear what the next state will be given the input). This is demonstrated by example on the left in figure \ref{fig:deter_WKA}. The snippet of the WK automaton has two transition rules: $q_0 \wkpair{a}{b} \rightarrow q_1$ and $q_0 \wkpair{a}{c} \rightarrow q_2$ and let us suppose that both $(a, b) \in \rho$ and $(a, c) \in \rho$. These rules fulfill the condition for deterministic WKA which, for this case, is: $a \nsim a \vee b \nsim c$. It is not possible to decide based on the upper strand as $a$ is a prefix of $a$. However, it should be possible to decide based on the lower strand --- either a symbol $b$ is going to be read and the automaton will transition to $q_1$ or symbol $c$ and the automaton will transition to $q_2$. But if the process of accepting a string is at the same time looking for a suitable lower strand, it is up to the automaton to decide between these two possibilities and produce either symbol $b$ to the lower strand or symbol $c$.
+If the lower strand is not known, however, the deterministic WK automata are in practice the same as non-deterministic WK automata. It is, in general, not necessarily clear what the next state will be given the input. This is demonstrated by example on the left on the figure \ref{fig:deter_WKA}. The snippet of the WK automaton has two transition rules: $q_0 \wkpair{a}{b} \rightarrow q_1$ and $q_0 \wkpair{a}{c} \rightarrow q_2$. Let us suppose that both $(a, b) \in \rho$ and $(a, c) \in \rho$ and there is the string $aaa$ on the input. These rules fulfill the condition for deterministic WKA which, for this case, is: $a \nsim a \vee b \nsim c$. It is not possible to choose the next path based on the upper strand as $a$ is a prefix of $a$. However, it should be possible to decide based on the lower strand --- either a symbol $b$ is going to be read and the automaton will transition to $q_1$ or symbol $c$ and the automaton will transition to $q_2$. But if the process of accepting a string is at the same time looking for a suitable lower strand, it is up to the automaton to decide between these two possibilities and produce either the symbol $b$ to the lower strand or the symbol $c$.
 
-The figure \ref{fig:deter_WKA} on the right shows a snippet of a completely non-deterministic WKA. The rules shown are: $q_0 \wkpair{a}{b} \rightarrow q_1$ and $q_0 \wkpair{aa}{bb} \rightarrow q_2$. In case, that the upper strand on the input has symbols $aa$ and the lower strand symbols $bb$ as the next symbols on the input, both paths are possible. Either one symbol from each strand will be read and transition will lead to $q_1$ or two symbols will be read and the transition will lead to $q_2$. So in practice, there is not much difference between a weakly deterministic WKA, deterministic WKA and non-deterministic WKA (unless the lower strand is known in advance).
+The figure \ref{fig:deter_WKA} on the right shows a snippet of a completely non-deterministic WKA. The rules shown are: $q_0 \wkpair{a}{b} \rightarrow q_1$ and $q_0 \wkpair{aa}{bb} \rightarrow q_2$. Even if both input strands are known, in case the upper strand contains $aa$ and the lower strand contains $bb$, both paths are possible. Either one symbol from each strand will be read and transition will lead to $q_1$ or two symbols from each strand will be read and the transition will lead to $q_2$. So in practice, there is not much difference between a weakly deterministic WKA, deterministic WKA and non-deterministic WKA unless the lower strand is known in advance.
 
 \begin{figure}[h]
   \centering
@@ -400,9 +400,9 @@ The figure \ref{fig:deter_WKA} on the right shows a snippet of a completely non-
 
 
 \subsection{Accepting inputs by a non-deterministic Watson-Crick automaton}
-It is possible to propose a similar algorithm for a run of WKA then for non-deterministic finite automata (FA). Such an algorithm for a finite automaton needs to consider all possible paths the FA may take --- in practice it must remember not just one state where the FA is at the moment, but a subset of all its states. however, this is not enough in case of WKA. An algorithm which controls a run of a non-deterministic WKA needs to remember not only all the states where the automaton can be at a given moment, but also, what inputs have been read from the upper strand and what inputs have been generated to the lower strand. The figure \ref{fig:automata_run} shows the difference between run of a FA and WKA.
+It is possible to propose a similar algorithm for a run of WKA as for non-deterministic finite automata (FA). Such an algorithm for a finite automaton needs to consider all possible paths the FA may take --- in practice it must remember, not just one state where the FA is at the moment, but a subset of all its states. However, this is not enough in case of WKA. An algorithm which controls a run of a non-deterministic WKA needs to remember not only all the states where the automaton can be at a given moment, but also, what inputs have been read from the upper strand and what inputs have been generated to the lower strand. The figure \ref{fig:automata_run} demonstrates the difference between undeterminism in run of a FA and WKA.
 
-The FA snippet on the left is in state $q_0$. If the next symbol on the input is $a$, the automaton can transition to state $q_1$ or $q_2$. This means that the algorithm keeps in mind that the current state is one of the two (a subset of all states $\{q_1, q_2\}$). If there is another $a$ which means another nondeterministic choice, it turns out that the number of possibilities can even decrease or, as in this case, stay the same because some branches are merged. The new state is either $q_3$ or $q_4$.
+The FA snippet on the left starts in state $q_0$. If the next symbol on the input is $a$, the automaton can transition to state $q_1$ or $q_2$. This means that the algorithm keeps in mind that the current state is one of the two (a subset of all FA states: $\{q_1, q_2\}$). If there is another $a$ which causes another non-deterministic choice, it turns out that the number of possibilities can even decrease or, as in this case, stay the same because some branches are merged. The new state is either $q_3$ or $q_4$.
 
 \begin{figure}[h]
   \centering
@@ -421,7 +421,7 @@ The situation in case of WKA on the right is much more complicated. Even though 
   \item{Transition to $q_3$, read symbol $a$ and generate symbol $c$.}
 \end{enumerate}
 
-In these three cases, there is a more differences between these states of the algorithm then just the different WKA state. Therefore, after the next step, the three paths will still differ in what has been read from the input (upper strand) and what has been generated to the lower strand.
+In these three cases, there is more differences between these states of the algorithm then just the different WKA state. Therefore, after the next step, the three paths will still differ in what has been read from the input (upper strand) and what has been generated to the lower strand.
 
 The algorithm that would simulate the run of a WKA could therefore be designed as a state space searching algorithm. Each node would contain three items --- 1. what state is the WKA in, 2. what remains to be read from the input, 3. what has been generated to the lower strand. The solution would then be a node where WKA is in a final state, nothing remains to be read and the two strands (one read, one generated) adhere to the complementarity relation.
 
@@ -1062,7 +1062,7 @@ In order to analyze these questions, I have decided to test the state space sear
   \item{Testing the WK-CYK algorithm with various grammars and inputs and comparison to the state space search.}
 \end{enumerate}
 
-\subsection{Comparison of the node precedence heuristics efficiency}
+\subsection{Comparison of the node precedence heuristics efficiency} \label{section:node_prec_test}
 In section \ref{heur_node_pref}, 12 node precedence heuristics have been described and only one of them can be active at a time.
 In order to compare their effectiveness I used the script \textit{ts\_node\_prece\-dence\_tests.py} which runs one test for each of the 40 grammars with an input that will be accepted. It is not useful to test the node precedence heuristics with inputs that are not within the given language as in such cases, the whole space state needs to be searched and node precedence cannot help in any way. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time, specifically within the time limit of ten seconds, but also to last some measurable amount of time.
 
@@ -1127,7 +1127,7 @@ The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 
   \label{fig:node_heuristics_comp}
 \end{figure}
 
-\subsection{Comparison of the pruning heuristics efficiency}
+\subsection{Comparison of the pruning heuristics efficiency} \label{section:pruning_test}
 
 Pruning has the advantage of being useful whether the input string is going to be accepted or rejected by the tree search. Also, all of the pruning can be active at the same time. Each node can be tested by all available checks to see if it can be pruned or not.
 
@@ -1168,13 +1168,15 @@ The tests are run by the script \textit{ts\_pruning\_tests.py} and each test pri
 The summary of results is displayed on figure \ref{fig:prune_timeouts_comp} --- the number of timeouts and \ref{fig:prune_times_comp} --- the amount of time for each of the seven cases across the 80 tests. The smaller the individual bars are, the better the result. But in case of the bars representing a specific pruning heuristic being turned off, the bigger the bar, the more important the given heuristic is, because the result is that much worse without it.
 
 \begin{figure}[h!]
-  \includegraphics[scale=0.45]{prune_timeouts_comp.png}
+  \centering
+  \includegraphics[scale=0.44]{prune_timeouts_comp.png}
   \caption{Number of timeouts of all pruning tests}
   \label{fig:prune_timeouts_comp}
 \end{figure}
 
 \begin{figure}[h!]
-  \includegraphics[scale=0.6]{prune_times_comp.png}
+  \centering
+  \includegraphics[scale=0.47]{prune_times_comp.png}
   \caption{Total time of all pruning tests}
   \label{fig:prune_times_comp}
 \end{figure}
@@ -1207,18 +1209,18 @@ I've chosen grammar 3 in CNF to test the results in practice, as this grammar is
 The figure \ref{fig:mem_consumption} on the left shows the amount of memory requirements in relation to the input length. The middle graph shows the memory consumption in relation to the time needed for computation. To the right is the experimental result where I measured real memory consumption of the program in time.
 
 \begin{figure}[h!]
-  \includegraphics[scale=0.5]{mem_consumption.png}
+  \includegraphics[scale=0.47]{mem_consumption.png}
   \caption{Memory consumption of tree search}
   \label{fig:mem_consumption}
 \end{figure}
 
 
 \subsection{The time complexity of the state space search}
-The previous sections showed that the best overall performance is achieved when using all of the tree pruning heuristics and using the NTA+TM2 as the node precedence heuristic. This may not be the case for every grammar or every input, but it is the case overall. Therefore, this will be the setting used in following sections --- for testing the tree search performance, analyzing the practical complexity and comparing to WK-CYK algorithm.
+The previous sections showed that the best overall performance is achieved when using all of the tree pruning heuristics and using the NTA+TM1 as the node precedence heuristic. This may not be the case for every grammar or every input, but it is the case overall. Therefore, this will be the setting used in the sections that follow --- testing the tree search performance, analyzing the practical complexity and comparing to WK-CYK algorithm.
 
-I used the script \textit{ts\_speed\_tests.py} to test the time complexity with respect to the input length. It runs 80 test, two for each of the 40 grammars --- one with inputs that are in the language defined by the grammar and so the inputs are going to be accepted and one with inputs which will be refused. Each test runs the tree search several times and increases the input length. It stops when the computation takes longer than a limit of ten seconds or after 30 runs. For each of the 80 tests, it prints out a table similar to \ref{tab:input_compl_test}. As it would not be practical to present all of the results here, they can be recreated by simply running the script again and they are included in the file \textit{output/ts\_speed.txt}.
+I used the script \textit{ts\_speed\_tests.py} to test the time complexity with respect to the input length. It runs 80 test, two for each of the 40 grammars --- one with inputs that are going to be accepted by the tree search and one with inputs which will be refused. Each test runs the tree search several times and increases the input length. It stops when the computation takes longer than a limit of ten seconds or after 30 runs. For each of the 80 tests, it prints out a table similar to \ref{tab:input_compl_test}. As it would not be practical to present all of the results here, they can be recreated by simply running the script again and they are included in the file \textit{output/ts\_speed.txt}.
 
-\begin{figure}[h]
+\begin{figure}[h!]
   \caption{An output of the time complexity test}
   \label{tab:input_compl_test}
 \begin{tabular}{ |l|l|l|l|l|  }
@@ -1262,142 +1264,65 @@ I used the script \textit{ts\_speed\_tests.py} to test the time complexity with 
 \end{tabular}
 \end{figure}
 
-Different grammars have very different complexity as the following results show. The following graphs display result for each of the 20 grammars.
+The performance for different grammars is quite different. In case of eleven of the twenty grammars (specifically, grammars 2, 5--10, 12-14, 19), the resulting graph is a very regular parabola. Often a bit steeper when transformed to the CNF and often steeper when the inputs are going to be rejected. An example is on figure \ref{fig:speed_test_grammar_12}. The performance with these grammars allows at least hundreds, in most cases thousands, of symbols on the input.
 
-% Figure \ref{fig:res_grammar_1} shows results for grammar 1. 
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_1.png}
-  \caption{Grammar 1: $a(aa)^*$}
-  \label{compl_result_grammar_1}
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_12.png}
+  \caption{Grammar 12: $r^n d^n u^n r^n$}
+  \label{fig:speed_test_grammar_12}
 \end{figure}
 
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_2.png}
-  \caption{Grammar 2: $(a+b+c)^*abc$ left recursive rules}
-  \label{compl_result_grammar_2}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_3.png}
-  \caption{Grammar 3: $(a+b+c)^*abc$ right recursive rules}
-  \label{compl_result_grammar_3}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_4.png}
-  \caption{Grammar 4: $a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)^*a$}
-  \label{compl_result_grammar_4}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_5.png}
-  \caption{Grammar 5: $(\{a,t,c,g\}^*ctg\{a,t,c,g\}^*)^*$}
-  \label{compl_result_grammar_5}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_6.png}
-  \caption{Grammar 6: $a^n b^n$}
-  \label{compl_result_grammar_6}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_7.png}
-  \caption{Grammar 7: $wcw^R$}
-  \label{compl_result_grammar_7}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_8.png}
-  \caption{Grammar 8: $ww^R$}
-  \label{compl_result_grammar_8}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_9.png}
-  \caption{Grammar 9: $x2y: |x| \neq |y|$}
-  \label{compl_result_grammar_9}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_10.png}
-  \caption{Grammar 10: regular expressions over 0 and 1}
-  \label{compl_result_grammar_10}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_11.png}
-  \caption{Grammar 11: $(ww)^C$}
-  \label{compl_result_grammar_11}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_12.png}
-  \caption{Grammar 12: $r^nd^nu^nr^n$}
-  \label{compl_result_grammar_12}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_13.png}
-  \caption{Grammar 13: $a^nc^nb^n$}
-  \label{compl_result_grammar_13}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_14.png}
-  \caption{Grammar 14: $a^nb^mc^nd^m$}
-  \label{compl_result_grammar_14}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_15.png}
-  \caption{Grammar 15: $wcw$}
-  \label{compl_result_grammar_15}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_16.png}
-  \caption{Grammar 16: $a^nb^ma^n$ where $2n \leq m \leq 3n$}
-  \label{compl_result_grammar_16}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_17.png}
-  \caption{Grammar 17: $w: \#_a(w) = \#_b(w)$ and for prefix $v$ of $w: w: \#_a(w) \geq \#_b(w)$}
-  \label{compl_result_grammar_17}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_18.png}
-  \caption{Grammar 18: $(l^nr^n)^k$ where $n$ does not increase for subsequent $k$s}
-  \label{compl_result_grammar_18}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_19.png}
-  \caption{Grammar 19: $a^n c^m b^n$}
-  \label{compl_result_grammar_19}
-\end{figure}
-
-\begin{figure}[h]
-  \includegraphics[scale=0.33]{compl_result_grammar_20.png}
-  \caption{Grammar 20: $a^m b^n c^o d^p$ where $m+n = o+p$}
-  \label{compl_result_grammar_20}
-\end{figure}
-
-These figures show that typically the tree search algorithm has a exponential growth but the curve grows very mildly for quite a long time. It is usually feasible to get the answer for inputs with lengths of hundreds and often even thousands of symbols.
 
 Occasionally, thanks to the pruning heuristics, the algorithm is able to tell practically immediately that there is no solution. This is the case of grammar 3 \ref{compl_result_grammar_3} and grammar 4 \ref{compl_result_grammar_4} in basic forms, making the complexity of this particular search constant. The grammar 3 has as the first rule, which it has to use to proceed further, $S \rightarrow A \wkpair{abc}{abc}$. If the input string does not end in $abc$ the regular expression check immediately detects that the input cannot be matched, prunes the only branch and the search is finished.
 
 Similarly, in the case of grammar 4, any inputs that are longer than seven symbols need to end with symbol $a$ and can be reached only by using $S \rightarrow Q \wkpair{a}{a}$ as the first rule. The regular expression check immediately prunes this branch. The rest of the tree is searched very quickly because the only other possible starting rule is $S \rightarrow A B C D E F G$, there are not many states that can be reached from it, so this part of the tree is always small.
 
-After conversion of the grammar to CNF, the complexity usually goes up. This is because the transformation adds a lot more rules and thus the state space expands more rapidly, there are also longer paths from the starting non-terminal to the final string (containing only terminals) making the tree deeper. Also, the node precedence heuristics and the pruning have harder time because many rules contain non-terminals only and most of the heuristics work with terminals. The most extreme case is the grammar 3 where the tree search is very effective for grammar in basic form (as discussed, in case of rejecting inputs the result is immediate) but has very bad effectiveness for this grammar in the CNF. The maximum length of input it can answer within 10 second is about 13--14 symbols.
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_3.png}
+  \caption{Grammar 3: $(a+b+c)^*abc$ with left recursive rules}
+  \label{fig:speed_test_grammar_3}
+\end{figure}
 
-The worst results for grammar in the basic form are in the case of grammar 17 \ref{compl_result_grammar_17}. For all other grammars, the input length can be in hundreds and in most cases more that a thousand symbols. With grammar 17 the tree search can handle only inputs with length of about 25 symbols within 10 seconds.
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_4.png}
+  \caption{Grammar 4: $(a+b+c)^*abc$ with right recursive rules}
+  \label{fig:speed_test_grammar_4}
+\end{figure}
+
+After conversion of the grammar to CNF, the complexity usually goes up. The transformation adds a lot more rules and thus the state space expands more rapidly, there are also longer paths from the starting non-terminal to the final string (containing only terminals) making the tree deeper. Also, the node precedence heuristics and the pruning have harder time because many rules contain non-terminals only and most of the heuristics work with terminals. The most extreme case is the grammar 3 \ref{fig:speed_test_grammar_4} where the tree search is very effective for grammar in basic form (as discussed, in case of rejecting inputs the result is immediate) but has very bad effectiveness for this grammar in the CNF. The maximum length of input it can answer within 10 second is about 13--14 symbols.
+
+The worst results for grammar in the basic form are in the case of grammar 17 \ref{fig:speed_test_grammar_17}. Here the tree search can handle only inputs with length of about 20 symbols within 10 seconds.
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_17.png}
+  \caption{Grammar 17: $w: \#_a(w) = \#_b(w)$ and for any prefix $v$ of $w$: $v: \#_a(v) \geq \#_b(v)$}
+  \label{fig:speed_test_grammar_17}
+\end{figure}
+
+Some grammars manifest interesting behavior --- for some longer inputs the performance is actually better. This is the case of grammars 11 (\ref{fig:speed_test_grammar_11} on the left), 16 (\ref{fig:speed_test_grammar_16} on the middle right) and 18 (\ref{fig:speed_test_grammar_18} on the middle left and middle right). Some of these results may appear to be partly random, simply the input generator might sometimes generate an input which is more complex and sometimes less complex to compute. This is the case of the grammar 18, in fact the shape of the randomly generated input has a big impact on the performance. However, repeated tests of the other two grammars confirmed that this happens always and the figure of grammar 16 has a clear pattern, it is certainly not random.
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_11.png}
+  \caption{Grammar 11: $(ww)^C$}
+  \label{fig:speed_test_grammar_11}
+\end{figure}
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_16.png}
+  \caption{Grammar 16: $a^n b^m a^n$ where $2n \leq m \leq 3n$}
+  \label{fig:speed_test_grammar_16}
+\end{figure}
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.33]{speed_test_grammar_18.png}
+  \caption{Grammar 18: $(l^n r^n)^k$ where $n$ does not increase for subsequent $k$s}
+  \label{fig:speed_test_grammar_18}
+\end{figure}
+
+The results of the three grammars which have not been yet mentioned, grammars 1, 15 and 20, are mostly similar to the standard parabola of the majority of tests with some irregularities.
 
 \subsection{Comparing different inputs of the same length}
-There are some grammars which do not provide any possibility of an interesting or edge case input. Specifically, it is the case of grammars 1--4. Grammar 1 works only with the terminal symbol $a$, grammars 2, 3 and 4 are only interested whether a string ends with specific symbols. But the rest of the grammars, grammars 5--20, all provide some space for trying to come up with an edge case input --- an input, which has the key part on the very end or on the very beginning etc. I tried to think of these edge cases and tested what differences in performance there are. For this test I used a script \textit{ts\_var\_inputs\_tests.py}. Its complete output can be again recreated by running the script and is attached in the file \textit{output/output/ts\_var\_inputs.txt}.
+There are some grammars which do not provide any possibility of an interesting or edge case input. Specifically, it is the case of grammars 1--4. Grammar 1 works only with the terminal symbol $a$, grammars 2, 3 and 4 are only interested whether a string ends with specific symbols. But the rest of the grammars, grammars 5--20, all provide some space for trying to come up with an edge case input --- an input, which has the key part on the very end or on the very beginning etc. I have manually created some of these edge cases and tested what differences in performance there are. For this test I used a script \textit{ts\_var\_inputs\_tests.py}. Its complete output can be again recreated by running the script and is attached in the file \textit{output/ts\_var\_inputs.txt}.
 
 I have selected three of these tests to show here. The tables \ref{tab:input_compl_test_2}, \ref{tab:input_compl_test_4}, \ref{tab:input_compl_test_8}  show the input of the tests from the script \textit{ts\_var\_inputs\_tests.py}. The first column called Input displays the string that has been used as an input in a compact format $(ns)^*$ where $n$ is a number of occurrences of the symbol or string $s$. For instance, $3a\:2ab$ would translate to string $aaaabab$.
 
@@ -1524,18 +1449,26 @@ It turns out that the WK-CYK gives very similar performance in all tests --- for
 
 These results confirm the claim made by authors of WK-CYK that the complexity with regards to the input length is $O(n^6)$. The figure \ref{fig:wk_cyk_test1} shows the same test with the input lengths raised to the power of six which can be considered to be a number of numeric operations needed for a computation. The curve is then very close to linear.
 
-When the results of the WK-CYK and state space search are compared, the advantage of state space search is the actual speed in most cases. The results in the previous sections showed that of all the grammars only one (grammar 17) was slower in the basic form when analyzed by tree search then when analyzed by WK-CYK. After transformation to CNF two more grammars (grammar 3 and 11) were comparable or slower when analyzed by the tree search.
+When the results of the WK-CYK and state space search are compared, the advantage of state space search is the actual speed in most cases. The results in the previous sections showed that of all the grammars only one (grammar 17) was slower in the basic form when analyzed by tree search then when analyzed by WK-CYK. After transformation to CNF two more grammars (grammar 3 and 11) were comparable or slower when analyzed by the tree search. Grammar 1 was slower for the negatove inputs.
 
-Another advantage of state space search is the flexibility regarding the grammars. It does not require to work with grammars in the CNF. Also, it does not require the complementarity relation to be identity. Even though it is always possible to transform any WK grammar to the WK-CNF and it is always possible to further transform the grammar in order to use only the identity as the relation, this can significantly add to the grammar's complexity.
-
-The advantage of WK-CYK, on the other hand, is its universality. It has roughly the same speed every time, it does not significantly depend on the grammar (increasing number of rules adds a little bit) and it does not matter, if the input is going to be accepted or not. For very complicated grammars, especially with lots of rules or long derivations from the starting symbol to the final string, WK-CYK still might be more practical.
-
-\begin{figure}[h]
+\begin{figure}[h!]
   \centering
   \includegraphics[scale=0.5]{wk_cyk_test_1.png}
   \caption{WK-CYK test result}
   \label{fig:wk_cyk_test1}
 \end{figure}
+
+\section{Comparison of state space search and WK-CYK}
+
+It has been concluded in the previous section that the WK-CYK algorithm is able to compute within the time limit of ten seconds results for inputs of length of approximately 33 symbols. I will assume that will always be the case even for grammars that would have to be modified in order to be suitable for WK-CYK (grammars 5, 19 and 20). If these results are compared with the results of state space search over grammars in basic forms, only one of them is more efficient with WK-CYK. Other 19 are more efficient with the state space search allowing hundreds of input symbols at minimum. That means that state space search was more efficient in 38 out of 40 test cases (each grammar is tested with accepted and rejected inputs) i.e. in 97.5 \% of cases. In this comparison the state space search benefits from being able to work with any WK grammar --- there is no need to transform it to the WK-CNF.
+
+If the state space search is compared to WK-CYK over all 40 grammars, WK-CYK has better efficiency in case of grammars 3 and 11 (in the CNF) and with the rejected inputs for grammar 1. That is 9 test cases out of 80 (four test cases of grammar 17, two of grammars 3 and eleven, one of grammar 1) i.e. in 88,75 \% of cases. However, this comparison assumes that there is a need to use the grammars in the CNF, as well.
+
+These results show some advantages and disadvantages if the two algorithm. An advantage of state space search is the flexibility regarding the grammars. It does not require to work with grammars in the CNF. Also, it does not require the complementarity relation to be identity. Even though it is always possible to transform any WK grammar to the WK-CNF and it is always possible to further transform the grammar in order to use only the identity as the relation, this can significantly add to the grammar's complexity.
+
+A useful feature of the state space search is the fact that it can be configured for the need of a specific grammar. If the membership test will be performed repeatedly on a grammar, it is possible to find out what node precedence heuristic works best and what pruning heuristics are useful in that particular scenario by running tests analogous to those presented in secton \ref{section:node_prec_test}. Thus the performance may be further enhanced.
+
+The advantage of WK-CYK, on the other hand, is its universality. It has roughly the same speed every time, it does not significantly depend on the grammar (increasing number of rules adds a little bit) and it does not matter, if the input is going to be accepted or not. For very complicated grammars, especially with lots of rules or long derivations from the starting symbol to the final string, WK-CYK still might be more practical.
 
 \chapter{Conclusion}
 In this work I have presented various existing models for representing Watson-Crick languages, most importantly Watson Crick automata and Watson-Crick grammars. Then I have analyzed the WK-CYK algorithm for testing membership of strings in a Watson-Crick context-free grammars. Than I have come up with an algorithm which I call state space search or tree search which is the most important contribution of this thesis.
@@ -1543,11 +1476,13 @@ In this work I have presented various existing models for representing Watson-Cr
 The state space search is based on standard Breadth-first search algorithm, where the starting non-terminal of the grammar is the root node and every applicable rule creates successors in the tree. State space search then introduces various optimizations, from which the most important are pruning and node precedence heuristics. Pruning uses five different methods of identifying, that a given node cannot produce the desired solution and removes the entire branch. Node precedence heuristics attempt to choose more promising nodes to be analyzed first. I have tested twelve such heuristics and chosen the one which had the best overall results (called NTA+TM2) as the default one.
 
 I have collected or created twenty Watson-Crick context-free grammars to test the WK-CYK and state space search algorithms.
-I have implemented both WK-CYK and state space search in the Python language and written scripts to test the algorithms with all these grammars and various inputs. The test results showed that for the majority of the grammars, state space search was very efficient and it can quickly decide membership problem of inputs that are hundreds or even thousands of symbols long. Another advantage of state space search is the fact that it can work with any WK-grammar --- it does not have to be in Chomsky normal form. Also the complementarity relation can be arbitrary, it does not have to be identity.
+I have implemented both WK-CYK and state space search in the Python language and written scripts to test the algorithms with all these grammars and various inputs. The test results showed that for the majority of the grammars, state space search was very efficient and it can quickly decide membership problem of inputs that are hundreds or even thousands of symbols long. Another advantage of state space search is the fact that it can work with any WK-grammar --- it does not have to be in Chomsky normal form. Also, the complementarity relation can be arbitrary, it does not have to be identity.
+
+The state space search can be optimized for a particular grammar. Tests comparing performance of node precedence heuristics and tests of pruning heuristics can be run in order to find which combination is best for a particular grammar thus further improving the performance.
 
 Testing the WK-CYK algorithm showed that its theoretical complexity $O(n^6)$ with respect to the input length corresponds to the real performance. In practice, it is able to decide membership problem of inputs up to length of 30--50 symbols. That is much less than state space search but, on the other hand, its performance is almost identical for any grammar and for any inputs. It is more efficient in case of some specific or complex grammars where the performance of state space search struggles.
 
-The state space search is a suitable algorithm to be parallelized. More processes can take nodes from the queue and analyze different branches of the tree independently. This would be a natural next step in the further development of the state space search.
+The state space search is a suitable algorithm for parallization. More processes can take nodes from the queue and analyze different branches of the tree independently. This would be a natural next step in the further development of the state space search.
 It is possible to come up with other heuristics for both the pruning and node preference. As for pruning, one option would be to combine the idea of comparing the lower strand to a regular expression in a similar way as it is currently done with the upper strand. Another idea is to calculate how many terminals can be generated at minimum to the lower strand and to the upper strand (currently, it is calculated how many terminals a non-terminal produces to both strands) thus making the constraint of the words stronger.
 As for the node precedence heuristics, it may be worthwhile to use some of the grammars with which state space search is not efficient (in particular grammars 3 and 17) and design or improve node precedence heuristics with respect to these particular cases. Then it would be appropriate to test all these new heuristics and see if they contribute to the overall performance or not.
 Another promising improvement could be analyzing the input from both sides at the same time. This could help with the cases, when the key part of the input is at or near its end and the state space search may struggle to get there in reasonable time.

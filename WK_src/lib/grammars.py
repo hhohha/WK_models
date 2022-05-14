@@ -69,7 +69,7 @@ g3.input_gen_func = g2.input_gen_func
 
 #####################################  GRAMMAR 4  #####################################
 # accepted strings: a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)*a
-# my example, aimed to have a lot of rules after transformation to CNF
+# aimed to have a lot of rules after transformation to CNF
 
 rules = [
 	cRule('S', ['Q', (['a'], ['a'])]),
@@ -106,7 +106,6 @@ g4.input_gen_func = input_gen_func
 
 ##################################### GRAMMAR 5  #####################################
 # accepted strings: ({a,t,c,g}*ctg{a,t,c,g}*)*
-# taken from: generative power and closure properties of WK grammars (chapter 6)
 
 rules = [
 	cRule('S', [(['a'], ['t']), 'S']),
@@ -144,7 +143,6 @@ g5.input_gen_func =  input_gen_func
 
 ##################################### GRAMMAR 6  #####################################
 # accepted strings: a^n b^n (n>0)
-# taken from: On Watson Crick automata
 
 rules  = [
 	cRule('S', [(['a'], []), 'S']),
@@ -170,6 +168,7 @@ def input_gen_func(start, step, accept):
 g6.input_gen_func = input_gen_func
 ##################################### GRAMMAR 7 #####################################
 # accepted strings: wcw^R
+
 rules = [
 	cRule('S', [(['a'], ['a']), 'S', (['a'], ['a'])]),
 	cRule('S', [(['b'], ['b']), 'S', (['b'], ['b'])]),
@@ -211,8 +210,7 @@ def input_gen_func(start, step, accept):
 
 g8.input_gen_func = input_gen_func
 ##################################### GRAMMAR 9  #####################################
-# accepted string: x2y : x,y in {0,1}* |x| != |y| - adjusted CF grammar
-# taken from: https://www.ccs.neu.edu/home/viola/classes/slides/slides-context-free.pdf
+# accepted string: x2y : x,y in {0,1}* |x| != |y|
 
 rules = [
 	cRule('S', ['B', 'L']),
@@ -248,8 +246,6 @@ g9.input_gen_func = input_gen_func
 # l  :  3   (empty string)
 # s  :  *   (star)
 # d  :  •   (dot / concatenation operator)
-# it is adjusted CF grammar
-# example from: https://jeffe.cs.illinois.edu/teaching/algorithms/models/05-context-free.pdf
 
 rules = [
 	cRule('S', ['T']),
@@ -281,6 +277,8 @@ ts = ['p', 'e', 'o', 'c', 'l', 's', 'd', '0', '1']
 g10 = cWK_CFG(nts, ts, 'S', rules, [(x, x) for x in ts])
 g10.desc = 'RE with 0, 1 and operators: p-plus, e-empty set, o-opening par, c-closing par, l-epsilon, s-star, d-dot'
 
+# possible enhancement - this generator is now very simple
+# it could generate more interesting strings
 def input_gen_func(start, step, accept):
 	curLen = start
 
@@ -291,6 +289,8 @@ def input_gen_func(start, step, accept):
 		
 g10.input_gen_func = input_gen_func
 ##################################### GRAMMAR 11 #####################################
+# accepted strings: (ww)^C
+
 rules = [
 	cRule('S', ['A']),
 	cRule('S', ['B']),
@@ -323,7 +323,6 @@ def input_gen_func(start, step, accept):
 g11.input_gen_func = input_gen_func
 ##################################### GRAMMAR 12 #####################################
 # accepted strings: r^n d^n u^n r^n
-# taken from: On Watson Crick automata
 
 rules = [
 	cRule('S', [(['r'], []), 'S']),
@@ -352,7 +351,6 @@ def input_gen_func(start, step, accept):
 g12.input_gen_func = input_gen_func
 ##################################### GRAMMAR 13 #####################################
 # accepted strings: a^n c^n b^n
-# taken from: generative power and closure properties of WK grammars (example 10)
 
 rules = [
 	cRule('S', [(['a'], []), 'S', (['b'], [])]),
@@ -377,7 +375,6 @@ def input_gen_func(start, step, accept):
 g13.input_gen_func = input_gen_func
 ##################################### GRAMMAR 14 #####################################
 # accepted strings: a^n b^m c^n d^m
-# taken from: generative power and closure properties of WK grammars  (example 11)
 
 rules = [
 	cRule('S', [(['a'], []), 'S']),
@@ -409,7 +406,6 @@ def input_gen_func(start, step, accept):
 g14.input_gen_func = input_gen_func
 ##################################### GRAMMAR 15 #####################################
 # accepted strings: wcw where w in {a,b }*
-# taken from: generative power and closure properties of WK grammars (example 12)
 
 rules = [
 	cRule('S', [(['a'], []), 'S']),
@@ -438,7 +434,6 @@ def input_gen_func(start, step, accept):
 g15.input_gen_func = input_gen_func
 ##################################### GRAMMAR 16 #####################################
 # accepted strings: a^n b^m a^n where 2n <= m <= 3n
-# taken from: generative power and closure properties of WK grammars (lemma 14)
 
 rules = [
 	cRule('S', [(['a'], []), 'S', (['a'], ['a'])]),
@@ -466,7 +461,6 @@ def input_gen_func(start, step, accept):
 g16.input_gen_func = input_gen_func
 ##################################### GRAMMAR 17 #####################################
 # accepted strings: cnt(a) == cnt(b) and for any prefix: cnt(a) >= cnt(b)
-# taken from: WK cyk paper
 
 rules = [
 	cRule('S', ['S', 'S']),
@@ -515,7 +509,6 @@ def input_gen_func(start, step, accept):
 g17.input_gen_func = input_gen_func
 ##################################### GRAMMAR 18 #####################################
 # accepted strings: (l^n r^n)^k where n does not increase (e.g. accepts llrrlr but not lrllrr)
-# taken from: generative power and closure properties of WK grammars (example 31)
 
 rules = [
 	cRule('S', [(['l'], []), 'S']),
@@ -532,7 +525,7 @@ g18 = cWK_CFG(['S', 'A', 'B'], ['l', 'r'], 'S', rules, [('l', 'l'), ('r', 'r')])
 g18.desc = '(l^n r^n)^k where n does not increase'
 
 def input_gen_func(start, step, accept):
-	curLen = start
+	curLen = start if accept else max(0, start - 6)
 
 	while True:
 		lsToGenerate = maxLs = (curLen // 2)
@@ -550,8 +543,9 @@ def input_gen_func(start, step, accept):
 
 g18.input_gen_func = input_gen_func
 ##################################### GRAMMAR 19 #####################################
+# accepted strings: a^n c^m b^n
 # non-bijective complementarity relation
-# a^n c^m b^n
+
 rules = [
 	cRule('S', [(['a'], []), 'S', (['b'], [])]),
 	cRule('S', [(['a'], []), 'A', (['b'], [])]),
@@ -576,8 +570,9 @@ def input_gen_func(start, step, accept):
 		
 g19.input_gen_func = input_gen_func
 ##################################### GRAMMAR 20 #####################################
+# accepted strings: #a + #b = #c + #d
 # non-bijective complementarity relation
-# '#a + #b = #c + #d'
+
 rules = [
 	cRule('S', [(['a'], []), 'S']),
 	cRule('S', [(['a'], []), 'A']),

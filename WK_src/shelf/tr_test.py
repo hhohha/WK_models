@@ -5,25 +5,13 @@ from ctf_WK_grammar import *
 #from itertools import product
 #from lib.perf_tester import cPerfTester
 from grammars import g1
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 ##import numpy as np
-#lengths = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33]
-#times = [0.0, 0.0, 0.0, 0.01, 0.03, 0.07, 0.15, 0.28, 0.52, 0.88, 1.47, 2.3, 3.46, 5.23, 7.55, 10.67]
-
-#fig, axs = plt.subplots(1, 2)
-
-#axs[0].plot(lengths, times, marker='o')
-#axs[0].set(xlabel='number of inputs')
-#axs[0].set(ylabel='time (sec)')
 
 
-#axs[1].plot([x**6//1000000 for x in lengths], times, marker='o')
-#axs[1].set(xlabel='number of operation (in millions)')
-##plt.xlabel("number of inputs")
-##plt.ylabel("time (sec)")
-##fig = plt.figure()
 
-#plt.show()
+
+
 
 #g3.to_wk_cnf()
 #g3.timeLimit = 600

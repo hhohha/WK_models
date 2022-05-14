@@ -1,6 +1,6 @@
 # Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
 # Project: WK Grammar Tree Search
-# Runs a test of wk-cyk using all 20 grammars increasing the input length by the step value, all grammars must be in CNF
+# Runs a test of wk-cyk using 17 grammars increasing the input length by the step value, all grammars must be in CNF
 
 from lib.perf_tester import cPerfTester
 from lib.grammars import *

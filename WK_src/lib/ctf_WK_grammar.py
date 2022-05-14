@@ -393,7 +393,6 @@ class cWK_CFG:
 
 		# loop until open queue is empty, solution has been found or time limit reached
 		while not openQueue.empty():
-
 			# check the time limit, if exceeded, stop and return None
 			currentTime = time.time()
 			if currentTime - startTime > self.timeLimit:
@@ -834,12 +833,14 @@ class cWK_CFG:
 	# remove unit rules (A -> B)
 	def remove_unit_rules(self) -> None:
 
-		simpleRules: Dict[tNonTerm, List[tNonTerm]] = {}
 		# dictionary - which nonterm can generate key nonterm
+		simpleRules: Dict[tNonTerm, List[tNonTerm]] = {}
+
+		# init - every nonterm can generate itself (in 0 steps)
 		for nt in self.nts:
 			simpleRules[nt] = [nt]
 
-		# loop until no change occures
+		# loop until no change occure
 		loop = True
 		while loop:
 			loop = False
@@ -854,7 +855,9 @@ class cWK_CFG:
 
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
+			# if this is not a simple rule...
 			if len(rule.rhs) != 1 or is_term(rule.rhs[0]):
+				# ...create rules replacing the lhs with nonterms that can generate this one
 				for k, v in simpleRules.items():
 					if rule.lhs in v:
 						newRules.add(cRule(k, deepcopy(rule.rhs)))
@@ -863,54 +866,70 @@ class cWK_CFG:
 		self.precalculate_data()
 
 
+	# if a symbol cannot generate terminal string, it can never be used on a successful run
+	# it can be erased (and rules using it)
 	def remove_unterminatable_symbols(self) -> None:
-		non_empty_nts: Set[tNonTerm] = set()
+		terminatableNts: Set[tNonTerm] = set()
 
+		# keep looping until no change occures
 		loop = True
 		while loop:
 			loop = False
 			for rule in self.rules:
-				if len(list(filter(lambda letter: is_nonterm(letter) and letter not in non_empty_nts, rule.rhs))) == 0:
-					if rule.lhs not in non_empty_nts:
-						non_empty_nts.add(rule.lhs)
+				# terminatable symbol generates only terms, or other terminatable symbols
+				if len(list(filter(lambda letter: is_nonterm(letter) and letter not in terminatableNts, rule.rhs))) == 0:
+					if rule.lhs not in terminatableNts:
+						terminatableNts.add(rule.lhs)
+						# found something - keep looping
 						loop = True
 
 
+		# check all rules and remove those that use unterminatable symbols
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
-			if rule.lhs in non_empty_nts and all(map(lambda letter: is_term(letter) or letter in non_empty_nts, rule.rhs)):
+			if rule.lhs in terminatableNts and all(map(lambda letter: is_term(letter) or letter in terminatableNts, rule.rhs)):
 				newRules.add(rule)
 
-		self.nts = self.nts.intersection(non_empty_nts)
+		# keep only nonterms that are terminatable
+		self.nts = self.nts.intersection(terminatableNts)
 		self.rules = newRules
 		self.precalculate_data()
 
 
+	# if a symbol cannot be generated from the starting symbol, it is useless
+	# it can be erased (and rules using it)
 	def remove_unreachable_symbols(self) -> None:
+		# both nts and ts can be unreachable, starting symbol is reachable trivially
 		reachableNts: Set[tNonTerm] = set(self.startSymbol)
 		reachableTs: Set[tTerm] = set()
 
+		# keep looping until there is no change, find all reachable symbols
 		loop = True
 		while loop:
 			loop = False
+			# follow all rules, see what you can find
 			for rule in self.rules:
 				if rule.lhs in reachableNts:
 					for letter in rule.rhs:
 						if is_nonterm(letter):
 							if letter not in reachableNts:
+								# new reachable nonterm found, keep looping
 								reachableNts.add(letter)
 								loop = True
 						else:
 							for terminal in letter[0] + letter[1]:
 								if terminal not in reachableTs:
+									# new reachable term found, keep looping
 									reachableTs.add(terminal)
 									loop = True
 
+		# check all rules and remove those that use unreachable symbols
 		newRules: Set[cRule] = set()
 		for rule in self.rules:
 			if rule not in newRules and rule.lhs in reachableNts and all(map(lambda letter: is_term(letter) or letter in reachableNts, rule.rhs)):
 				newRules.add(rule)
 
+		# keep only terminal that are reachable
 		self.nts = self.nts.intersection(reachableNts)
 		self.ts = self.ts.intersection(reachableTs)
 		self.rules = newRules
@@ -918,6 +937,8 @@ class cWK_CFG:
 		self.precalculate_data()
 
 
+	# splits a segment - creates a new one with 1 symbol
+	# helper function use only in dismantle_term_letters
 	def _pop_term_from_letter(self, letter: tTermLetter) -> tTermLetter:
 		if len(letter[0]) > len(letter[1]):
 			t = letter[0].pop(0)
@@ -926,22 +947,33 @@ class cWK_CFG:
 			t = letter[1].pop(0)
 			return ([], [t])
 
+
+	# each terminal in rules (that don't generate only one terminal) is replaced by non-term
+	# and new rule is generated for to place the term there
 	def dismantle_term_letters(self) -> None:
 		newRules: List[cRule] = []
 
 		for rule in self.rules:
+			# rules of the form A -> a/lambda, A -> lambda/a  are ok
 			if len(rule.rhs) == 1 and is_term(rule.rhs[0]) and len(rule.rhs[0][0]) + len(rule.rhs[0][1]) == 1:
 				continue
+
+			# otherwise find terminal segments in the rhs...
 			for idx, letter in enumerate(rule.rhs):
 				if is_term(letter):
+					# ...replace each term from the segment (but the last one) them with a new nonterm
 					newNt = self.createNewNt()
 					self.nts.add(newNt)
 					rule.rhs[idx] = newNt
 
+					# if there is only one letter - term segment - we don't want to just replace it with a nonterm
+					# we would get a unit rule, lets split the segment
 					if len(rule.rhs) == 1:
 						rule.rhs.insert(0, self._pop_term_from_letter(letter))
 
 					currentNt = newNt
+					# pop terms from this segment one by one until only one is left
+					# for each one create a new rule
 					while len(letter[0]) + len(letter[1]) > 1:
 						t = self._pop_term_from_letter(letter)
 						newNt = self.createNewNt()
@@ -955,9 +987,13 @@ class cWK_CFG:
 		self.rules.update(newRules)
 		self.precalculate_data()
 
+
+	# does the actual breaking down of rules
+	# helper function use only in transform_to_wk_cnf_form
 	def _dismantle_rule(self, rule: cRule) -> List[cRule]:
 		newRules: List[cRule] = []
 
+		# in rules of form (A -> term B) replace the term with a new nonterm and create a rule
 		for idx, letter in enumerate(rule.rhs):
 			if is_term(letter):
 				newNt = self.createNewNt()
@@ -967,6 +1003,7 @@ class cWK_CFG:
 
 		currentNt: tNonTerm = rule.lhs
 
+		# rules of form (A -> BCD...) break down the rhs with new nonterm and rules until the rhs len is 2
 		while len(rule.rhs) > 2:
 			newNt = self.createNewNt()
 			self.nts.add(newNt)
@@ -976,20 +1013,25 @@ class cWK_CFG:
 		newRules.append(cRule(currentNt, rule.rhs))
 		return newRules
 
+
+	# rules of form (A -> BCD...) or form (A -> a\lambda B) (A -> lambda/a B) need to be futher broken down
 	def transform_to_wk_cnf_form(self) -> None:
 		newRules: Set[cRule] = set()
 
 		for rule in self.rules:
+			# the rules in the WK-CNF form we keep
 			if len(rule.rhs) == 1 and is_term(rule.rhs[0]) or len(rule.rhs) == 2 and is_nonterm(rule.rhs[0]) and is_nonterm(rule.rhs[1]):
 				newRules.add(rule)
 
-			# swap terminal letters for respective non-terminals and break down words longer than 2
+			# as for the rest, swap terminal letters for respective non-terminals and break down words longer than 2
 			elif len(rule.rhs) >= 2:
 				newRules.update(self._dismantle_rule(rule))
 
 		self.rules = newRules
 		self.precalculate_data()
 
+
+	# transform grammar to WK-CNF
 	def to_wk_cnf(self) -> None:
 		self.remove_lambda_rules()
 		self.remove_unit_rules()
@@ -997,60 +1039,77 @@ class cWK_CFG:
 		self.remove_unreachable_symbols()
 		self.dismantle_term_letters()
 		self.transform_to_wk_cnf_form()
-		# possible optimization terminal covering non-terms
+
+		# possible optimization - only one non-term generates each term among the dynamically generated nonterms
+		# - could be the last step of transformation, but the impact is probably negligable
 
 ################# run wk-cyk                         #######################################################
 
+	# add a nonterm to the covering set
 	def addToX(self, idx: t4DInt, nt: tNonTerm) -> None:
 		if idx not in self.X:
 			self.X[idx] = []
-
 		self.X[idx].append(nt)
 
 
-	def checkRules(self, idx1: t4DInt, idx2: t4DInt, target: t4DInt) -> None:
+	# find rule(s) that have nonterms from idx1, idx2 as the right side
+	# add left hand side of such rules to target set
+	def find_generating_rules(self, idx1: t4DInt, idx2: t4DInt, target: t4DInt) -> None:
 		if idx1 not in self.X or idx2 not in self.X:
 			return
 		for rule in self.rules:
 			if rule.rhs[0] in self.X[idx1] and rule.rhs[1] in self.X[idx2]:
 				self.addToX(target, rule.lhs)
 
-	def computeSet(self, i: int, j: int, k: int ,l: int) -> None:
+
+	# find non terminals that can generate term segment given by the four indexes
+	def compute_set(self, i: int, j: int, k: int ,l: int) -> None:
+		# i = j = 0 -> segment has only lower part
 		if i == 0 and j == 0:
 			for t in range(k, l):
-				self.checkRules((0, 0, k, t), (0, 0 ,t+1, l), (i, j, k, l))
+				self.find_generating_rules((0, 0, k, t), (0, 0 ,t+1, l), (i, j, k, l))
 
+		# k = l = 0 -> segment has only upper part
 		elif k == 0 and l == 0:
 			for s in range(i, j):
-				self.checkRules((i, s, 0, 0), (s+1, j ,0 , 0), (i, j, k, l))
+				self.find_generating_rules((i, s, 0, 0), (s+1, j ,0 , 0), (i, j, k, l))
 
+		# segment has symbols from both strands find all possible combinations, there are 7 types of divisions
 		else:
-			self.checkRules((i, j, 0, 0), (0, 0, k, l), (i, j, k, l))
-			self.checkRules((0, 0, k, l), (i, j, 0, 0), (i, j, k, l))
+			# 1. first non-term generates upper strand, the second lower...
+			self.find_generating_rules((i, j, 0, 0), (0, 0, k, l), (i, j, k, l))
+			# 2. ... or vice versa
+			self.find_generating_rules((0, 0, k, l), (i, j, 0, 0), (i, j, k, l))
 
+			# 3. both nonterms contain symbols from both strands
 			for s in range(i, j):
 				for t in range(k, l):
-					self.checkRules((i, s, k, t), (s+1, j, t+1, l), (i, j, k, l))
+					self.find_generating_rules((i, s, k, t), (s+1, j, t+1, l), (i, j, k, l))
 
 			for s in range(i, j):
-				self.checkRules((i, s, k, l), (s+1, j, 0, 0), (i, j, k, l))
-				self.checkRules((i, s, 0, 0), (s+1, j, k, l), (i, j, k, l))
+				# 4. first contains whole upper and bit of lower strand, the second contains rest of lower strand...
+				self.find_generating_rules((i, s, k, l), (s+1, j, 0, 0), (i, j, k, l))
+				# 5. ...or vice versa
+				self.find_generating_rules((i, s, 0, 0), (s+1, j, k, l), (i, j, k, l))
 
 			for t in range(k, l):
-				self.checkRules((i, j, k, t), (0, 0, t+1, l), (i, j, k, l))
-				self.checkRules((0, 0, k, t), (i, j, t+1, l), (i, j, k, l))
+				# 6. first contains whole lower and bit of upper strand, the second contains rest of upper strand...
+				self.find_generating_rules((i, j, k, t), (0, 0, t+1, l), (i, j, k, l))
+				# 7. ...or vice versa
+				self.find_generating_rules((0, 0, k, t), (i, j, t+1, l), (i, j, k, l))
 
 
+	# the main wk-cyk function
+	# technically, double stranded string (2 strings) should be on the input, but since they have to be identical,
+	# we use one string (goalStr) in the role of upper or lower strand
 	def run_wk_cyk(self, goalStr: str) -> Optional[bool]:
 		start_time = time.time()
 		n = len(goalStr)
-		self.X: Dict[t4DInt, List[tNonTerm]] = {}
+		self.X: Dict[t4DInt, List[tNonTerm]] = {}  # what nonterms can generate segment soecified by the indexes
 
+		# the first step - finding nonterm that generate individual terms
+		# for each term in the input find the appropriate rules and add to X
 		for i, word in enumerate(goalStr):
-			current_time = time.time()
-			if current_time - start_time > self.timeLimit:
-				return None
-
 			for rule in self.rules:
 				if len(rule.rhs) == 1 and is_term(rule.rhs[0]):
 					letter = rule.rhs[0]
@@ -1059,31 +1118,40 @@ class cWK_CFG:
 					elif len(letter[1]) == 1 and letter[1][0] == word:
 						self.addToX((0, 0, i+1, i+1), rule.lhs)
 
+		# continuously increase the len of analysed segment
 		for y in range(2, 2*n+1):
+			# check the time limit, if it has been exceeded return None
 			current_time = time.time()
 			if current_time - start_time > self.timeLimit:
 				return None
 
+			# do the search for all segment len divisions between upper (alpha) and lower (beta) strand
 			for beta in range(max(y - n, 0), min(n, y)+1):
 				alpha = y - beta
 
 				if alpha == 0:
+					# symbols only in lower strand
 					i = j = 0
 					for k in range(1, n-y+2):
 						l = k + y - 1
-						self.computeSet(i, j, k, l)
+						self.compute_set(i, j, k, l)
 
 				elif beta == 0:
+					# symbols only in upper strand
 					k = l = 0
 					for i in range(1, n - y + 2):
 						j = i + y - 1
-						self.computeSet(i, j, k, l)
+						self.compute_set(i, j, k, l)
 
 				else:
+					# symbols in both strnads, consider all posiible distributions
 					for i in range(1, n - alpha + 2):
 						for k in range(1, n - beta + 2):
 							j = i + alpha - 1
 							l = k + beta - 1
-							self.computeSet(i, j, k, l)
+							self.compute_set(i, j, k, l)
 
+		# the result is positive if
+		# 1. the set of symbols that generate the whole input is non empty
+		# 2. starting symbol is in this set
 		return (1, n, 1, n) in self.X and self.startSymbol in self.X[(1, n, 1, n)]
