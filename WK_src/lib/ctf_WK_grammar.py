@@ -513,10 +513,6 @@ class cWK_CFG:
 
 	# is a word a solution?
 	def is_result(self, word: tWord, goal: str) -> bool:
-		# there is a number of conditions that must be fullfilled
-		# upper and lower strands must have the same length
-		# upper and lower strands must fulfil compl. relation
-		# upper strand must equal goal string
 
 		# word lenght must be of len 1 and it must be terminal segment
 		if len(word) != 1 or is_nonterm(word[0]):
