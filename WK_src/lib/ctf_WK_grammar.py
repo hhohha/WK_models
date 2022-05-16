@@ -150,7 +150,7 @@ class cWK_CFG:
 			self.prune_check_regex: 0
 		}
 
-		# idx of active node precedence
+		# idx of active node precedence, NTA+TM1 (index 5) is the default one
 		self.currentNodePrecedence = 5
 
 		# node precedence heuristics - name and function
@@ -166,7 +166,7 @@ class cWK_CFG:
 			('WNTA+TM1', self.compute_precedence_WNTA_TM1),
 			('WNTA+TM2', self.compute_precedence_WNTA_TM2),
 			('WNTA+TM3', self.compute_precedence_WNTA_TM3),
-			('no heuristic', self.compute_precedence_no_heuristic)
+			('NONE', self.compute_precedence_no_heuristic)
 		]
 
 		# does the definition make sense?
@@ -174,6 +174,7 @@ class cWK_CFG:
 			raise ValueError
 
 		self.precalculate_data()
+
 
 ################# function for init, backup and precalcualtions   ##########################################
 
@@ -542,6 +543,28 @@ class cWK_CFG:
 			currentNode = currentNode.parent
 
 ################# pruning functions                  #######################################################
+
+	# activate/deactivate heuristics
+	def activate(self, name: str, value: bool=True) -> None:
+		if name == 'SL':
+			self.pruningOptions[self.prune_check_strands_len] = value
+		elif name == 'TL':
+			self.pruningOptions[self.prune_check_total_len] = value
+		elif name == 'WS':
+			self.pruningOptions[self.prune_check_word_start] = value
+		elif name == 'RL':
+			self.pruningOptions[self.prune_check_relation] = value
+		elif name == 'RE':
+			self.pruningOptions[self.prune_check_regex] = value
+		else:
+			nodePrecNames = list(map(lambda x: x[0], self.nodePrecedenceList))
+			if name not in nodePrecNames:
+				print(f'unknown heuristic: "{name}"')
+			elif value:
+				self.currentNodePrecedence = nodePrecNames.index(name)
+			else:
+				print(f'cannot deactivate node precedence heuristic, activate a different one')
+
 
 	# SL - is one of the strands too long?
 	def prune_check_strands_len(self, node: cTreeNode, goalStr: str) -> bool:

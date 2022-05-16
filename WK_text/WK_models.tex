@@ -1,7 +1,7 @@
-\documentclass[english]{fitthesis} % bez zadání - pro začátek práce, aby nebyl problém s překladem
+% \documentclass[english]{fitthesis} % bez zadání - pro začátek práce, aby nebyl problém s překladem
 %\documentclass[english]{fitthesis} % without assignment - for the work start to avoid compilation problem
 %\documentclass[zadani]{fitthesis} % odevzdani do wisu a/nebo tisk s barevnými odkazy - odkazy jsou barevné
-%\documentclass[english,zadani]{fitthesis} % for submission to the IS FIT and/or print with color links - links are color
+\documentclass[english,zadani]{fitthesis} % for submission to the IS FIT and/or print with color links - links are color
 %\documentclass[zadani,print]{fitthesis} % pro černobílý tisk - odkazy jsou černé
 %\documentclass[english,zadani,print]{fitthesis} % for the black and white print - links are black
 %\documentclass[zadani,cprint]{fitthesis} % pro barevný tisk - odkazy jsou černé, znak VUT barevný
@@ -25,7 +25,7 @@
 \usepackage{xcolor}
 \usepackage{multirow}
 \usepackage{wrapfig}
-
+\usepackage{pdfpages}
 
 \newcommand{\wkdomain}[2]{\big[\genfrac{}{}{0pt}{1}{#1}{#2}\big]}
 \newcommand{\wkpair}[2]{\big(\genfrac{}{}{0pt}{1}{#1}{#2}\big)}
@@ -92,18 +92,32 @@
   supervisor.title.a={Ph.D.},
   keywords.cs={Watson-Crickovy jazyky, formální gramatiky, DNA výpočty, prohledávání stavového prostoru, problém členství v jazyce},
   keywords.en={Watson-Crick languages, formal grammars, DNA computing, state space search, language membership problem},
+  extendedabstract = {
+    Tato práce se zabývá Watson-Crikovými jazyky, které jsou inspirovány výpočty nad DNA, dále jejich modely a především algoritmy pro rozhodování členství řetězců v těchto jazycích. Tyto jazyky pracují s dvojitými vstupními řetězci, jejichž symboly jsou spojeny komplementární relací.
+
+    Jeden z hlavních modelů pro tyto jazyky jsou Watson-Crickovy bezkontextové gramatiky. Nedávno představený algoritmus WK-CYK, který je modifikací algoritmu CYK pro bezkontextové gramatiky, je určen právě pro rozhodování členství v těchto jazycích. Tento algoritmus pracuje s gramatikami v Watson-Crickově Chomského normální formě (WK-CNF), což je modifikace Chomského normání formy bezkontextových gramatik. V této práci je algoritmus analyzován, implementován, je ověřena jeho funkčnost a deklarovaná složitost $\mathcal{O}(n^6)$ vzhledem k délce vstupu.
+
+    Hlavním přínosem práce je použití algoritmu prohledávání stavového prostoru pro rozho\-dování členství v WK jazycích. Jeho základem je standardní algoritmus BFS (prohledávání stavového prostoru do šířky), na který byl rozšířen o několik optimalizací a heuristik, aby jeho efektivita byla zajímavá pro použití praktické použití. Kořen stavového stromu je počáteční symbol gramatiky a následníci jsou získáni aplikací všech možných pravidel gramatiky na první neterminální symbol ve slově.
+
+    Nejdůležitější rozšíření oproti původnímu BFS je pět heuristik pro prořezávání stavového stromu. Tyto heuristiky každý uzel analyzují a rozhodují, jestli je možné, že daný uzel vede k hledanému řešení. Dále je zde použita sada heuristik pro výběr nejslibnějšího uzlu, pro další prohledávání. Tyto heuristiky jsou následně testovány a porovnávány, aby byla zjištěna jejich nejvhodnější kombinace.
+
+    Pro testování bylo vybráno 20 různých WK gramatik. Při testování se ukázalo, že WK-CYK je schopen v rozumném časovém horizontu rozhodnout členství v jazyce pro řetězce o délce 30--50 znaků. Jeho výhodou je konzistentnost --- ve všech testovaných případech, pro různé gramatiky i vstupy byla časová složitost velice podobná.
+
+    Výhodou algoritmu prohledávání stavového prostoru je předně univerzálnost. Je schopen pracovat s WK gramatikami v jakékoli formě a s libovolnou komplementární relací. Díky tomu není nutné gramatiky převádět do WK-CNF, což může vyústit v daleko komplikovanější gramatiku s více pravidly. Při testování gramatik v základní formě byla práce v 38 ze 40 testovacích případů (tedy 97.5 \%) výrazně efektivnější --- je takto možné rozhodnout členství řetězců s řádově stovkami, často i tisícemi symbolů. Po zahrnutí gramatik v WK-CNF testování gramatik po transformaci do WK-CNF byl algoritmus efektivnější v 71 z 80 (tedy 88.75 \%) testovacích případů. Další výhodou tohoto algoritmu je jeho konfigurovatelnost, je možné pro konkrétní gramatiku porovnat účinnost heuristik pro výběr uzlu a používat tu, která je pro daný nejvhodnější. Stejně tak u heuristiky pro prořezávání stavového stromu může být vhodné pro danou gramatiku některé vypnout. Takto se efektivita dále zvýší.
+
+},
   abstract.cs={
   Tato práce se zabývá Watson-Crikovými jazyky, které jsou inspirovány výpočty nad DNA, dále jejich modely a algoritmy pro rozhodování členství řetězců v těchto jazycích. Analyzoval jsem nedávno představený algoritmus nazvaný WK-CYK a presentuji algoritmus založený na prohledávání stavového prostoru, jehož základem je standardní prohledávání prostoru do šířky, ale používá množství optimalizací a heuristik, aby byl v praxi efektivnější a dokázal analyzovat delší vstupy. Klíčové jsou heuristiky pro prořezávání stavového prostoru (detekují slepé větve) a heuristiky pro výběr nejslibnějších větví pro další výpočet.
 
-  Testoval jsem tyto dva algoritmy na 20 různých Watson-Crickových gramatikách (40 včetně jejich verzí v Chomského normální formě). Zatímco WK-CYK je schopen rozhodnout členství v jazyce v rozumném čase u vstupů o délce zhruba 30--50 symbolů, jeho efektivnost je velmi konzistentní u různých gramatik a různých vstupů, algoritmus prohledávající stavový prostor je obvykle (v 90--95 \% případů) efektivnější a je schopen provést výpočet pro vstupy s délkou o stovkách často i tisících symbolů. Tedy tento algoritmus má potenciál být vhodným nástrojem pro praktické použití při rozhodování členství ve Watson-Crickových jazycích a nabízí vhodný základ pro další vývoj a vylepšení, která by dále zvyšovala efektivitu algoritmu.
+  Testoval jsem tyto dva algoritmy na 20 různých Watson-Crickových gramatikách (40 včetně jejich verzí v Chomského normální formě). Zatímco WK-CYK je schopen rozhodnout členství v jazyce v rozumném čase u vstupů o délce zhruba 30--50 symbolů, jeho efektivnost je velmi konzistentní u různých gramatik a různých vstupů, algoritmus prohledávající stavový prostor je obvykle (v 89--98 \% případů) efektivnější a je schopen provést výpočet pro vstupy s délkou o stovkách často i tisících symbolů. Tedy tento algoritmus má potenciál být vhodným nástrojem pro praktické použití při rozhodování členství ve Watson-Crickových jazycích a nabízí vhodný základ pro další vývoj a vylepšení, která by dále zvyšovala efektivitu algoritmu.
 },
   abstract.en={
-This work focuses on Watson-Crick languages inspired by DNA computing, their models and algorithms of deciding the language membership. I have analyzed a recently introduced algorithm called WK-CYK and I introduce a state space search algorithm which is based on regular Breath-first search but uses a number of optimizations and heuristics to be efficient in practical use and able to analyze inputs of greater lengths. The key parts are the heuristics for pruning the state space (detecting dead ends) and heuristics for choosing the most promising branches to continue the search.
+This work focuses on Watson-Crick languages inspired by DNA computing, their models and algorithms of deciding the language membership. It analyzes a recently introduced algorithm called WK-CYK and introduce a state space search algorithm which is based on regular Breath-first search but uses a number of optimizations and heuristics to be efficient in practical use and able to analyze inputs of greater lengths. The key parts are the heuristics for pruning the state space (detecting dead ends) and heuristics for choosing the most promising branches to continue the search.
 
-I have tested these two algorithms with 20 different Watson-Crick grammars (40 including their Chomsky normal form versions). While WK-CYK is able to decide the language membership in a reasonable time for inputs of length of roughly 30--50 symbols and its performance is very consistent for all kinds of grammars and inputs, state space search is usually (90--95 \% of cases) more efficient and able to do the computation for inputs with lengths of hundreds or even thousands of symbols. Thus, the state space search has a potential to be a good tool for practical Watson-Crick membership testing and is a good basis to further build on and improve the efficiency of the algorithm.
+These two algorithms have been tested with 20 different Watson-Crick grammars (40 including their Chomsky normal form versions). While WK-CYK is able to decide the language membership in a reasonable time for inputs of length of roughly 30--50 symbols and its performance is very consistent for all kinds of grammars and inputs, state space search is usually (89--98 \% of cases) more efficient and able to do the computation for inputs with lengths of hundreds or even thousands of symbols. Thus, the state space search has a potential to be a good tool for practical Watson-Crick membership testing and is a good basis to further build on and improve the efficiency of the algorithm.
 
 },
-  declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Mr. Křivka
+  declaration={I hereby declare that this Master's thesis was prepared as an original work by the author under the supervision of Mr. Křivka
   I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.},
   % Acknowledgement (optional, ideally in the language of the thesis)
   %acknowledgment={Here it is possible to express thanks to the supervisor and to the people which provided professional help
@@ -137,11 +151,12 @@ I have tested these two algorithms with 20 different Watson-Crick grammars (40 i
   % Typesetting of the title pages
   % ----------------------------------------------
   \maketitle
+
   % Contents
   % ----------------------------------------------
   \setlength{\parskip}{0pt}
   \setcounter{tocdepth}{1}
-  \setcounter{secnumdepth}{1}
+  \setcounter{secnumdepth}{2}
   {\hypersetup{hidelinks}\tableofcontents}
   
   % List of figures and list of tables (if the thesis contains a lot of pictures, it is good)
@@ -163,10 +178,6 @@ I have tested these two algorithms with 20 different Watson-Crick grammars (40 i
   % ----------------------------------------------
   \input{WK_models-chapters}
   
-  % Compilation piecewise (see above, it is necessary to uncomment it)
-  %\subfile{projekt-01-uvod-introduction}
-  % ...
-  %\subfile{chapters/projekt-05-conclusion}
 
 
   % Bibliography

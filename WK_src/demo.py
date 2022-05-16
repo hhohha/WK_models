@@ -106,6 +106,7 @@ print('\n')
 for inputStr in [inputStr1, inputStr2, inputStr3]:
 	openStates, allStates, pruneStats, result = g.run_tree_search(inputStr)
 	print(f'the input "{inputStr}" returned with result: {result}')
+	print(pruneStats)
 
 # and we can restore the original form of the grammar
 g.restore()
@@ -114,3 +115,17 @@ print(f'\ngrammar {g.desc} rules:')
 for rule in g.rules:
 	print(rule)
 print('\n')
+
+# it is possible to change the active node precedence heuristic
+g.activate('NTA')
+
+# also the pruning heuristics can be turned off,
+# maybe the statistics show that some are not used with a particular grammar
+g.activate('SL', False)
+g.activate('RL', False)
+
+# the tree search is now using this now configuration
+for inputStr in [inputStr1, inputStr2, inputStr3]:
+	openStates, allStates, pruneStats, result = g.run_tree_search(inputStr)
+	print(f'the input "{inputStr}" returned with result: {result}')
+	print(pruneStats)

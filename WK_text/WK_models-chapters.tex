@@ -10,7 +10,7 @@ Chapter \ref{chapter:models} contains an overview of most common models for work
 
 A integral component of this thesis is an implementation of the state space search algorithm, the WK-CYK algorithm and a number tests used to analyze the state and space complexities and to compare the algorithms.
 
-\chapter{Watson-Crick models} \label{chapter:models}
+\chapter{Models of Watson-Crick languages} \label{chapter:models}
 A number of models working with double stranded sequences has been proposed. The purpose of this chapter is to present a motivation for using them and to summarize these models and some of their key attributes that will be important in later chapters.
 
 \section{DNA as an inspiration for Watson-Crick languages}
@@ -202,13 +202,13 @@ $L(A) = \Big\{w_1 \in V^*| \big(q_1, \wkdomain{w_1}{w_2}, q_2, \wkdomain{w_1}{w_
 
 \section{Expressing power of Watson-Crick models} \label{section:exp_power}
 
-The comparison of expressing power of WK language families in the context of Chomsky hierarchy has been studied in \cite{WK_GRAMMARS_1} and \cite{WK_GRAMMARS_2}. The main result is shown at the figure \ref{fig:expr-power}. The Chomsky hierarchy is represented on the right (REG --- regular languages, LIN --- linear languages, CF --- context-free languages, CS --- context sensitive languages, RE --- recursively enumerable languages) while the Watson-Crick languages are on the left. WKREG are languages defined by a non-deterministic Watson-Crick automata or a Watson-Crick regular grammars (\cite{REG_GRAMMAR} shows that these are equivalent). WKLIN are languages defined by WK linear grammars and WKCF are languages defined by WK context-free grammars (it has not been shown, yet, that WK pushdown automata have the same power). The full arrows denote proper inclusion, dotted arrows denote inclusion and dotted lines denote incomparability.
+The comparison of expressing power of WK language families in the context of the Chomsky hierarchy has been studied in \cite{WK_GRAMMARS_1} and \cite{WK_GRAMMARS_2}. The main result is shown at the figure \ref{fig:expr-power}. The Chomsky hierarchy is represented on the right (REG --- regular languages, LIN --- linear languages, CF --- context-free languages, CS --- context sensitive languages, RE --- recursively enumerable languages) while the Watson-Crick languages are on the left. WKREG are languages defined by a non-deterministic Watson-Crick automata or a Watson-Crick regular grammars (\cite{REG_GRAMMAR} shows that these are equivalent). WKLIN are languages defined by WK linear grammars and WKCF are languages defined by WK context-free grammars (it has not been shown, yet, that WK pushdown automata have the same power). The full arrows denote proper inclusion, dotted arrows denote inclusion and dotted lines denote incomparability.
 
 \begin{figure}[h!]
   \includegraphics[height=5.5cm]{exp_pow.png}
   \centering
   \label{fig:expr-power}
-  \caption{Comparison of WK language families in the context of Chomsky hierarchy}
+  \caption{Comparison of WK language families in the context of the Chomsky hierarchy}
 \end{figure}
 
 It has been shown in \cite{COMPL_REL} that the type of complementary relation which is used does not increase the expressing power of the Watson-Crick automata and grammars. Also \cite{SURVEY} provides an algorithm how to transform any WK automaton to an equivalent WK automaton with the relation being identity. Therefore, many models and algorithms limit themselves to working with identity complementarity relation.
@@ -217,10 +217,10 @@ It has been shown in \cite{COMPL_REL} that the type of complementary relation wh
 
 This chapter focuses mainly on the WK-CYK algorithm which is practically the only algorithm explicitly designed to decide a membership in Watson-Crick languages defined by a WK context-free grammars. Another way could be using WK automata, which is discussed in the latter part.
 
-\section{WK-CYK algorithm}
+\section{The WK-CYK algorithm}
 The WK-CYK algorithm has been introduced in \cite{WK_CYK} and it is an enhancement of the CYK algorithm modified for WK context-free languages. To understand it, it is good to be familiar with the way the original CYK algorithm works.
 
-\subsection{The CYK algorithm}
+\subsection{The CYK algorithm as an inspiration of WK-CYK}
 The CYK algorithm is named after J. Cocke, D. Younger and T. Kasami \cite{CYK1}, \cite{CYK2} \cite{CYK3}. It is used to decide the membership in a language defined by a context-free grammar, which must be in the Chomsky normal form (CNF).
 
 On the input there is a string and a grammar and the algorithm decides whether the string belongs to the language defined by the grammar (accepts or rejects the string). There are two kinds of rules in a grammar in the CNF (disregarding the $S \rightarrow \epsilon$ rule which is used only to include empty string in the language): $A \rightarrow a$ and $A \rightarrow BC$ where $A, B, C$ are non-terminals and $a$ is a terminal.
@@ -344,7 +344,7 @@ Lets us consider an example, where the procedure computes $X_{1:2,1:2}$, in othe
 
 
 \begin{figure}[H]
-  \caption{All possible division of the segment $\wkpair{ab}{ab}$}
+  \caption{All possible divisions of the segment $\wkpair{ab}{ab}$}
   \centering
   \label{tab:segment_divisions}
 \begin{tabular}{ |l|l|l|l|  }
@@ -378,7 +378,7 @@ This does not affect the correctness of the computation because the non-sensical
 
 2. The time complexity of WK-CYK is $\mathcal{O}(n^6)$. As described in \cite{WK_CYK} (section 6), the WK-CYK main procedure has complexity of $\mathcal{O}(n^4)$ and the nested procedure \textit{ComputeSet} has complexity of $\mathcal{O}(n^2)$. This is true with respect to the input length. Possibly, more precise description of the complexity would be $\mathcal{O}(n^6 \times R)$ where $n$ is the input length and $R$ is the number of rules in the grammar. The description of the procedure \textit{ComputeSet} uses the operation of set union ($\cup$), as if it has constant time complexity which, in reality, it does not --- it requires iterating over the rules of the grammar.
 
-\section{Using automata to test membership in Watson-Crick languages}
+\section{Using automata to test the membership in Watson-Crick languages}
 In general, automata seem more suitable for deciding the membership in a language than grammars. In case of deterministic automata, the situation is quite straightforward --- every input deterministically leads to the next state and when the whole input is read, the automaton decides whether the input is accepted by finishing in a final state or not. The situation is not as clear in case of the weaker types of deterministic automata.
 
 \subsection{Strongly deterministic Watson-Crick automata}
@@ -394,7 +394,7 @@ The figure \ref{fig:deter_WKA} on the right shows a snippet of a completely non-
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.43]{deter_wka.png}
-  \caption{Example of an nondeterminism WKA}
+  \caption{Example of non-determinisms in WKA}
   \label{fig:deter_WKA}
 \end{figure}
 
@@ -407,7 +407,7 @@ The FA snippet on the left starts in state $q_0$. If the next symbol on the inpu
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.43]{automata_run.png}
-  \caption{Non-determinism in WKA and FA}
+  \caption{Non-determinisms in a WKA and a finite automaton}
   \label{fig:automata_run}
 \end{figure}
 
@@ -421,7 +421,7 @@ The situation in case of WKA on the right is much more complicated. Even though 
   \item{Transition to $q_3$, read symbol $a$ and generate symbol $c$.}
 \end{enumerate}
 
-In these three cases, there is more differences between these states of the algorithm then just the different WKA state. Therefore, after the next step, the three paths will still differ in what has been read from the input (upper strand) and what has been generated to the lower strand.
+In these three cases, there are more differences between these states of the algorithm then just the the different WKA state. Therefore, after the next step, the three paths will still differ in what has been read from the input (upper strand) and what has been generated to the lower strand.
 
 The algorithm that would simulate the run of a WKA could therefore be designed as a state space searching algorithm. Each node would contain three items --- 1. what state is the WKA in, 2. what remains to be read from the input, 3. what has been generated to the lower strand. The solution would then be a node where WKA is in a final state, nothing remains to be read and the two strands (one read, one generated) adhere to the complementarity relation.
 
@@ -545,7 +545,7 @@ Such heuristics can only be effective if the answer of the search is positive --
 The following node precedence heuristics have been implemented. Each heuristic also has an abbreviation that will refer to it further on.
 
 \begin{itemize}
-  \item{No heuristic --- the evaluation of the word is always 0. This is used for comparison to the other heuristics.}
+  \item{No heuristic (NONE) --- the evaluation of the word is always 0. This is used for comparison to the other heuristics.}
   \item{Aversion to non-terminals (NTA) --- the evaluation is equal to the count of non-terminals in the word}
   \item{Weighted aversion to non-terminals (WNTA) --- each non-terminal has a pre-calculated weight, which is the minimum amount of rules that must be used in order to generate a terminal word from it. The evaluation is equal to the sum of the weights of all non-terminals in the word.}
   \item{The terminal matching --- there are three variants that differ slightly (TM1, TM2, TM3). Each of them increases the priority (i.e. decreases the evaluation) for each upper strand non-terminal (going from left to right) which matches the input string symbol on the same index.
@@ -571,7 +571,7 @@ The parallelization of the state space search should be very much possible and s
 
 \chapter{Implementation of the state space search} \label{chapter:implementation}
 
-The implementation has been done in the language Python3. The main components are the following:
+The implementation has been done in the language Python (version 3.9.7). The main components are the following:
 \begin{itemize}
   \item{the class representing a Watson-Crick context-free grammar, including the implementation of the WK-CYK algorithm and the state space search algorithm}
   \item{classes representing a rule of a grammar and a tree node}
@@ -586,7 +586,7 @@ has three letters: non-terminals $A$ and $B$ and a segment of non-terminals $\wk
 
 
 \section{Implementation of the main class representing the grammar}
-The class representing a grammar is called \textit{cWK\_CFG}, the source file is \textit{lib/ctf\_WK\_grammar.py}. It contains the following data:
+The class representing a grammar is called \textit{cWK\_CFG}, it contains the following data:
 \begin{itemize}
   \item{the items which define the grammar: \textit{nts} --- the set of non-terminals, which are represented by alpha-numeric characters; \textit{ts} --- set of terminals, also represented by alpha-numeric characters; \textit{startSymbol} --- starting non-terminal; \textit{rules} --- set of grammar rules, which are objects of the class \textit{cRule}; \textit{relation} --- list representing a complementarity relation, it contains tuples of two terminals. These five items are parameters which need to be passed to the class constructor. This corresponds to the way how a context-free WK grammar is formally defined.}
 
@@ -619,7 +619,7 @@ The class \textit{cWK\_CFG} has these key functionalities:
   \item{the run of the tree search algorithm}
   \item{pruning heuristics}
   \item{node precedence heuristics}
-  \item{the transformation of grammar to the CNF}
+  \item{the transformation of grammar to the WK-CNF}
   \item{the run of the WK-CYK algorithm}
 \end{itemize}
 
@@ -646,7 +646,7 @@ A rule length is a value which indicates how the minimal length of a word will b
 
 For instance, let us have a word $A \wkpair{ab}{c} B$, the rule being applied $A \rightarrow B \wkpair{d}{d}$ and the minimum number of terminals generated from $A$ is 2 and from $B$ is 3. The resulting word will be $B \wkpair{dab}{dc} B$. The word at the start had total length of 8 (1 for each terminal symbol, 2 for $A$, 3 for $B$). The word afterwards has a total length of 11 (3 for each $B$ and 1 for each terminal). Therefore, the rule $A \rightarrow B \wkpair{d}{d}$ must have the length of 3. And it does: $-2$ for the non-terminal $A$ on the left-hand side, 1 for each of the two terminals and 3 for the non-terminal $B$.
 
-Since the grammar is able to apply certain transformations (like to the CNF or removing lambda rules), it is convenient to be able to save the state of the grammar and later restore it. This is what the methods \textit{backup} and \textit{restore} are for. The \textit{backup} method simply saves a copy of the sets of rules, non-terminals and terminals as \textit{rulesBackup}, \textit{ntsBackup} and \textit{tsBackup}. The \textit{restore} method then restores these backup sets and runs again the pre-calculating methods similarly to the class initialization phase.
+Since the grammar is able to apply certain transformations (like to the Wk-CNF or removing lambda rules), it is convenient to be able to save the state of the grammar and later restore it. This is what the methods \textit{backup} and \textit{restore} are for. The \textit{backup} method simply saves a copy of the sets of rules, non-terminals and terminals as \textit{rulesBackup}, \textit{ntsBackup} and \textit{tsBackup}. The \textit{restore} method then restores these backup sets and runs again the pre-calculating methods similarly to the class initialization phase.
 
 \subsection{Run of the state space search algorithm}
 The state space search algorithm is run by the \textit{run\_tree\_search} method which has one parameter: the string to be tested for the language membership. It uses a priority queue (python \textit{PriorityQueue} class from the \textit{queue} module) to store the nodes of the search tree. When getting items from this queue, it returns the smallest value item that it contains. The items in the queue are objects of the class \textit{cTreeNode} (described in \ref{section:cRule_cNode}). The method also uses a set of hash codes (acquired by the standard Python \textit{hash} function) of all the nodes that have been put in the queue (whether they are still there or have been taken out), so that duplicate nodes are skipped.
@@ -678,11 +678,25 @@ The pruning methods are:
 
 All the pruning methods require a word and the input string as parameters. They return a boolean value indicating whether the word is feasible or not.
 
+The pruning heuristics can be activated or deactivated by the method \textit{activate}, parameters are the name of the heuristic and a boolean value indicating if it should be active or not. For example:
+
+\begin{verbatim}
+  g.activate('RE', True)  # g is an object of class cWK_CFG
+  g.activate('RL', False)
+\end{verbatim}
+
+
 \subsection{Node precedence heuristics}
 Just like with pruning, the node precedence functionality needs to be flexible --- it must be possible to switch between various node precedence methods. The functionality is implemented by the method \textit{compute\_precedence}. This methods simply uses \textit{nodePrecedenceList} and \textit{currentNodePrecedence} to call the right specific method.
-There are 12 of these methods called \textit{compute\_precedence\_[name]} where \textit{name} is the name of the specific heuristic (one of NTA, WNTA, TM1, TM2, TM3, NTA\_TM1, NTA\_TM2, NTA\_TM3, WNTA\_TM1, WNTA\_TM2, WNTA\_TM3, no\_heuristic). All of these methods take a word and an input string as parameters, they return an integer evaluation of the node.
+There are 12 of these methods called \textit{compute\_precedence\_[name]} where \textit{name} is the name of the specific heuristic (one of NTA, WNTA, TM1, TM2, TM3, NTA\_TM1, NTA\_TM2, NTA\_TM3, WNTA\_TM1, WNTA\_TM2, WNTA\_TM3, NONE). All of these methods take a word and an input string as parameters, they return an integer evaluation of the node.
 
-\subsection{Transformation of grammar to WK Chomsky normal form}
+The node precedence heuristics can be activated by the method \textit{activate}, the name of the chosen heuristic is the only parameter. For example:
+
+\begin{verbatim}
+  g.activate('NTA')  # g is an object of class cWK_CFG
+\end{verbatim}
+
+\subsection{The transformation of a grammar to the WK Chomsky normal form}
 The transformation of a WK grammar to WK-CNF is quite similar to the transformation of a standard context-free grammar to the CNF. It is performed by the method \textit{to\_wk\_cnf} and it takes the following steps:
 
 \begin{enumerate}
@@ -776,7 +790,7 @@ g1.can_generate(input2)
 
 I have implemented the following five test scripts, which are in the root directory:
 \begin{itemize}
-  \item{\textit{ts\_node\_precedence\_tests.py} --- runs a test for all of the 40 grammars (20 in the basic form and 20 in the CNF) with inputs which are going to be accepted (node precedence is irrelevant if inputs are eventually rejected). Each test runs the tree on search this input one time for each of the available node precedence heuristics.}
+  \item{\textit{ts\_node\_precedence\_tests.py} --- runs a test for all of the 40 grammars (20 in the basic form and 20 in the WK-CNF) with inputs which are going to be accepted (node precedence is irrelevant if inputs are eventually rejected). Each test runs the tree on search this input one time for each of the available node precedence heuristics.}
 
   \item{\textit{ts\_pruning\_tests.py} --- runs two tests for each of the 40 grammars, one with an input that will be accepted and one that will be rejected by the search. Each test runs the search with all pruning heuristics inactive, then with all active, and then for each one it runs with activated all but the one heuristic. Thus comparing how each one heuristic contributes to the overall performance.}
 
@@ -784,7 +798,7 @@ I have implemented the following five test scripts, which are in the root direct
 
   \item{\textit{ts\_var\_inputs\_tests.py} --- runs tests for some hand-picked inputs of the same length in order to compare, how the different variants of the same length inputs affect the performance}
 
-  \item{\textit{wk\_cyk\_tests.py} --- runs two tests (one positive, one negative) for 17 grammars, which are ready for WK-CYK run. Those must be in the CNF and grammars 5, 19 and 20 are excluded, since they use other complementarity relation then identity. In each test, the grammar runs the WK-CYK repeatedly with increasing input lengths.}
+  \item{\textit{wk\_cyk\_tests.py} --- runs two tests (one positive, one negative) for 17 grammars, which are ready for WK-CYK run. Those must be in the WK-CNF and grammars 5, 19 and 20 are excluded, since they use other complementarity relation then identity. In each test, the grammar runs the WK-CYK repeatedly with increasing input lengths.}
 \end{itemize}
 
 Each of these scripts prints its output into a table where all the results are compared. Outputs, which I received by running these test scripts, are attached in the output directory.
@@ -803,7 +817,7 @@ It contains the following methods:
 
 
 \section{How to use the application}
-It is possible to directly run the one or more of the test scripts from the root folder. They do not have other requirements than having Python3 installed. In the application root directory in Linux terminal it can be run simply by typing:
+It is possible to directly run the one or more of the test scripts from the root folder. They do not have other requirements than having installed the interpreter of language Python (version 3). In the application root directory in Linux terminal it can be run simply by typing:
 
 \begin{verbatim}
   python3 ts_node_precedence_tests.py
@@ -843,9 +857,19 @@ In this chapter I present the set of grammars that have been used to test the al
 
 When the best configuration is known, I test the performance of both the state space search algorithm and WK-CYK with various inputs, especially inputs of increasing lengths and compare the results.
 
+\bigskip
+
+All tests were run in the following environment:
+ \begin{itemize}
+   \item{CPU: AMD Ryzen 5 3600 6-Core Processor}
+   \item{Memory: 32 GB}
+   \item{Operating system: Linux, Ubuntu 21.10}
+   \item{Interpreter: Python 3.9.7}
+ \end{itemize}
+
 \section{Watson-Crick grammars used for testing}
 
-For the testing of the tree search algorithm and the WK-CYK algorithm, I have used the following Watson-Crick grammars. Unless stated otherwise, the set of non-terminals and the set of terminals is defined simply symbols that appear in the rules --- all the uppercase letters are non-terminals of the grammar and all the lowercase letters and digits are terminals. The starting non-terminal is $S$ and the complementarity relation is identity. With these specifications in mind the grammar can be defined by the rules only.
+For the testing of the tree search algorithm and the WK-CYK algorithm, I have used the following Watson-Crick grammars. Unless stated otherwise, the set of non-terminals and the set of terminals is defined simply by the symbols that appear in the rules --- all the uppercase letters are non-terminals of the grammar and all the lowercase letters and digits are terminals. The starting non-terminal is $S$ and the complementarity relation is identity. With these specifications in mind the grammar can be defined by the rules only.
 
 \begin{enumerate}
   \item{
@@ -884,7 +908,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
 
     The accepted language is: $a?b?c?d?e?f?g? + (a?b?c?d?e?f?g?)^*a$ ($x?$ denotes that the symbol $x$ is optional, i.e. $(x + \lambda)$ )
 
-    The problematic feature of this grammar may be the fact, that during the transformation of this grammar to WK-CNF (more specifically, when removing the $\lambda$-rules) the number of rules increases rapidly.
+    The problematic feature of this grammar may be the fact, that during the transformation of this grammar to the WK-CNF (more specifically, when removing the $\lambda$-rules) the number of rules increases rapidly.
   }
 
   \item{
@@ -914,7 +938,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
   \item{
     $$S \rightarrow \wkpair{a}{a} S \wkpair{a}{a} \:|\: \wkpair{b}{b} S \wkpair{b}{b} \:|\: \wkpair{c}{c}$$
 
-    The accepted language is: $wcw^R$ where $w \in \{a, b\}^*$($w^R$ is the reversal of string $w$)
+    The accepted language is: $wcw^R$ where $w \in \{a, b\}^*$($w^R$ is the reversal of the string $w$)
   }
 
   \item{
@@ -944,7 +968,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$W \rightarrow \wkpair{l}{l} \:|\: Z$$
     $$Z \rightarrow \wkpair{0}{0} \:|\: \wkpair{1}{1} \:|\: Z Z$$
 
-    The accepted language includes regular expressions over symbols 0 and 1 with parenthesis ($o$ for opening and $c$ for closing parenthesis), operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
+    The accepted language includes regular expressions over symbols 0 and 1 with parentheses ($o$ for opening and $c$ for closing parenthesis), operators $+$ (p), $*$ (s), $\cdot$ (d) and symbols $\emptyset$ (e), $\varepsilon$ (l)
 
     The grammar is taken from \cite{GRAMMAR_10}.
   }
@@ -1017,7 +1041,7 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
     $$A \rightarrow \wkpair{b}{a} A \:|\: \wkpair{b}{a} B \:|\: \wkpair{b}{a}$$
     $$B \rightarrow \wkpair{\lambda}{b} B \:|\: \wkpair{\lambda}{b} \:|\: B B \:|\: \wkpair{a}{a} S \wkpair{b}{b} \:|\: \wkpair{a}{\lambda} S \:|\: \wkpair{a}{\lambda} A$$
 
-    The accepted language is: $w: \#_a(w) = \#_b(w)$ and for any prefix $v$ of $w: \#_a(v) \geq \#_b(v)$  where $\#_a(x)$ denotes the number of occurrences of symbol $a$ in string $x$
+    The accepted language is: $w: \#_a(w) = \#_b(w)$ and for any prefix $v$ of $w: \#_a(v) \geq \#_b(v)$  where $\#_a(x)$ denotes the number of occurrences of symbol $a$ in the string $x$
 
     The grammar is taken from \cite{WK_CYK}.
   }
@@ -1029,13 +1053,11 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
 
     The accepted language is: $(l^n r^n)^k$ where $n$ does not increase for subsequent $k$. For instance: $lllrrrlrlr$ is within the language, $llrrlllrrr$ is not.
 
-    The grammar is taken from \cite{WK_GRAMMARS_1} (where it is stated that the language of this grammar is $(l^nr^n)^k$ for $n, k \geq 1$ which is not correct). The original symbols for opening and closing parenthesis have been replaced by letters $l$ (left parenthesis) and $r$ (right parenthesis)
+    The grammar is taken from \cite{WK_GRAMMARS_1} (where it is stated that the language of this grammar is $(l^nr^n)^k$ for $n, k \geq 1$ which is not correct). The original symbols for opening and closing parenthesis have been replaced by letters $l$ (left parenthesis) and $r$ (right parenthesis).
   }
 
   \item{
-    The grammar is identical to the grammar 13 with a difference in the complementarity relation. The relations between symbols $a, b$ and symbols $a, c$ are added.
-
-    This means that the relation is: $\rho = \{(a, a), (b, b), (c, c), (a, b), (b, a), (a, c), (c, a)\}$
+    The grammar is identical to the grammar 13 with a difference in the complementarity relation. The relations between symbols $a, b$ and symbols $a, c$ are added. This means that the relation is: $\rho = \{(a, a), (b, b), (c, c), (a, b), (b, a), (a, c), (c, a)\}$
 
     The accepted language is: $a^n b^m c^n$ where $n, m \geq 1$
   }
@@ -1051,35 +1073,35 @@ For the testing of the tree search algorithm and the WK-CYK algorithm, I have us
 
 There are twenty grammars altogether. Grammars 1--5 are regular, 6--11 are context-free and 12--18 are context-sensitive. Grammars 19 and 20 are context-free but they also have a non-bijective complementarity relation.
 
-In reality, there are not 20 but 40 grammars, because all of them can be used in the basic form and after the transformation to the Chomsky normal form. That results in a different grammar (although accepting the same language) which is usually significantly more difficult to calculate with, as there are more rules and many rules generate more non-terminals.
+In reality, there are not 20 but 40 grammars, because all of them can be used in the basic form and after the transformation to the WK Chomsky normal form. That results in a different grammar (although accepting the same language) which is usually significantly more difficult to calculate with, as there are more rules and many rules generate more non-terminals.
 
 \section{Testing the state space search}
 
-There is a lot of parameters that could be tested and analyzed. How efficient are the various heuristics (both pruning and node preference) for different grammars. What input lengths are answered within a reasonable time? Or more generally, what is the relation between input length and time to get the answer? What are the memory requirements? What is the difference in decision time between input strings which are in the given language and those which are not? Are there significant differences between some inputs of the same lengths?
+There is a lot of parameters that could be tested and analyzed. How efficient are the various heuristics (both pruning and node precedence) for different grammars. What input lengths are answered within a reasonable time frame? Or more generally, what is the relation between input length and time to get the answer? What are the memory requirements? What is the difference in decision time between input strings which are in the given language and those which are not? Are there significant differences between some inputs of the same lengths?
 
 In order to analyze these questions, I have decided to test the state space search in the following stages.
 \begin{enumerate}
-  \item{Comparison of the node precedence heuristics and analysis of their efficiency.}
-  \item{Comparison of the pruning heuristics and analysis of their efficiency.}
-  \item{Analysis of the time and memory complexity based on the length of the input string.}
-  \item{Testing if there are any different inputs of the same length which would result in a significant difference in the computation complexity.}
-  \item{Testing the WK-CYK algorithm with various grammars and inputs and comparison to the state space search.}
+  \item{comparison of the node precedence heuristics and analysis of their efficiency}
+  \item{comparison of the pruning heuristics and analysis of their efficiency}
+  \item{analysis of the time and memory complexity based on the length of the input string}
+  \item{testing if there are any different inputs of the same length which would result in a significant difference in the computation complexity}
+  \item{testing the WK-CYK algorithm with various grammars and inputs and comparison to the state space search}
 \end{enumerate}
 
 \subsection{Comparison of the node precedence heuristics efficiency} \label{section:node_prec_test}
 In section \ref{heur_node_pref}, 12 node precedence heuristics have been described and only one of them can be active at a time.
-In order to compare their effectiveness I used the script \textit{ts\_node\_prece\-dence\_tests.py} which runs one test for each of the 40 grammars with an input that will be accepted. It is not useful to test the node precedence heuristics with inputs that are not within the given language as in such cases, the whole space state needs to be searched and node precedence cannot help in any way. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time, specifically within the time limit of ten seconds, but also to last some measurable amount of time.
+In order to compare their effectiveness I used the script \textit{ts\_node\_prece\-dence\_tests.py} which runs one test for each of the 40 grammars with an input that will be accepted. It is not useful to test the node precedence heuristics with inputs that are not within the given language as in such cases, the whole space state needs to be searched and node precedence cannot help in any way. The input strings have been chosen to have suitable lengths, so that the computation is finished (at least with some heuristics) in a reasonable time, specifically within the time limit of ten seconds but the search also should last some measurable amount of time.
 
 Each of the 40 tests consists of 12 runs, each with a different node precedence heuristic active. There are three metrics to observe:
 \begin{itemize}
   \item{How many times the search timed out?}
 
-  \item{What is the total time in which all 40 tests were completed for each of the heuristics. There should be a kind of penalty involved if the test times out because the time needed for the computation is in that case certainly greater then the time it actually ran, before it was stopped by the time limit. Therefore, for the sake of the comparison, the time of the search is in this case doubled.}
+  \item{What is the total time in which all 40 tests were completed for each of the heuristics. There should be a kind of penalty involved if the test times out because the time needed for the computation is, in that case, certainly greater then the time it actually ran before it was stopped by the time limit. Therefore, for the sake of the comparison, the time of the search is in this case doubled.}
 
-  \item{The total time normalized for each test --- the time of the fastest heuristic for each test is normalized to one. This is probably the most telling metric as each test has roughly the same impact on the final number.}
+  \item{The total time normalized for each test --- all the times are multiplied by a number $n = 1 / t_{min}$ where $t_{min}$ is the time of the fastest heuristic for the given test. This is probably the most telling metric as each test has roughly the same impact on the final number.}
 \end{itemize}
 
-Each test prints out the results in a table similar to \ref{tab:node_heuristics_table}. The upper part of the table displays the description of the accepted language, number of rules, non-terminals and terminals in the grammar, string on the input (if it is too long to be printed out, its beginning part and total length is printed out instead), whether the input is expected to be accepted and time limit. In the lower part the table shows for each of the node precedence heuristic how much time it took, how many states at most were in the queue at a time and how many states were analyzed, how many times each pruning heuristic was successful and the result of the search (True, False or Timeout). It would not be practical to present here the complete output, but it can be recreated simply by running the script again and is also attached in the file \textit{output/ts\_node\_precedence\_output.txt}.
+Each test prints out the results in a table similar to \ref{tab:node_heuristics_table}. The upper part of the table displays the description of the accepted language, number of rules, non-terminals and terminals in the grammar, string on the input (if it is too long to be printed out, its beginning part and total length is printed out instead), whether the input is expected to be accepted and the time limit. The lower part the table shows for each of the node precedence heuristic how much time it took, how many states at most were in the queue at a time and how many states were analyzed, how many times each pruning heuristic was successful and the result of the search (True, False or Timeout). It would not be practical to present here the complete output but it can be recreated simply by running the script again and is also attached in the file \textit{output/node\_precedence\_test\_output.txt}.
 
 \begin{figure}[h!]
   \caption{An output of a node precedence heuristics test}
@@ -1107,13 +1129,12 @@ Each test prints out the results in a table similar to \ref{tab:node_heuristics_
  WNTA+TM1 & 0.495 & 498 + 2503 & 0, 3, 0, 0, 250 & TRUE  \\
  WNTA+TM2 & 0.4949 & 498 + 2503 & 0, 3, 0, 0, 250 & TRUE  \\
  WNTA+TM3 & 0.4977 & 498 + 2503 & 0, 3, 0, 0, 250 & TRUE  \\
- no heuristic & 2.4445 & 4188 + 22147 & 0, 89, 0, 0, 239 & TRUE  \\
-  \hline
+ NONE & 2.4445 & 4188 + 22147 & 0, 89, 0, 0, 239 & TRUE  \\
   \hline
 \end{tabular}
 \end{figure}
 
-It is interesting to notice how different heuristics are better in different test cases. This is illustrated by selected test cases which are on figure \ref{fig:selected_tests}. There are some cases where the best heuristic is the empty one which assigns zero to each node, like in the case of test 23. This is because this heuristic is the simplest one to compute and if no heuristic is effective in a particular test case, this one wins. But since it does not win by a large margin, these cases do not have a decisive impact on the overall result. There was only one timeout of heuristic TM2 and the empty heuristics.
+It is interesting to notice how different heuristics are better in different test cases. This is illustrated by selected test cases which are on figure \ref{fig:selected_tests}. There are some cases where the best heuristic is the empty one which assigns zero to each node, like in the case of test 23. This is because this heuristic is the simplest one to compute and if no heuristic is effective in a particular test case, this one wins. But since it does not win by a large margin, these cases do not have a decisive impact on the overall result. There was only one timeout of heuristic TM2 and the empty heuristic. The significant result differences indicate that the state space search can be customized to fit a specific grammar and thus futher improve its performance.
 
 In some cases, a certain heuristics do not work so well, but their combination does. This can be seen in test 22 --- NTA and WNTA have poor result, comparable to no heuristic. TM1, TM2, TM3 have somewhat better result, but by far the best result is achieved by combination of NTA with any version of TN.
 
@@ -1123,7 +1144,7 @@ In some cases, a certain heuristics do not work so well, but their combination d
   \label{fig:selected_tests}
 \end{figure}
 
-The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 40 tests. The right bar of each heuristic shows the total time for the 40 tests and the left bar shows the normalized time. It turns out that the best results are achieved by the combination NTA+TM1. The best time overall was achieved by TM3 by very narrow margin. The normalized times show that all NTA+TM1, NTA+TM2 and NTA+TM3 heuristics are very close but the narrow winner is NTA+TM1. Even if in some cases there are some faster heuristics, it's usually not by much. Interestingly, even though TM2 turns out to have the worst results of them all, often worse than no heuristic, with the combination of NTA the results are among the best. Therefore, for all of the following tests, the winning node precedence heuristic NTA+TM1 will be used.
+The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 40 tests. The left bar of each heuristic shows the total time for the 40 tests and the right bar shows the normalized time. It turns out that the best results are achieved by the combination NTA+TM1. The best time overall was achieved by TM3 by very narrow margin. The normalized results of all NTA+TM1, NTA+TM2 and NTA+TM3 heuristics are very close but the narrow winner is NTA+TM1. Even if, in some cases, there are some faster heuristics, it's usually not by much. Interestingly, even though TM2 turns out to have the worst results of them all, often worse than no heuristic, with the combination of NTA the results are among the best. Anyway, for all of the following tests, the winning node precedence heuristic NTA+TM1 will be used.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.45]{node_heuristics_comp.png}
@@ -1133,14 +1154,14 @@ The figure \ref{fig:node_heuristics_comp} shows the total result for all of the 
 
 \subsection{Comparison of the pruning heuristics efficiency} \label{section:pruning_test}
 
-Pruning has the advantage of being useful whether the input string is going to be accepted or rejected by the tree search. Also, all of the pruning can be active at the same time. Each node can be tested by all available checks to see if it can be pruned or not.
+Pruning has the advantage of being useful whether the input string is going to be accepted or rejected by the tree search. Also, all of the pruning can be active at the same time. Each node can be tested by all available checks to see whether it can be pruned or not.
 
 The testing is performed over 80 tests --- each of the 40 grammars is used for a positive test (where the input will be accepted) and a negative test (the input will be rejected).
 Each test contains seven runs of the tree search algorithm --- one where all pruning heuristics are active, one where all are inactive, and one for each heuristic where all are active except the given one.
 
-Similarly to the node precedence heuristics comparison, the metrics that are important are the total time needed to compute the 80 tests and a number of timeouts for each of the seven cases.
+Similarly to the node precedence heuristics comparison, the metrics that are important are the total time needed to compute the 80 tests and a number of timeouts for each of the seven cases. The main goal here is not to compare the heuristics to each other and find which one is the best --- as they can be active at the same time, it does not matter that much. Rather, the goal is to decide whether each of the pruning heuristics improves the performance or if it is better to turn some off. Therefore the comparison between the case where all heuristics are active and the case where a specific heuristic is inactive and the rest are active is important. If the latter case is faster, the given heuristic's cost (in terms of computing power) is greater than its contribution.
 
-The tests are run by the script \textit{ts\_pruning\_tests.py} and each test prints out a table similar to the table \ref{tab:prune_heuristics_table}. Again, it would not be practical to include the entire output here. The complete set of results can be recreated by running the script again and it is included in the file \textit{output/ts\_pruning.txt}.
+The tests are run by the script \textit{ts\_pruning\_tests.py} and each test prints out a table similar to the table \ref{tab:prune_heuristics_table}. Again, it would not be practical to include the entire output here. The complete set of results can be recreated by running the script again and it is included in the file \textit{output/pruning\_test\_output.txt}.
 
 \begin{figure}[h!]
   \caption{An output of the pruning heuristics test}
@@ -1165,42 +1186,41 @@ The tests are run by the script \textit{ts\_pruning\_tests.py} and each test pri
   regex OFF & 0.3594 & 800 + 1599 & 0, 3, 0, 0, 0 & TRUE \\
   ALL OFF & 0.2179 & 801 + 1600 & 0, 0, 0, 0, 0 & TRUE \\
   \hline
-  \hline
 \end{tabular}
 \end{figure}
 
-The summary of results is displayed on figure \ref{fig:prune_timeouts_comp} --- the number of timeouts and \ref{fig:prune_times_comp} --- the amount of time for each of the seven cases across the 80 tests. The smaller the individual bars are, the better the result. But in case of the bars representing a specific pruning heuristic being turned off, the bigger the bar, the more important the given heuristic is, because the result is that much worse without it.
+The summary of results is displayed on figure \ref{fig:prune_timeouts_comp} --- the number of timeouts and \ref{fig:prune_times_comp} --- the amount of time for each of the seven cases across the 80 tests. The smaller the individual bars are, the better the result. But in case of the bars representing a specific pruning heuristic being turned off, the bigger the bar, the more important the given heuristic is because the result is that much worse without it.
 
 \begin{figure}[h!]
   \centering
   \includegraphics[scale=0.44]{prune_timeouts_comp.png}
-  \caption{Number of timeouts of all pruning tests}
+  \caption{The number of timeouts of all pruning tests}
   \label{fig:prune_timeouts_comp}
 \end{figure}
 
 \begin{figure}[h!]
   \centering
   \includegraphics[scale=0.47]{prune_times_comp.png}
-  \caption{Total time of all pruning tests}
+  \caption{The total time of all pruning tests}
   \label{fig:prune_times_comp}
 \end{figure}
 
 
-From these results it is clear that the tree pruning is the key feature of the tree search algorithm. After turning off the pruning, the results are quite poor --- 67 out of 80 tests timed out. The total time is then not relevant at all. The middle bars, which represent the individual pruning heuristics being turned off, needs to be compared to the first one, where all heuristics are active, to see how important the given heuristic actually is. Thus, the figure suggests, that the RL (complementarity relation) check is the most important one because turning it off had the biggest impact on the result. This can be a bit misleading, as some heuristics can be sometimes backed up by another one. This is the reason why the WS (match of leftmost terminals to the input string) seem to have a rather small impact. If this heuristic is turned off, the dead branch can be identified by the RE (regular expression) check and so the impact is not so big. Similarly, turning off the SL (strands length) heuristic has smaller impact, because it is backed up by TL (total length) heuristic.
+From these results it is clear that the tree pruning is the key feature of the tree search algorithm. After turning off the pruning, the results are quite poor --- 67 out of 80 tests timed out. The total time is then not relevant at all. The middle bars, which represent the individual pruning heuristics being turned off, need to be compared to the first one, where all heuristics are active, to see how important the given heuristic actually is. Thus, the figure suggests, that the RL (complementarity relation) check is the most important one because turning it off had the biggest impact on the result. This can be a bit misleading, as some heuristics can be sometimes backed up by another one. This is the reason why the WS (match of leftmost terminals to the input string) seem to have a rather small impact. If this heuristic is turned off, the dead branch can be identified by the RE (regular expression) check and so the impact is not so big. Similarly, turning off the SL (strands length) heuristic has smaller impact because it is backed up by TL (total length) heuristic.
 
-Nevertheless, all heuristic are useful according to this result, because no other bar is as small as the first one. This means that the best result is achieved when all heuristics are active the same time. This is especially important in the case of the RE heuristic. This one is quite demanding with regards to computation power --- regular expression match is performed each time this check is executed. It is the reason why it is the last check that is used, if there is another heuristic able to prune the node, a lot of computational power is saved. However, the figure shows clearly, that the RE heuristic contributes significantly to the overall performance (still, some tests cannot take advantage of this heuristic and turning it off would improve the results).
+Nevertheless, all heuristics are useful according to this result because no other result is as good as in the first case where all the heuristics are active.  This finding is especially important in the case of the RE heuristic. This one is quite demanding with regards to computational power --- regular expression match is performed each time this check is executed. It is the reason why it is the last check that is used, if there is another heuristic able to prune the node, a lot of computational power is saved. However, the figure shows clearly, that the RE heuristic contributes significantly to the overall performance. Still, some tests cannot benefit from all heuristics and turning some off would improve the results. This, again, means that there is some space for improving the performance by customizing the algorithm to specific grammars.
 
 
 \subsection{Analysis of the memory requirements}
-The tree search algorithm needs to keep in memory the nodes, which have been generated but not yet analyzed. These are in the priority queue waiting to be used. Also, it keeps track of all nodes which have already been generated. These are the nodes that had been in the queue before and nodes that are there at the moment, as in both cases, there is no reason to put them into the queue again. But it is not necessary to keep all these nodes in the memory in order to identify them, their hash is enough.
+The tree search algorithm needs to keep in memory the nodes which have been generated but not yet analyzed. These are in the priority queue waiting to be used. Also, it keeps track of all the nodes which have already been generated. These are the nodes that had been in the queue before and the nodes that are there at the moment, as in both cases, there is no reason to put them into the queue again. But it is not necessary to keep all these nodes in the memory in order to identify them, their hash code is enough.
 
-If the algorithm should not only find a solution if there is one, but also find the path from the initial node to the solution, it is not enough just to remember the hashes of nodes that have been analyzed. It is necessary to remember all of the nodes. This is actually the case in the current implementation because when testing the tree search algorithm, it turns out that the memory consumption is not a real issue and it is sometimes convenient to learn the path to the solution. A very simple modification would change this --- simply removing the item \textit{parent} from the tree node (\textit{cTreeNode} class) and the method printPath from the grammar (\textit{cWK\_CFG} class).
+If the algorithm should, not only find a solution if there is one, but also find the path from the initial node to the solution, it is not enough just to remember the hashes of nodes that have been analyzed. It is necessary to remember all of the nodes. This is actually the case in the current implementation because when testing the tree search algorithm, it turns out that the memory consumption is not a real issue and it is sometimes convenient to learn the path to the solution. A very simple modification would change this --- simply removing the item \textit{parent} from the tree node (\textit{cTreeNode} class) and the method printPath from the grammar (\textit{cWK\_CFG} class).
 
 The number of nodes in the queue can go up or down as the search progresses but it is more likely to go up, unless the search is coming to its end. In any case, the important figure is the maximum number of nodes that were in the queue at one point.
 
-Next parameter that needs to be considered is the size of one node in the memory. As mentioned in the section \ref{chapter:implementation}, one node contains six integers (storing the number of terminals in the two strands, number of non-terminals, hash number, the node parent and the node precedence evaluation) and the word itself. The word can contain up to twice the number of symbols then is the length of the input string. If it contains more, it is going to be pruned.
+Another parameter that needs to be considered is the size of one node in the memory. As mentioned in the section \ref{chapter:implementation}, one node contains six integers (storing the number of terminals in the two strands, number of non-terminals, hash number, the node parent and the node precedence evaluation) and the word itself. The word can contain up to twice the number of symbols then is the length of the input string. If it contains more, it is going to be pruned.
 
-This is not necessarily true, if the grammar contains some $\lambda$-rules and non-terminals that can be erased. Then the theoretical length of the word in memory has no limit, but this is not a typical scenario and it can be avoided altogether by applying the $\lambda$-rules removal algorithm.
+This is not necessarily true, if the grammar contains some $\lambda$-rules and non-terminals that can be erased. Then the theoretical length of the word in memory has no limit but this is not a typical scenario and it can be avoided altogether by applying the $\lambda$-rules removal algorithm.
 
 The equation for getting the memory requirement, based on the number of nodes working with, is than the following:
 
@@ -1210,24 +1230,24 @@ After the removal of the parent information from the nodes, the equation would b
 
 $$S_{all} \times size(int) + S_{open} \times (6 \times size(int) + 2 \times size(symbol) \times |input|)$$
 
-$S_{all}$ is the number of all nodes generated, $S_{open}$ is the maximum number of nodes in the queue, $size(int)$ is the size of an integer (for this calculation, I will assume it is 64 bytes), $size(symbol)$ is the size of one symbol of the grammar and $|input|$ is the length of the input string.
+$S_{all}$ is the number of all generated nodes, $S_{open}$ is the maximum number of nodes in the queue, $size(int)$ is the size of an integer , $size(symbol)$ is the size of one symbol of the grammar and $|input|$ is the length of the input string.
 
-I've chosen grammar 3 in CNF to test the results in practice, as this grammar is among the hardest ones with respect to computing complexity. I used inputs in the form of $a^nb$ with increasing $n$, which will always be rejected, because the grammar accepts strings that end with $abc$.
+I've chosen grammar 3 in WK-CNF to test the results in practice, as this grammar is among the hardest ones with respect to computing complexity. I used inputs in the form of $a^nb$ with increasing $n$, which will always be rejected, because the grammar accepts strings that end with symbols $abc$.
 
-The figure \ref{fig:mem_consumption} on the left shows the amount of memory requirements in relation to the input length. The middle graph shows the memory consumption in relation to the time needed for computation. To the right is the experimental result where I measured real memory consumption of the program in time.
+The figure \ref{fig:mem_consumption} on the left shows the amount of memory needed in relation to the input length. The middle graph shows the memory consumption in relation to the time needed for computation. To the right is the experimental result where I measured real memory consumption of the program in time.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.47]{mem_consumption.png}
-  \caption{Memory consumption of tree search}
+  \caption{Memory consumption of the tree search (the left and middle parts show computed values, the part on the right shows real measuements)}
   \label{fig:mem_consumption}
 \end{figure}
 
 The measurement of the real memory consumption shows that there is a possibility to be limited by the memory available. As the figure \ref{fig:mem_consumption} on the right shows, the tree search used 1 GB of memory after approximately 80 seconds of running and the consumption increases linearly (the number depends on the hardware and environment so it is very crude). On the other hand, it does not seem practical to have the time limit of the computation too high. If the result is not found in the order of tens of seconds or, at most, minutes, it is probably not going to be found (within a reasonable time frame) at all.
 
 \subsection{The time complexity of the state space search}
-The previous sections showed that the best overall performance is achieved when using all of the tree pruning heuristics and using the NTA+TM1 as the node precedence heuristic. This may not be the case for every grammar or every input, but it is the case overall. Therefore, this will be the setting used in the sections that follow --- testing the tree search performance, analyzing the practical complexity and comparing to WK-CYK algorithm.
+The previous sections showed that the best overall performance is achieved when using all of the tree pruning heuristics and using the NTA+TM1 as the node precedence heuristic. This may not be the case for every grammar or every input, but it is the case overall. Therefore, this will be the setting used in the sections that follow --- testing the tree search performance, analyzing the practical complexity and comparison to the WK-CYK algorithm.
 
-I used the script \textit{ts\_speed\_tests.py} to test the time complexity with respect to the input length. It runs 80 test, two for each of the 40 grammars --- one with inputs that are going to be accepted by the tree search and one with inputs which will be refused. Each test runs the tree search several times and increases the input length. It stops when the computation takes longer than a limit of ten seconds or after 30 runs. For each of the 80 tests, it prints out a table similar to \ref{tab:input_compl_test}. As it would not be practical to present all of the results here, they can be recreated by simply running the script again and they are included in the file \textit{output/ts\_speed.txt}.
+I used the script \textit{ts\_speed\_tests.py} to test the time complexity with respect to the input length. It runs 80 test, two for each of the 40 grammars --- one with inputs that are going to be accepted by the tree search and one with inputs which will be refused. Each test runs the tree search several times and increases the input length. It stops when the computation takes longer than a limit of ten seconds or after 30 runs. For each of the 80 tests, it prints out a table similar to \ref{tab:input_compl_test}. As it would not be practical to present all of the results here, they can be recreated by simply running the script again and they are included in the file \textit{output/speed\_test\_output.txt}.
 
 \begin{figure}[h!]
   \caption{An output of the time complexity test}
@@ -1253,11 +1273,10 @@ I used the script \textit{ts\_speed\_tests.py} to test the time complexity with 
  2701 & 8.4195 & 2699 + 4050 & 0, 3, 0, 0, 1350 & TRUE \\
  2801 & 9.2167 & 2799 + 4200 & 0, 3, 0, 0, 1400 & TRUE \\
   \hline
-  \hline
 \end{tabular}
 \end{figure}
 
-The performance for different grammars is quite different. In case of eleven of the twenty grammars (specifically, grammars 2, 5--10, 12-14, 19), the resulting graph is a very regular parabola. Often a bit steeper when transformed to the CNF and often steeper when the inputs are going to be rejected. An example is on figure \ref{fig:speed_test_grammar_12}. The performance with these grammars allows at least hundreds, in most cases thousands, of symbols on the input.
+The performance for different grammars is quite different. In case of 11 of the 20 grammars (specifically, grammars 2, 5--10, 12-14, 19), the resulting graph is a very regular parabola. Often a bit steeper when transformed to the WK-CNF and often steeper when the inputs are going to be rejected. An example is on figure \ref{fig:speed_test_grammar_12}. The performance with these grammars allows at least hundreds, in most cases thousands, of symbols on the input.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.33]{speed_test_grammar_12.png}
@@ -1266,9 +1285,9 @@ The performance for different grammars is quite different. In case of eleven of 
 \end{figure}
 
 
-Occasionally, thanks to the pruning heuristics, the algorithm is able to tell practically immediately that there is no solution. This is the case of grammar 3 \ref{compl_result_grammar_3} and grammar 4 \ref{compl_result_grammar_4} in basic forms, making the complexity of this particular search constant. The grammar 3 has as the first rule, which it has to use to proceed further, $S \rightarrow A \wkpair{abc}{abc}$. If the input string does not end in $abc$ the regular expression check immediately detects that the input cannot be matched, prunes the only branch and the search is finished.
+Occasionally, thanks to the pruning heuristics, the algorithm is able to tell practically immediately that there is no solution. This is the case of grammar 3 \ref{fig:speed_test_grammar_3} and grammar 4 \ref{fig:speed_test_grammar_4} in basic forms, making the complexity of this particular search constant. The grammar 3 has as the first rule, which it has to use to proceed further, $S \rightarrow A \wkpair{abc}{abc}$. If the input string does not end with $abc$, the regular expression check immediately detects that the input cannot be matched, it prunes the only branch and the search is finished.
 
-Similarly, in the case of grammar 4, any inputs that are longer than seven symbols need to end with symbol $a$ and can be reached only by using $S \rightarrow Q \wkpair{a}{a}$ as the first rule. The regular expression check immediately prunes this branch. The rest of the tree is searched very quickly because the only other possible starting rule is $S \rightarrow A B C D E F G$, there are not many states that can be reached from it, so this part of the tree is always small.
+Similarly, in the case of grammar 4, any inputs that are longer than seven symbols need to end with the symbol $a$ and can be reached only by using $S \rightarrow Q \wkpair{a}{a}$ as the first rule. The regular expression check immediately prunes this branch. The rest of the tree is searched very quickly because the only other possible starting rule is $S \rightarrow A B C D E F G$, there are not many states that can be reached from it, so this part of the tree is always small.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.33]{speed_test_grammar_3.png}
@@ -1282,9 +1301,9 @@ Similarly, in the case of grammar 4, any inputs that are longer than seven symbo
   \label{fig:speed_test_grammar_4}
 \end{figure}
 
-After conversion of the grammar to CNF, the complexity usually goes up. The transformation adds a lot more rules and thus the state space expands more rapidly, there are also longer paths from the starting non-terminal to the final string (containing only terminals) making the tree deeper. Also, the node precedence heuristics and the pruning have harder time because many rules contain non-terminals only and most of the heuristics work with terminals. The most extreme case is the grammar 3 \ref{fig:speed_test_grammar_4} where the tree search is very effective for grammar in basic form (as discussed, in case of rejecting inputs the result is immediate) but has very bad effectiveness for this grammar in the CNF. The maximum length of input it can answer within 10 second is about 13--14 symbols.
+After conversion of the grammar to the WK-CNF, the complexity usually goes up. The transformation adds a lot more rules and so the state space expands more rapidly, there are also longer paths from the starting non-terminal to the final string (containing only terminals) making the tree deeper. Also, the node precedence heuristics and the pruning have harder time because many rules contain non-terminals only and most of the heuristics work with terminals. The most extreme case is the grammar 3 \ref{fig:speed_test_grammar_4} where the tree search is very effective for grammar in basic form (as discussed, in case of rejecting inputs the result is immediate) but has very bad effectiveness for this grammar in the WK-CNF. The maximum length of input it can answer within 10 second is about 13--14 symbols.
 
-The worst results for grammar in the basic form are in the case of grammar 17 \ref{fig:speed_test_grammar_17}. Here the tree search can handle only inputs with length of about 20 symbols within 10 seconds.
+The worst results for grammar in the basic form are in the case of grammar 17 \ref{fig:speed_test_grammar_17}. Here, the tree search can handle only inputs with length of about 20 symbols within 10 seconds.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.33]{speed_test_grammar_17.png}
@@ -1292,7 +1311,7 @@ The worst results for grammar in the basic form are in the case of grammar 17 \r
   \label{fig:speed_test_grammar_17}
 \end{figure}
 
-Some grammars manifest interesting behavior --- for some longer inputs the performance is actually better. This is the case of grammars 11 (\ref{fig:speed_test_grammar_11} on the left), 16 (\ref{fig:speed_test_grammar_16} on the middle right) and 18 (\ref{fig:speed_test_grammar_18} on the middle left and middle right). Some of these results may appear to be partly random, simply the input generator might sometimes generate an input which is more complex and sometimes less complex to compute. This is the case of the grammar 18, in fact the shape of the randomly generated input has a big impact on the performance. However, repeated tests of the other two grammars confirmed that this happens always and the figure of grammar 16 has a clear pattern, it is certainly not random.
+Some grammars manifest an interesting behavior --- for some longer inputs the performance is actually better. This is the case of grammars 11 (\ref{fig:speed_test_grammar_11} on the left), 16 (\ref{fig:speed_test_grammar_16} on the middle right) and 18 (\ref{fig:speed_test_grammar_18} on the middle left and middle right). Some of these results may appear to be partly random, simply the input generator might sometimes generate an input which is more complex and sometimes less complex to compute. This is the case of the grammar 18, here, in fact, the shape of the randomly generated input has a significant impact on the performance which is the reason for the irregular curves. However, repeated tests of the other two grammars confirmed that this happens always and the figure of grammar 16 has a clear pattern, it is certainly not random.
 
 \begin{figure}[h!]
   \includegraphics[scale=0.33]{speed_test_grammar_11.png}
@@ -1315,17 +1334,17 @@ Some grammars manifest interesting behavior --- for some longer inputs the perfo
 The results of the three grammars which have not been yet mentioned, grammars 1, 15 and 20, are mostly similar to the standard parabola of the majority of tests with some irregularities.
 
 \subsection{Comparing different inputs of the same length}
-There are some grammars which do not provide any possibility of an interesting or edge case input. Specifically, it is the case of grammars 1--4. Grammar 1 works only with the terminal symbol $a$, grammars 2, 3 and 4 are only interested whether a string ends with specific symbols. But the rest of the grammars, grammars 5--20, all provide some space for trying to come up with an edge case input --- an input, which has the key part on the very end or on the very beginning etc. I have manually created some of these edge cases and tested what differences in performance there are. For this test I used a script \textit{ts\_var\_inputs\_tests.py}. Its complete output can be again recreated by running the script and is attached in the file \textit{output/ts\_var\_inputs.txt}.
+There are some grammars which do not provide any possibility of an interesting or edge case input. Specifically, it is the case of grammars 1--4. Grammar 1 works only with the terminal symbol $a$, grammars 2, 3 and 4 are only interested whether a string ends with specific symbols. But the rest of the grammars, grammars 5--20, all provide some space for trying to come up with an edge case input --- an input, which has the key part on the very end or on the very beginning etc. I have manually created some of these edge cases and tested what differences in performance there are. For this test I used a script \textit{ts\_var\_inputs\_tests.py}. Its complete output can be again recreated by running the script and is attached in the file \textit{output/var\_inputs\_test\_output.txt}.
 
-I have selected three of these tests to show here. The tables \ref{tab:input_compl_test_2}, \ref{tab:input_compl_test_4}, \ref{tab:input_compl_test_8}  show the input of the tests from the script \textit{ts\_var\_inputs\_tests.py}. The first column called Input displays the string that has been used as an input in a compact format $(ns)^*$ where $n$ is a number of occurrences of the symbol or string $s$. For instance, $3a\:2ab$ would translate to string $aaaabab$.
+I have selected three of these tests to present here. The tables \ref{tab:input_compl_test_2}, \ref{tab:input_compl_test_4}, \ref{tab:input_compl_test_8}  show the output of three tests from the script \textit{ts\_var\_inputs\_tests.py}. The first column called Input displays the string that has been used as an input in a compact format $(ns)^*$ where $n$ is a number of occurrences of the symbol or string $s$. For instance, $3a\:2ab$ would translate to string $aaaabab$.
 
-As mentioned, one advantage of state space search is, that sometimes it can recognize right away that a certain input is not in a given language. It is usually when the string starts with a symbol that cannot be at the beginning. For instance the second input on table \ref{tab:input_compl_test_2} where the language is $a^nb^n$ and the input starts with $b$ can never be accepted. A similar case is the second input on table \ref{tab:input_compl_test_8} where the language is $r^nd^nu^nr^n$ and it cannot start with anything other than $r$.
+As previously mentioned, one advantage of state space search is that sometimes it can recognize right away that a certain input is not in a given language. It is usually when the string starts with a symbol that cannot be at the beginning. For instance, the second input on table \ref{tab:input_compl_test_2}, where the language is $a^nb^n$ and the input starts with $b$, can never be accepted. A similar case is the second input in table \ref{tab:input_compl_test_8} where the language is $r^nd^nu^nr^n$ and it cannot start with anything other than $r$.
 
-On the other hand, sometimes the search has harder time finding a key part of the string which is at the end. This can take longer as is the case in the last input of \ref{tab:input_compl_test_2} (search has to get to the end of the string to see that there are not enough of the $b$ symbols). Some inputs on the table \ref{tab:input_compl_test_8} also suffer for the same reason. This is usually not a problem that could break the practical use completely. The result is typically still reached within a reasonable time. A extreme example is, however, on the table \ref{tab:input_compl_test_4} where the last input is not decided in time, even though other inputs were decided very quickly.
+On the other hand, sometimes the search has harder time finding a key part of the string which is at the end. This can take longer as is the case in the last input of \ref{tab:input_compl_test_2} (search has to get to the end of the string to see that there are not enough $b$ symbols). Some inputs in the table \ref{tab:input_compl_test_8} also suffer for the same reason. This is usually not a problem that could break the practical use completely. The result is typically still reached within a reasonable time. An extreme example is, however, on the table \ref{tab:input_compl_test_4} where the last input is not decided in time, even though other inputs were decided very quickly.
 
 \begin{figure}[h]
 \centering
-  \caption{Test of various inputs for grammar 6}
+  \caption{Test of various inputs for the grammar 6}
   \label{tab:input_compl_test_2}
 \begin{tabular}{ |l|l|l|l|l|  }
   \hline
@@ -1348,7 +1367,7 @@ On the other hand, sometimes the search has harder time finding a key part of th
 
 \begin{figure}[h]
 \centering
-  \caption{Test of various inputs for grammar 8}
+  \caption{Test of various inputs for the grammar 8}
   \label{tab:input_compl_test_4}
 \begin{tabular}{ |l|l|l|l|l|  }
   \hline
@@ -1369,7 +1388,7 @@ On the other hand, sometimes the search has harder time finding a key part of th
 
 \begin{figure}[h]
 \centering
-  \caption{Test of various inputs for grammar 12}
+  \caption{Test of various inputs for the grammar 12}
   \label{tab:input_compl_test_8}
 \begin{tabular}{ |l|l|l|l|l|  }
   \hline
@@ -1379,7 +1398,7 @@ On the other hand, sometimes the search has harder time finding a key part of th
   Rules / NTs / Ts & \multicolumn{4}{|l|}{10/5/3} \\
   Timeout & \multicolumn{4}{|l|}{10 seconds} \\
   \hline
-  Input & Time & States Q+C & Prunes(SL, TL, WS, RL, RE) & Accepted \\
+  Input & Time & States Q+C & Prunes(SL,TL,WS,RL,RE) & Accepted \\
   \hline
  500r 500d 500u 500r d & 8.9568 & 1500 + 3001 & 0, 0, 3002, 998, 501, 1 & FALSE \\
  d 500r 500d 500u 500r & 0.0001 & 1 + 0 & 0, 0, 2, 0, 0, 0 & FALSE \\
@@ -1399,7 +1418,7 @@ On the other hand, sometimes the search has harder time finding a key part of th
 
 \section{Testing the efficiency of WK-CYK}
 
-I have tested the WK-CYK algorithm in a similar manner as the tree search. This time not all grammars can be used due to limitations of WK-CYK. The grammars must be in CNF form and grammars 5, 19 and 20 cannot be used at all, since WK-CYK requires the complementarity relation to be identity, which is not the case of these three grammars. Therefore there are 17 grammars that can be tested. The script \textit{wk\_cyk\_tests.py} runs two tests for each of these grammars. One with inputs that should be accepted and one with inputs that should be rejected. Again, each test increases the input string length until the computation lasts more that a limit of 10 seconds. The output of each test is, again, a table similar to \ref{tab:wk_cyk_res}. The entire output can be recreated by running the script again and is attached in file \textit{output/wk\_test.txt}.
+I have tested the WK-CYK algorithm in the similar manner as the tree search. This time not all grammars can be used due to the limitations of WK-CYK. The grammars must be in the WK-CNF and grammars 5, 19 and 20 cannot be used at all, since WK-CYK requires the complementarity relation to be identity which is not the case of these three grammars. Therefore there are 17 grammars that can be tested. The script \textit{wk\_cyk\_tests.py} runs two tests for each of these grammars. One with inputs that should be accepted and one with inputs that should be rejected. Again, each test increases the input string length until the computation lasts more that the limit of 10 seconds. The output of each test is a table similar to \ref{tab:wk_cyk_res}. The entire output can be recreated by running the script again and is attached in file \textit{output/wk\_cyk\_test\_output.txt}.
 
 
 \begin{figure}[h]
@@ -1438,30 +1457,30 @@ I have tested the WK-CYK algorithm in a similar manner as the tree search. This 
 \end{tabular}
 \end{figure}
 
-It turns out that the WK-CYK gives very similar performance in all tests --- for all the grammars and regardless whether the input is accepted or not. The figure \ref{fig:wk_cyk_test1} to the right shows a result for the first test which is very similar to all the others. The limit of ten seconds is reached by WK-CYK when the input has about 33 symbols.
+It turns out that the WK-CYK gives very similar performance in all tests --- for all the grammars and regardless whether the input is accepted or not. The figure \ref{fig:wk_cyk_test1} on the left shows a result for the first test which is very similar to all the others. The limit of ten seconds is reached by WK-CYK when the input has about 33 symbols.
 
-These results confirm the claim made by authors of WK-CYK that the complexity with regards to the input length is $O(n^6)$. The figure \ref{fig:wk_cyk_test1} shows the same test with the input lengths raised to the power of six which can be considered to be a number of numeric operations needed for a computation. The curve is then very close to linear.
+These results confirm the claim made by the authors of WK-CYK that the complexity with regards to the input length is $O(n^6)$. The figure \ref{fig:wk_cyk_test1} on the right shows the same test with the input lengths raised to the power of six which can be considered to be a number of numeric operations needed for the computation. The curve is then very close to linear.
 
-When the results of the WK-CYK and state space search are compared, the advantage of state space search is the actual speed in most cases. The results in the previous sections showed that of all the grammars only one (grammar 17) was slower in the basic form when analyzed by tree search then when analyzed by WK-CYK. After transformation to CNF two more grammars (grammar 3 and 11) were comparable or slower when analyzed by the tree search. Grammar 1 was slower for the negative inputs.
+When the results of the WK-CYK and state space search are compared, the advantage of state space search is the actual speed in most cases. The results in the previous sections showed that of all the grammars only one (grammar 17) was slower in the basic form when analyzed by tree search then when analyzed by WK-CYK. After transformation to Wk-CNF two more grammars (grammar 3 and 11) were comparable or slower when analyzed by the tree search. Grammar 1 was slower for the negative inputs.
 
 \begin{figure}[h!]
   \centering
-  \includegraphics[scale=0.5]{wk_cyk_test_1.png}
+  \includegraphics[scale=0.45]{wk_cyk_test_1.png}
   \caption{WK-CYK test result}
   \label{fig:wk_cyk_test1}
 \end{figure}
 
-\section{Comparison of state space search and WK-CYK}
+\section{Comparison of the state space search and WK-CYK}
 
-It has been concluded in the previous section that the WK-CYK algorithm is able to compute within the time limit of ten seconds results for inputs of length of approximately 33 symbols. I will assume that will always be the case even for grammars that would have to be modified in order to be suitable for WK-CYK (grammars 5, 19 and 20). If these results are compared with the results of state space search over grammars in basic forms, only one of them is more efficient with WK-CYK. Other 19 are more efficient with the state space search allowing hundreds of input symbols at minimum. That means that state space search was more efficient in 38 out of 40 test cases (each grammar is tested with accepted and rejected inputs) i.e. in 97.5 \% of cases. In this comparison the state space search benefits from being able to work with any WK grammar --- there is no need to transform it to the WK-CNF.
+It has been concluded in the previous section that the WK-CYK algorithm is able to compute within the time limit of ten seconds results for inputs of length of approximately 33 symbols. I assume that this will always be the case even for grammars that would have to be modified in order to be suitable for WK-CYK (grammars 5, 19 and 20). If these results are compared with the results of state space search over grammars in basic forms, only one of them is more efficient with WK-CYK. Other 19 are more efficient with the state space search allowing hundreds of input symbols at minimum. That means that state space search was more efficient in 38 out of 40 test cases (each grammar is tested with accepted and rejected inputs) i.e. in 97.5 \% of cases. In this comparison the state space search benefits from being able to work with any WK grammar --- there is no need to transform it to the WK-CNF.
 
-If the state space search is compared to WK-CYK over all 40 grammars, WK-CYK has better efficiency in case of grammars 3 and 11 (in the CNF) and with the rejected inputs for grammar 1. That is 9 test cases out of 80 (four test cases of grammar 17, two of grammars 3 and eleven, one of grammar 1) i.e. in 88,75 \% of cases. However, this comparison assumes that there is a need to use the grammars in the CNF, as well.
+If the state space search is compared to WK-CYK over all 40 grammars, WK-CYK has better efficiency in case of grammars 3 and 11 (in the WK-CNF) and with the rejected inputs for grammar 1. That is 9 test cases out of 80 (four test cases of grammar 17, two of grammars 3 and 11, one of grammar 1) i.e. in 88,75 \% of cases. However, this comparison assumes that there is a need to use the grammars in the CNF.
 
-These results show some advantages and disadvantages if the two algorithm. An advantage of state space search is the flexibility regarding the grammars. It does not require to work with grammars in the CNF. Also, it does not require the complementarity relation to be identity. Even though it is always possible to transform any WK grammar to the WK-CNF and it is always possible to further transform the grammar in order to use only the identity as the relation, this can significantly add to the grammar's complexity.
+These results show some advantages and disadvantages of the two algorithms. An advantage of state space search is the flexibility regarding the grammars. It does not require to work with grammars in the WK-CNF. Also, it does not require the complementarity relation to be identity. Even though it is always possible to transform any WK grammar to the WK-CNF and it is always possible to further transform the grammar in order to use only the identity as the relation, this can significantly add to the grammar's complexity.
 
 A useful feature of the state space search is the fact that it can be configured for the need of a specific grammar. If the membership test will be performed repeatedly on a grammar, it is possible to find out what node precedence heuristic works best and what pruning heuristics are useful in that particular scenario by running tests analogous to those presented in section \ref{section:node_prec_test}. Thus the performance may be further enhanced.
 
-The advantage of WK-CYK, on the other hand, is its universality. It has roughly the same speed every time, it does not significantly depend on the grammar (increasing number of rules adds a little bit) and it does not matter, if the input is going to be accepted or not. For very complicated grammars, especially with lots of rules or long derivations from the starting symbol to the final string, WK-CYK still might be more practical.
+An advantage of WK-CYK, on the other hand, is its universality. It has roughly the same speed every time, it does not significantly depend on the grammar (increasing number of rules adds a little bit) and it does not matter, if the input is going to be accepted or not. For very complicated grammars, especially with lots of rules or long derivations from the starting symbol to the final string, WK-CYK still might be more practical.
 
 \chapter{Conclusion}
 In this work I have presented various existing models for representing Watson-Crick languages, most importantly Watson Crick automata and Watson-Crick grammars and I have analyzed the algorithm WK-CYK which is used for testing a membership of strings in languages defined by Watson-Crick context-free grammars. Than I have come up with another algorithm for testing membership in WK languages which I call state space search or tree search which is the most important contribution of this thesis.
@@ -1471,12 +1490,12 @@ The state space search is based on a standard Breadth-first search algorithm whe
 I have collected or created twenty Watson-Crick context-free grammars to test the WK-CYK and state space search algorithms.
 I have implemented both WK-CYK and state space search in the Python language and written scripts to test the algorithms with all these grammars and various inputs. The test results showed that for the majority of the grammars, state space search was very efficient and it can quickly decide membership problem of inputs that are hundreds or even thousands of symbols long.
 
-Among the advantages of the state space search is the fact that it can work over any forms of WK context-free grammars (not only grammars in the CNF or grammars with the identity complementarity relation). Also, it can be optimized for a particular grammar. Tests comparing performance of node precedence heuristics and tests of pruning heuristics can be run in order to find which combination is best for a particular grammar thus further improving the performance.
+Among the advantages of the state space search is the fact that it can work over any forms of WK context-free grammars (not only grammars in the WK-CNF or grammars with the identity complementarity relation). Also, it can be optimized for a particular grammar. Tests comparing performance of node precedence heuristics and tests of pruning heuristics can be run in order to find which combination is best for a particular grammar thus further improving the performance.
 
 Testing the WK-CYK algorithm showed that its theoretical complexity $O(n^6)$ with respect to the input length corresponds to the real performance. In practice, it is able to decide membership problem of inputs up to the length of approximately 30--50 symbols. That is much less than state space search but, on the other hand, its performance is almost identical for any grammar and for any input. It is more efficient in case of some specific or complex grammars where the performance of state space search struggles.
 
 The state space search is a suitable algorithm for parallization. Several processes can take nodes from the queue of open nodes and analyze different branches of the tree independently. This would be a natural next step in the further development of the state space search.
-It is possible to come up with other heuristics for both the pruning and node preference. As for pruning, one possibility would be to expand the regular expression matching (RE) heuristic also to the lower strand.
+It is possible to come up with other heuristics for both the pruning and node precedence. As for pruning, one possibility would be to expand the regular expression matching (RE) heuristic also to the lower strand.
 Another pruning idea is to calculate how many terminals can be generated at minimum to the lower strand and to the upper strand individually (currently, it is calculated how many terminals a non-terminal produces to both strands) thus making the constraint of the words stronger.
-As for the node precedence heuristics, it may be worthwhile to use some of the grammars with which state space search is not efficient (in particular grammars 3 in the CNF and grammar 17) and design or improve node precedence heuristics with respect to these particular cases. Then it would be necessary to test all these new heuristics and see if they contribute to the overall performance or not.
+As for the node precedence heuristics, it may be worthwhile to use some of the grammars with which state space search is not efficient (in particular grammars 3 in the WK-CNF and grammar 17) and design or improve node precedence heuristics with respect to these particular cases. Then it would be necessary to test all these new heuristics and see if they contribute to the overall performance or not.
 Another promising improvement could be analyzing the input from both sides at the same time. This could help with the cases, when the key part of the input is at or near its end and the state space search may struggle to get there in a reasonable time frame.

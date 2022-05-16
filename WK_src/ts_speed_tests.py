@@ -60,7 +60,5 @@ def main():
 		if testNo in runTests:
 			tester.run_speed_test(grammar, grammar.input_gen_func(cnfNegLen, cnfNegStep, False), False, times)
 
-	tester.printResults()
-
 if __name__ == "__main__":
 	main()

@@ -19,22 +19,18 @@ def main():
 	runTests = range(1, len(allGrammars) * 2 + 1)
 	#runTests = [25, 30]
 
-	for i in range(10):
-		testNo = 0
-		for grammar, lenBasic, lenCNF in zip(allGrammars, lensBasicForm, lensCNF):
-			testNo += 1
-			if testNo in runTests:
-				inputStr = next(grammar.input_gen_func(lenBasic, 0, True))
-				tester.run_node_precedence_test(grammar, inputStr, True, times)
+	testNo = 0
+	for grammar, lenBasic, lenCNF in zip(allGrammars, lensBasicForm, lensCNF):
+		testNo += 1
+		if testNo in runTests:
+			inputStr = next(grammar.input_gen_func(lenBasic, 0, True))
+			tester.run_node_precedence_test(grammar, inputStr, True, times)
 
-			testNo += 1
-			if testNo in runTests:
-				grammar.backup()
-				grammar.to_wk_cnf()
-
-				inputStr = next(grammar.input_gen_func(lenCNF, 0, True))
-				tester.run_node_precedence_test(grammar, inputStr, True, times)
-				grammar.restore()
+		testNo += 1
+		if testNo in runTests:
+			grammar.to_wk_cnf()
+			inputStr = next(grammar.input_gen_func(lenCNF, 0, True))
+			tester.run_node_precedence_test(grammar, inputStr, True, times)
 
 	tester.printResults()
 
