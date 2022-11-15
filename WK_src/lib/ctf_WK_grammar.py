@@ -1,9 +1,11 @@
 # Author: Jan Hammer, xhamme00@stud.fit.vutbr.cz
 # Project: WK Grammar Tree Search
 # Implementation of the main grammar class - can run WK-CYK or parse tree
+from __future__ import annotations
+from dataclasses import dataclass
 
 from itertools import combinations
-from typing import Dict, List, Tuple, Set, Union, Optional, TypeVar, Any, Callable, Generator
+from typing import Dict, List, Tuple, Set, Optional, TypeVar, Any, Callable, Generator
 from queue import PriorityQueue
 from copy import deepcopy
 import time
@@ -47,7 +49,7 @@ def wordToStr(word: tWord) -> str:
 		else:
 			rs.append(symbol)
 
-	return(f'{" ".join(rs)}')
+	return f'{" ".join(rs)}'
 
 # a node in the search tree
 class cTreeNode:
@@ -130,7 +132,7 @@ class cWK_CFG:
 		self.relation = set(relation)             # set of relations - tuples (term, term)
 		self.erasableNts: Set[tNonTerm] = set()   # nonterms that can be erased by lambda-rules
 		self.lastCreatedNonTerm = 0               # dynamically created non-term last index
-		self.timeLimit = 10                       # max computation time before timeout
+		self.timeLimit = 2                        # max computation time before timeout
 
 		# pruning heuristics - which are active
 		self.pruningOptions: Dict[Callable, bool] = {
@@ -812,7 +814,7 @@ class cWK_CFG:
 	# create new nonterm Ni where i increases can specify differnt prefix than N
 	def createNewNt(self, prefix: str = 'N') -> tNonTerm:
 		self.lastCreatedNonTerm += 1
-		# double check the the nonterm is unique (should be)
+		# double check the nonterm is unique (should be)
 		while prefix + str(self.lastCreatedNonTerm) in self.nts:
 			self.lastCreatedNonTerm += 1
 		return prefix + str(self.lastCreatedNonTerm)
@@ -1174,3 +1176,71 @@ class cWK_CFG:
 		# 1. the set of symbols that generate the whole input is non empty
 		# 2. starting symbol is in this set
 		return (1, n, 1, n) in self.X and self.startSymbol in self.X[(1, n, 1, n)]
+
+	# we need either a set of inputs to test on or a input generator
+	def find_best_configuration(self, inputs: [str]) -> None:
+		times = [0] * len(self.nodePrecedenceList)
+		for inputStr in inputs:
+			newTimes = self.compare_node_precedence(inputStr)
+			times = [e1 + e2 for e1, e2 in zip(times, newTimes)]
+
+		self.currentNodePrecedence = times.index(min(times))
+
+		times = [0] * 2**len(self.pruningOptions)
+		for inputStr in inputs:
+			newTimes = self.compare_all_pruning(inputStr)
+			times = [e1 + e2 for e1, e2 in zip(times, newTimes)]
+
+		self._set_pruning_opts(times.index(min(times)))
+
+	# find the best node precedence function for the given input
+	# TODO - how to gather statistics and set timeout?
+	def compare_node_precedence(self, inputStr: str) -> [float]:
+		times = []
+
+		for nodePrecedenceIdx in range(len(self.nodePrecedenceList)):
+			self.currentNodePrecedence = nodePrecedenceIdx
+
+			start = time.time()
+			result = self.run_tree_search(inputStr)
+			end = time.time()
+			times.append(end-start)
+			if result[3] is None:
+				times[-1] *= 2
+
+		return times
+
+	# sets pruning options based on an integer,
+	# the pruning options are represented by a binary form of this integer - each single options one binary digit
+	# example: integer == 20 (i.e. '10100') - only first and third options (indexes 0, 2) are active
+	def _set_pruning_opts(self, i: int) -> None:
+		#assert len(bin(i)) - 2 == len(self.pruningOptions.keys())
+		binaryI = (bin(i)[2:].rjust(len(self.pruningOptions), '0'))[::-1]
+		for idx, val in enumerate(binaryI):
+			key = list(self.pruningOptions.keys())[idx]
+			self.pruningOptions[key] = val == '1'
+
+	def compare_all_pruning(self, inputStr: str) -> [float]:
+		times = []
+		for i in (range(2**len(self.pruningOptions))):
+			# 0 - 31
+			self._set_pruning_opts(i)
+			start = time.time()
+			openStates, closedStates, stats, result = self.run_tree_search(inputStr)
+			end = time.time()
+			timeTaken = round(end - start, 7)
+			if result is None:
+				timeTaken *= 2
+			times.append(timeTaken)
+
+			# print(f'{bin(i)[2:].rjust(5, "0")[::-1]} :  {timeTaken}      result: {result},    stats: {stats},  openStates: {openStates}, closed states: {closedStates}')
+		return times
+
+
+	def find_best_configuration2(self, input_func):
+		pass
+	# 1. set length to a starting number
+    # 2. find a suitable length for rejected inputs
+	# 3. run number of tests
+	# 4. find suitable length for accepted inputs
+	# 5. run number of tests
