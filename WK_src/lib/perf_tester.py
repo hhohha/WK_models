@@ -237,7 +237,7 @@ class cPerfTester:
 			resultObj.update(timeTaken, statesOpen, statesAll-statesOpen, result == 'TIMEOUT', len(inputStr))
 
 			# do 30 tests or until it timeouts
-			if i > 30 or result == 'TIMEOUT':
+			if i >= 0 or result == 'TIMEOUT':
 				break
 			i += 1
 

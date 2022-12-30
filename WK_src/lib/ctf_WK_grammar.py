@@ -10,6 +10,7 @@ from queue import PriorityQueue
 from copy import deepcopy
 import time
 import re
+import sys
 
 # typings
 tNonTerm = str
@@ -74,6 +75,9 @@ class cTreeNode:
 	def __lt__(self, other: 'cTreeNode') -> bool:
 		return self.precedence < other.precedence
 
+	def __repr__(self):
+		return wordToStr(self.word)
+
 # a rule of a grammar
 class cRule:
 	def __init__(self, lhs: tNonTerm, rhs: tWord) -> None:
@@ -109,7 +113,6 @@ class cRule:
 				self.lowerCnt += len(letter[1])
 			else:
 				self.ntsLen += 1
-
 
 	def __eq__(self, other):
 		return self.rhs == other.rhs and self.lhs == other.lhs
@@ -195,7 +198,7 @@ class cWK_CFG:
 		self.precalculate_data()
 
 
-	# check grammar definition consistecy
+	# check grammar definition consistency
 	def is_consistent(self) -> bool:
 
 		# is starting symbol among nonterminals?
@@ -251,6 +254,11 @@ class cWK_CFG:
 			self.ruleDict[nt] = []
 		for rule in self.rules:
 			self.ruleDict[rule.lhs].append(rule)
+
+		# the order of applicable rules is better deterministic
+		# otherwise the result can occasionally differ significantly at random
+		for nt in self.nts:
+			self.ruleDict[nt] = sorted(self.ruleDict[nt], key=lambda x: wordToStr(x.rhs))
 
 
 	# parse the relation and create dictionary for more efficient access
@@ -401,22 +409,23 @@ class cWK_CFG:
 			if currentTime - startTime > self.timeLimit:
 				return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), None
 
-			# get another node with highest priority
+			# get another node with the highest priority
 			currentNode = openQueue.get()
 			openQueueLen -= 1
 
-			# generate all possible sucessors (pruning happens within get_all_successors)
+			# generate all possible successors (pruning happens within get_all_successors)
 			for nextNode in self.get_all_successors(currentNode, upperStr):
 				# check if the node is by chance the solution, if so, return True
 				if self.is_result(nextNode.word, upperStr):
 					self.printPath(nextNode)
 					return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), True
-				# if the current node new, add it to the queue
+				# if the current node is new, add it to the queue
 				if nextNode.hashNo not in allStates:
 					openQueueLen += 1
 					openQueueMaxLen = max(openQueueMaxLen, openQueueLen)
 					openQueue.put(nextNode)
 					allStates.add(nextNode.hashNo)
+
 
 		# queue empty, solution not found - return False
 		return openQueueMaxLen, len(allStates), list(map(lambda key: (key.__name__, self.pruneCnts[key]), self.pruneCnts.keys())), False
@@ -435,13 +444,13 @@ class cWK_CFG:
 	# generates node successors
 	def get_all_successors(self, node: cTreeNode, goalStr: str) -> Generator:
 		for ntIdx, symbol in enumerate(node.word):
-			# find the first non terminal
+			# find the first non-terminal
 			if is_nonterm(symbol):
 				for rule in self.ruleDict[symbol]:
 					# apply every possible rule of the given non-term and create a node
 					newWord = self.apply_rule(node.word, ntIdx, rule.rhs)
 					newNode = cTreeNode(newWord, node.upperStrLen + rule.upperCnt, node.lowerStrLen + rule.lowerCnt, node.ntLen + rule.ntsLen, node, 0)
-					# if the node is not pruned, compute it's precedence and yield it
+					# if the node is not pruned, compute its precedence and yield it
 					if self.is_word_feasible(newNode, goalStr):
 						newNode.precedence = self.compute_precedence(newWord, goalStr)
 						yield newNode
@@ -475,7 +484,7 @@ class cWK_CFG:
 				mergedLower = word[ntIdx - 1][1] + ruleRhs[0][1]
 				retval = word[:ntIdx - 1] + [(mergedUpper, mergedLower)] + word[ntIdx + 1:]
 			elif mergeNext:
-				# merge with followinf segment
+				# merge with following segment
 				mergedUpper = ruleRhs[0][0] + word[ntIdx + 1][0]
 				mergedLower = ruleRhs[0][1] + word[ntIdx + 1][1]
 				retval = word[:ntIdx] + [(mergedUpper, mergedLower)] + word[ntIdx + 2:]
@@ -1186,15 +1195,21 @@ class cWK_CFG:
 
 		self.currentNodePrecedence = times.index(min(times))
 
-		times = [0] * 2**len(self.pruningOptions)
+		# find best pruning config for each input, use the most frequent one
+		bestConfigs: Dict[Tuple, int] = {}
 		for inputStr in inputs:
-			newTimes = self.compare_all_pruning(inputStr)
-			times = [e1 + e2 for e1, e2 in zip(times, newTimes)]
+			res = self.compare_pruning_configs(inputStr)
+			if res in bestConfigs:
+				bestConfigs[res] += 1
+			else:
+				bestConfigs[res] = 1
 
-		self._set_pruning_opts(times.index(min(times)))
+		finalConfig = max(bestConfigs.items(), key=lambda x: x[1])[0]
+		for i, key in enumerate(self.pruningOptions):
+			self.pruningOptions[key] = finalConfig[i]
+
 
 	# find the best node precedence function for the given input
-	# TODO - how to gather statistics and set timeout?
 	def compare_node_precedence(self, inputStr: str) -> [float]:
 		times = []
 
@@ -1204,43 +1219,36 @@ class cWK_CFG:
 			start = time.time()
 			result = self.run_tree_search(inputStr)
 			end = time.time()
-			times.append(end-start)
+			times.append(end - start)
 			if result[3] is None:
 				times[-1] *= 2
 
 		return times
 
-	# sets pruning options based on an integer,
-	# the pruning options are represented by a binary form of this integer - each single options one binary digit
-	# example: integer == 20 (i.e. '10100') - only first and third options (indexes 0, 2) are active
-	def _set_pruning_opts(self, i: int) -> None:
-		#assert len(bin(i)) - 2 == len(self.pruningOptions.keys())
-		binaryI = (bin(i)[2:].rjust(len(self.pruningOptions), '0'))[::-1]
-		for idx, val in enumerate(binaryI):
-			key = list(self.pruningOptions.keys())[idx]
-			self.pruningOptions[key] = val == '1'
+	def compare_pruning_configs(self, inputStr: str) -> Tuple[bool]:
+		# first step - all prunings are on
+		for key in self.pruningOptions:
+			self.pruningOptions[key] = True
 
-	def compare_all_pruning(self, inputStr: str) -> [float]:
-		times = []
-		for i in (range(2**len(self.pruningOptions))):
-			# 0 - 31
-			self._set_pruning_opts(i)
+		q = 0
+		for option in self.pruningOptions:
+			# measure with the option active
 			start = time.time()
-			openStates, closedStates, stats, result = self.run_tree_search(inputStr)
+			self.run_tree_search(inputStr)
 			end = time.time()
-			timeTaken = round(end - start, 7)
-			if result is None:
-				timeTaken *= 2
-			times.append(timeTaken)
+			timeTakenOn = end - start
 
-			# print(f'{bin(i)[2:].rjust(5, "0")[::-1]} :  {timeTaken}      result: {result},    stats: {stats},  openStates: {openStates}, closed states: {closedStates}')
-		return times
+			# measure with the option inactive
+			self.pruningOptions[option] = False
+			start = time.time()
+			self.run_tree_search(inputStr)
+			end = time.time()
+			timeTakenOff = end - start
 
+			# use the better config of the option
+			if timeTakenOn < timeTakenOff:
+				self.pruningOptions[option] = True
 
-	def find_best_configuration2(self, input_func):
-		pass
-	# 1. set length to a starting number
-    # 2. find a suitable length for rejected inputs
-	# 3. run number of tests
-	# 4. find suitable length for accepted inputs
-	# 5. run number of tests
+			q += 1
+
+		return tuple(self.pruningOptions.values())

@@ -38,12 +38,15 @@ def main():
 
 	#filter which tests will be run
 	runTests = range(1, len(testDataLst) * 4 + 1)
-	#runTests = [10, 14]
+	# runTests = [40]
 
 	testNo = 0
 	for grammar, basicPosLen, basicPosStep, basicNegLen, basicNegStep, cnfPosLen, cnfPosStep, cnfNegLen, cnfNegStep in testDataLst:
 		testNo += 1
 		if testNo in runTests:
+			inputStr = next(grammar.input_gen_func(basicPosLen, 0, True))
+			grammar.find_best_configuration([inputStr])
+			print(f'chosen config:   NP - {grammar.currentNodePrecedence}    pruning {list(grammar.pruningOptions.values())}')
 			tester.run_speed_test(grammar, grammar.input_gen_func(basicPosLen, basicPosStep, True), True, times)
 
 		testNo += 1
@@ -54,6 +57,9 @@ def main():
 
 		testNo += 1
 		if testNo in runTests:
+			inputStr = next(grammar.input_gen_func(cnfPosLen, 0, True))
+			grammar.find_best_configuration([inputStr])
+			print(f'chosen config:   NP - {grammar.currentNodePrecedence}    pruning {list(grammar.pruningOptions.values())}')
 			tester.run_speed_test(grammar, grammar.input_gen_func(cnfPosLen, cnfPosStep, True), True, times)
 
 		testNo += 1

@@ -15,11 +15,11 @@ print('\n')
 inputStr1 = 'aaaaabbbbb'
 
 # or we can use the generator to generate an input of a given length that will be accepted
-gen  = g6.input_gen_func(30, 0, True)
+gen = g6.input_gen_func(30, 0, True)
 inputStr2 = next(gen)
 
 # or rejected
-gen  = g6.input_gen_func(30, 0, False)
+gen = g6.input_gen_func(30, 0, False)
 inputStr3 = next(gen)
 
 # and then, let's run the tree search on these inputs and print the results
